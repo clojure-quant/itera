@@ -3,7 +3,7 @@
 (defn calc-area [_ctx {:keys [a b]}]
   {:a a 
    :b b 
-   :c (+ a b)})
+   :c (* a b)})
 
 (defn options [_ctx]
   ; same format as in https://github.com/pink-gorilla/options
@@ -11,7 +11,7 @@
    {:type :select :path [:b], :name "b" :spec [1 2 3 4 5 6 7 8 9 10]}])
 
 
-(defn plot [{:keys [a b c]}]
+(defn plot [_opts {:keys [a b c]}]
   [:div
    [:div
     [:h1
@@ -23,6 +23,7 @@
 (def algo-area
   {:calculate/options options
    :calculate/fn calc-area
+   :calculate/option-initial {:a 1 :b 2}
    :plot/options {}
    :plot/fn plot})
 

@@ -1,6 +1,7 @@
 (ns itera.routes
   (:require [clojure.string :as str]
             [hyper.core :as h]
+            [itera.algo :as algo]
             [itera.discover :as discover]))
 
 (defn- split-name
@@ -32,10 +33,44 @@
               (for [{:keys [file error]} error]
                 [:tr {:key file} [:td file] [:td (str error)]])]]])]))))
 
+(defn- find-algo
+  "Find the discovery entry whose :name matches name."
+  [algos name]
+  (some #(when (= name (:name %)) %) algos))
+
+(defn- algo-map
+  "Resolve a discovery entry's :algo (a Var) to its value."
+  [entry]
+  (let [v (:algo entry)]
+    (if (var? v) (var-get v) v)))
+
 (defn- algo-page
-  [req]
-  (let [{n :ns s :symbol} (get-in req [:hyper/route :path-params])]
-    [:div.page [:h1 (str n "/" s)]]))
+  "Form-3 view for one algo: owns the calculate/plot lifecycle across
+   mount/unmount over tab-scoped cursors."
+  [ctx result*]
+  (fn [req]
+    (let [{n :ns s :symbol} (get-in req [:hyper/route :path-params])
+          name (str n "/" s)]
+      (if-let [entry (find-algo (:algos @result*) name)]
+        (let [m    (algo-map entry)
+              base [:itera.algo name]]
+          (h/view
+           {:mount
+            (fn []
+              (let [calc-a (h/tab-cursor (conj base :calculate-options)
+                                         (:calculate/option-initial m {}))
+                    plot-a (h/tab-cursor (conj base :plot-options)
+                                         (:plot/option-initial m {}))
+                    res-a  (h/tab-cursor (conj base :result))]
+                (algo/init-calculate calc-a plot-a res-a m)
+                {:calc-a calc-a :plot-a plot-a :res-a res-a :m m
+                 :watch (algo/start-calculate ctx calc-a plot-a res-a m)}))
+            :render
+            (fn [r _req] (or (algo/plot-result (:plot-a r) (:res-a r) (:m r))
+                             [:div]))
+            :unmount
+            (fn [r] (algo/stop-calculate (:watch r)))}))
+        [:div.page [:h1 "Algo not found"] [:p name]]))))
 
 (defn routes
   "Build the itera routes. Calls discover-start once and returns
@@ -49,5 +84,5 @@
                  :get (overview-page result*)}]
       ["/itera/:ns/:symbol" {:name :itera-algo
                              :title "Algo"
-                             :get #'algo-page}]]
+                             :get (algo-page ctx result*)}]]
      :discover d}))
