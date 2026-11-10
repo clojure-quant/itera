@@ -4,3 +4,5 @@
 demo/.clj-kondo
 demo/.lsp
 demo/.cpcache
+.playwright-mcp
+itera/.cpcache

@@ -1,7 +1,9 @@
 (ns area.itera)
 
 (defn calc-area [_ctx {:keys [a b]}]
-  (+ a b))
+  {:a a 
+   :b b 
+   :c (+ a b)})
 
 (defn options [_ctx]
   ; same format as in https://github.com/pink-gorilla/options
