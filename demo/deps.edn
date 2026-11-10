@@ -1,0 +1,3 @@
+{:paths ["src"]
+ :deps {itera/itera {:local/root "../itera"}}
+ :aliases {:run {:main-opts ["-m" "demo.discover"]}}}
