@@ -1,7 +1,11 @@
 (ns itera.options
   "Server-side options UI from a spec (pink-gorilla/options spec format).
    Renders hiccup and writes edits server-side into an options cursor through
-   hyper actions.  All functions must be called inside a Hyper render context."
+   hyper actions.  All functions must be called inside a Hyper render context.
+
+   Supported option :type values: :bool :string :date :select :select-multiple
+   :view :label.  A :date value is a java.time.LocalDate (native
+   <input type=\"date\">; nil when cleared)."
   (:require [hyper.core :as h]))
 
 (defn norm-path
@@ -45,6 +49,20 @@
 
 ;; --- editors ----------------------------------------------------------------
 
+(defn- date->str
+  "Render a value as an <input type=\"date\"> value string (yyyy-MM-dd)."
+  [v]
+  (cond
+    (instance? java.time.LocalDate v) (str v)
+    (string? v)                       v
+    :else                             ""))
+
+(defn- str->date
+  "Parse a yyyy-MM-dd string into a java.time.LocalDate (nil when blank/invalid)."
+  [s]
+  (when (seq s)
+    (try (java.time.LocalDate/parse s) (catch Exception _ nil))))
+
 (defn- editor [opt value set-fn group]
   (let [{:keys [type name class size]} opt
         style (or (:style opt) {})
@@ -60,6 +78,11 @@
                :value (str (or value ""))
                :placeholder (or name "")
                :data-on:change (h/action (set-fn path $value))}]
+
+      :date
+      [:input {:class class :style style :type "date"
+               :value (date->str value)
+               :data-on:change (h/action (set-fn path (str->date $value)))}]
 
       :select
       (let [ns-spec (normalize-select (:spec opt))

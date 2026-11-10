@@ -14,6 +14,7 @@
            {:id :cherry :name "Cherry"}]}
    {:type :label   :name "Advanced"}
    {:type :select-multiple :path [:multi] :name "Multi" :spec [:a :b :c :d]}
+   {:type :date    :path [:date]        :name "Date"}
    {:type :view    :path [:string]      :name "View"}])
 
 (defn plot [_opts result]
@@ -28,6 +29,7 @@
                               :string "hello"
                               :select 2
                               :select-map :apple
-                              :multi [:a :b]}
+                              :multi [:a :b]
+                              :date (java.time.LocalDate/of 2024 1 1)}
    :plot/options {}
    :plot/fn plot})

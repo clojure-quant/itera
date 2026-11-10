@@ -1,6 +1,6 @@
 {:paths ["src"]
- :deps {itera/itera {:local/root "../itera"}}
+ :deps {itera/itera {:local/root "../itera"}
+        plot/plot   {:local/root "../plot"}}
  :aliases {:run {:main-opts ["-m" "demo.discover"]}
-           :itera {:exec-fn itera.hyper/start
-                   :exec-args {:ctx {}
-                               :opts {:port 5000}}}}}
+           :itera {:exec-fn demo.main/start
+                   :exec-args {:opts {:port 5000}}}}}
