@@ -2,7 +2,8 @@
   (:require [clojure.string :as str]
             [hyper.core :as h]
             [itera.algo :as algo]
-            [itera.discover :as discover]))
+            [itera.discover :as discover]
+            [itera.options :as options]))
 
 (defn- split-name
   "Split an alg name \"<ns>/<symbol>\" into {:ns <ns> :symbol <symbol>}."
@@ -64,10 +65,25 @@
                     res-a  (h/tab-cursor (conj base :result))]
                 (algo/init-calculate calc-a plot-a res-a m)
                 {:calc-a calc-a :plot-a plot-a :res-a res-a :m m
+                 :calc-spec (options/resolve-spec (:calculate/options m) ctx)
+                 :plot-spec (options/resolve-spec (:plot/options m) ctx)
                  :watch (algo/start-calculate ctx calc-a plot-a res-a m)}))
             :render
-            (fn [r _req] (or (algo/plot-result (:plot-a r) (:res-a r) (:m r))
-                             [:div]))
+            (fn [r _req]
+              [:div.page
+               [:div.algo-layout
+                {:style {:display "flex" :gap "1.5rem" :align-items "flex-start"}}
+                [:div.algo-options {:style {:flex "0 0 280px" :min-width "240px"}}
+                 (when (seq (:calc-spec r))
+                   (options/options-ui {:group :calculate :spec (:calc-spec r)
+                                        :value @(:calc-a r)
+                                        :set-fn (fn [p v] (swap! (:calc-a r) assoc-in p v))}))
+                 (when (seq (:plot-spec r))
+                   (options/options-ui {:group :plot :spec (:plot-spec r)
+                                        :value @(:plot-a r)
+                                        :set-fn (fn [p v] (swap! (:plot-a r) assoc-in p v))}))]
+                [:div.algo-result {:style {:flex "1" :min-width "0"}}
+                 (or (algo/plot-result (:plot-a r) (:res-a r) (:m r)) [:div])]]])
             :unmount
             (fn [r] (algo/stop-calculate (:watch r)))}))
         [:div.page [:h1 "Algo not found"] [:p name]]))))
