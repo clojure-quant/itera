@@ -12,10 +12,12 @@
                  :series [{:name \"A\" :data [1 2 3]}]
                  :style {:width \"100%\" :height \"400px\"}})
 
-   Highcharts styles its canvas itself, so `head` is empty."
+   The stylesheet is served locally from the plot sub-project's resources."
   (:require [hyper.core :as h]))
 
-(def head [])
+(def head
+  [[:link {:rel  "stylesheet"
+           :href "/itera/plot/highcharts/css/highcharts.css"}]])
 
 (h/defc itera-highchart
   {:require [["https://esm.sh/highcharts@11.4.8" :as hc]

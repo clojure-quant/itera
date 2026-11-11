@@ -14,11 +14,13 @@
 
 (def head
   [[:link {:rel  "stylesheet"
-           :href "https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/styles/ag-theme-quartz.css"}]])
+           :href "/itera/plot/aggrid/styles/ag-grid.css"}]
+   [:link {:rel  "stylesheet"
+           :href "/itera/plot/aggrid/styles/ag-theme-quartz.css"}]])
 
 (h/defc itera-aggrid
   "Vanilla ag-grid in a custom element. `options` is the JSON-parsed gridOptions."
-  {:require [["https://esm.sh/ag-grid-community@31.3.2" :as ag]]}
+  {:require [["https://esm.sh/ag-grid-community@32.3.9" :as ag]]}
   [{:keys [options theme]}]
   (render
    [:div {:class (str "ag-theme-" (or theme "quartz"))

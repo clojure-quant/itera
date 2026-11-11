@@ -31,4 +31,6 @@
   "Hyper :exec-fn. Receives {:opts {...}} from the :itera alias exec-args."
   [{:keys [opts]}]
   (hyper/start {:ctx  {}
-                :opts (merge {:port 5000} opts {:head (head)})}))
+                :opts (merge {:port 5000 :static-resources "public"}
+                             opts
+                             {:head (head)})}))

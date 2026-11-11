@@ -98,7 +98,7 @@
      [["/itera" {:name :itera
                  :title "Itera"
                  :get (overview-page result*)}]
-      ["/itera/:ns/:symbol" {:name :itera-algo
-                             :title "Algo"
-                             :get (algo-page ctx result*)}]]
+      ["/itera/algo/:ns/:symbol" {:name  :itera-algo
+                                  :title "Algo"
+                                  :get   (algo-page ctx result*)}]]
      :discover d}))

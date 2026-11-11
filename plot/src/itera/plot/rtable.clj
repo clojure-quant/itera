@@ -12,7 +12,9 @@
      :render-cell  table-level cell fn (fn [col row]) -> content (hiccup/value)
      :class :style  table passthrough")
 
-(def head [])
+(def head
+  [[:link {:rel  "stylesheet"
+           :href "/itera/plot/rtable/rtable.css"}]])
 
 (defn- col-value
   "Resolve a row's value for a column via its :path (keyword/vector) or :expr."

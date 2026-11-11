@@ -1,0 +1,12 @@
+
+
+.highcharts-series-inactive {
+    opacity: 1 !important;
+  }
+
+
+/*  .highcharts-candlestick-series .highcharts-point-up  {}
+
+we set styled mode to false, so that we set color in code.
+
+*/
