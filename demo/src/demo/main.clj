@@ -8,7 +8,9 @@
   (:require [itera.hyper :as hyper]
             [itera.plot.aggrid :as aggrid]
             [itera.plot.cheetah :as cheetah]
+            [itera.plot.fipp :as fipp]
             [itera.plot.highcharts :as highcharts]
+            [itera.plot.md :as md]
             [itera.plot.plotly :as plotly]
             [itera.plot.rtable :as rtable]
             [itera.plot.vega :as vega]))
@@ -18,7 +20,9 @@
   []
   (vec (concat aggrid/head
                cheetah/head
+               fipp/head
                highcharts/head
+               md/head
                plotly/head
                rtable/head
                vega/head)))

@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
  :deps {itera/itera {:local/root "../itera"}
         plot/plot   {:local/root "../plot"}}
  :aliases {:run {:main-opts ["-m" "demo.discover"]}
