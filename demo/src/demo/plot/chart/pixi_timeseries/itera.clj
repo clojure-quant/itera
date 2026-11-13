@@ -1,4 +1,4 @@
-(ns demo.plot.pixi-timeseries.itera
+(ns demo.plot.chart.pixi-timeseries.itera
   (:require [itera.plot.pixi-timeseries :as pixi]
             [itera.plot.pixi-timeseries.options]))
 
@@ -18,7 +18,8 @@
 (def ds (mapv bar (range 240)))
 
 (def charts
-  [[{:type :line :col :daily-atr-lower :color "blue-3"}
+  [[{:type :bar :col [:open :high :low :close]}
+    {:type :line :col :daily-atr-lower :color "blue-3"}
     {:type :line :col :daily-atr-upper :color "blue-7"}
     {:type :range :col [:daily-atr-lower :daily-atr-upper] :color "red-3"}
     {:type :line :col :p0-low :color "red-3"}

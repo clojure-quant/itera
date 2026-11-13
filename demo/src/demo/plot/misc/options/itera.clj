@@ -1,4 +1,4 @@
-(ns options.itera)
+(ns demo.plot.misc.options.itera)
 
 (defn calculate [_ctx options]
   options)

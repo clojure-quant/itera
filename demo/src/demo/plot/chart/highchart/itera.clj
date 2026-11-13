@@ -1,4 +1,4 @@
-(ns demo.plot.highchart.itera
+(ns demo.plot.chart.highchart.itera
   (:require [itera.plot.highcharts :as hc]))
 
 (defn economic-activity []

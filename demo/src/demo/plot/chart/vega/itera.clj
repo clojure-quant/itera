@@ -1,4 +1,4 @@
-(ns demo.plot.vega.itera
+(ns demo.plot.chart.vega.itera
   (:require [itera.plot.vega :as vega]))
 
 (def symbol-spec

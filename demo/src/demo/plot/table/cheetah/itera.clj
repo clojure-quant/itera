@@ -1,4 +1,4 @@
-(ns demo.plot.cheetah.itera
+(ns demo.plot.table.cheetah.itera
   (:require [demo.data :as data]
             [itera.plot.cheetah :as cheetah]))
 

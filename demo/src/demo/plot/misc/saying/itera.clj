@@ -1,6 +1,6 @@
-(ns saying.itera
+(ns demo.plot.misc.saying.itera
   (:require
-   [saying.db :as db]))
+   [demo.plot.misc.saying.db :as db]))
 
 (defn calculate [_ _]
   (db/saying))

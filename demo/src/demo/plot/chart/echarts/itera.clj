@@ -1,4 +1,4 @@
-(ns demo.plot.echarts.itera
+(ns demo.plot.chart.echarts.itera
   (:require [itera.plot.echarts :as echarts]))
 
 (def line

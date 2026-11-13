@@ -1,4 +1,4 @@
-(ns demo.plot.fipp.itera
+(ns demo.plot.misc.fipp.itera
   (:require [itera.plot.fipp :as fipp]))
 
 (def data

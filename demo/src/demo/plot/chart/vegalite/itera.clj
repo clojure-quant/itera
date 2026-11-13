@@ -1,4 +1,4 @@
-(ns demo.plot.vegalite.itera
+(ns demo.plot.chart.vegalite.itera
   (:require [demo.data :as data]
             [itera.plot.vega :as vega]))
 

@@ -1,9 +1,9 @@
 {:paths ["src" "resources"]
-  :deps {itera/itera {:local/root "../itera"}
+ :deps {itera/itera {:local/root "../itera"}
         plot/plot   {:local/root "../plot"}
         pixi-timeseries/pixi-timeseries {:local/root "../pixi-timeseries"}
         org.clojure/data.csv {:mvn/version "1.0.1"}}
- :aliases {:run {:main-opts ["-m" "demo.discover"]}
+ :aliases {:discover {:main-opts ["-m" "demo.discover"]}
            :itera {:exec-fn demo.main/start
                    :exec-args {:opts {:port 5000}}}
            :convert

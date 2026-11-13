@@ -1,5 +1,5 @@
 
-(ns saying.db)
+(ns demo.plot.misc.saying.db)
 
 (def sayings
   ["Peace to the world"

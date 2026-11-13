@@ -1,4 +1,4 @@
-(ns demo.plot.md.itera
+(ns demo.plot.misc.md.itera
   (:require [itera.plot.md :as md]))
 
 (def markdown

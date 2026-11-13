@@ -1,4 +1,4 @@
-(ns demo.plot.aggrid.itera
+(ns demo.plot.table.aggrid.itera
   (:require [demo.data :as data]
             [itera.plot.aggrid :as aggrid]))
 

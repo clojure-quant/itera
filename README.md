@@ -17,7 +17,7 @@ create itera.plot/glide-grid/glide-grid
 it is based on npm "@glideapps/glide-data-grid" 
 a native javascript if possible. do not add react dependencies
 it syntax should be identical to itera.plot.rtable/rtable as
-shown in the demo of demo.plot.rtable.itera
+shown in the demo of demo.plot.table.rtable.itera
 add a demo for glide-grid. 
 
 

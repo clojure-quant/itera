@@ -1,4 +1,4 @@
-(ns demo.plot.highstock.itera
+(ns demo.plot.chart.highstock.itera
   (:require [demo.data :as data]
             [itera.plot.highcharts :as hc]))
 

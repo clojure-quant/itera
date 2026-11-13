@@ -1,4 +1,4 @@
-(ns demo.plot.plotly.itera
+(ns demo.plot.chart.plotly.itera
   (:require [itera.plot.plotly :as plotly]))
 
 (def surface

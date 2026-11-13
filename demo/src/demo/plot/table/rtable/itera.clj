@@ -1,4 +1,4 @@
-(ns demo.plot.rtable.itera
+(ns demo.plot.table.rtable.itera
   (:require [demo.data :as data]
             [itera.plot.rtable :as rtable]))
 

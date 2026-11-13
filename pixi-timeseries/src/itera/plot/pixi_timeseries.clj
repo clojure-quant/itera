@@ -5,7 +5,8 @@
      :data    rows (vector of maps) or a column map; required
      :charts  vector of panes, each a vector of series maps:
               {:type one of itera.plot.pixi.plot-type/types
-               :col  <keyword> or [<kw> <kw>] for :range
+               :col  <kw> or [<kw> <kw>] for :range
+                     or [<open> <high> <low> <close>] for :bar
                :color \"blue-5\" (name in itera.plot.color/colors or a CSS color)}
      :step    pixels per row (default 8)
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
@@ -192,6 +193,49 @@
                                                     (recur (inc i))))
                                                 (.fill graphics
                                                        (js-obj "color" color "alpha" 0.6))))
+                                 add-bars (fn [graphics rows height col]
+                                            (let [c0        (aget col 0)
+                                                  c1        (aget col 1)
+                                                  c2        (aget col 2)
+                                                  c3        (aget col 3)
+                                                  mn        (true-min rows c2)
+                                                  mx        (true-max rows c1)
+                                                  n         (.-length rows)
+                                                  st        (.-step state)
+                                                  bar-width (- st 2)]
+                                              (when (and (js/isFinite mn) (js/isFinite mx))
+                                                (loop [i 0]
+                                                  (when (< i n)
+                                                    (let [row (aget rows i)
+                                                          o   (scale-value (aget row c0)
+                                                                           mn mx height)
+                                                          hi  (scale-value (aget row c1)
+                                                                           mn mx height)
+                                                          lo  (scale-value (aget row c2)
+                                                                           mn mx height)
+                                                          c   (scale-value (aget row c3)
+                                                                           mn mx height)]
+                                                      (when (and (not (nil? o)) (not (nil? hi))
+                                                                 (not (nil? lo)) (not (nil? c)))
+                                                        (let [x-center (* i st)
+                                                              x        (- x-center (/ bar-width 2))
+                                                              upper    (js/Math.min o c)
+                                                              lower    (js/Math.max o c)
+                                                              bar-h    (js/Math.abs (- o c))
+                                                              color    (if (>= (aget row c3)
+                                                                               (aget row c0))
+                                                                         "#66ccff" "#ff3333")]
+                                                          (.rect graphics x upper bar-width bar-h)
+                                                          (.fill graphics (js-obj "color" color))
+                                                          (.stroke graphics (js-obj "width" 1
+                                                                                    "color" "#ffffff"))
+                                                          (.moveTo graphics x-center upper)
+                                                          (.lineTo graphics x-center hi)
+                                                          (.stroke graphics (js-obj "width" 1 "color" color))
+                                                          (.moveTo graphics x-center lower)
+                                                          (.lineTo graphics x-center lo)
+                                                          (.stroke graphics (js-obj "width" 1 "color" color)))))
+                                                    (recur (inc i)))))))
                                  draw-series (fn [rows pane height series]
                                                (when series
                                                  (let [t     (aget series "type")
@@ -211,6 +255,15 @@
 
                                                      (= t "signal")
                                                      (add-signal g rows height col color)
+
+                                                     (= t "bar")
+                                                     (add-bars g rows height
+                                                               (let [c (aget series "col")]
+                                                                 (if (and (array? c)
+                                                                          (>= (.-length c) 4))
+                                                                   c
+                                                                   (array "open" "high"
+                                                                          "low" "close"))))
 
                                                      :else nil)
                                                    (.addChild pane g))))
@@ -232,43 +285,6 @@
                                                         (recur (inc i))))))
                                                 (.addChild container pane)
                                                 pane))
-                                 draw-bars (fn [rows pane height]
-                                             (let [mn        (true-min rows "low")
-                                                   mx        (true-max rows "high")
-                                                   n         (.-length rows)
-                                                   st        (.-step state)
-                                                   bar-width (- st 2)
-                                                   g         (new pixi/Graphics)]
-                                               (when (and (js/isFinite mn) (js/isFinite mx))
-                                                 (loop [i 0]
-                                                   (when (< i n)
-                                                     (let [row (aget rows i)
-                                                           o   (scale-value (aget row "open") mn mx height)
-                                                           hi  (scale-value (aget row "high") mn mx height)
-                                                           lo  (scale-value (aget row "low") mn mx height)
-                                                           c   (scale-value (aget row "close") mn mx height)]
-                                                       (when (and (not (nil? o)) (not (nil? hi))
-                                                                  (not (nil? lo)) (not (nil? c)))
-                                                         (let [x-center (* i st)
-                                                               x        (- x-center (/ bar-width 2))
-                                                               upper    (js/Math.min o c)
-                                                               lower    (js/Math.max o c)
-                                                               bar-h    (js/Math.abs (- o c))
-                                                               color    (if (>= (aget row "close")
-                                                                                (aget row "open"))
-                                                                          "#66ccff" "#ff3333")]
-                                                           (.rect g x upper bar-width bar-h)
-                                                           (.fill g (js-obj "color" color))
-                                                           (.stroke g (js-obj "width" 1
-                                                                              "color" "#ffffff"))
-                                                           (.moveTo g x-center upper)
-                                                           (.lineTo g x-center hi)
-                                                           (.stroke g (js-obj "width" 1 "color" color))
-                                                           (.moveTo g x-center lower)
-                                                           (.lineTo g x-center lo)
-                                                           (.stroke g (js-obj "width" 1 "color" color)))))
-                                                     (recur (inc i)))))
-                                               (.addChild pane g)))
                                  draw-date (fn [rows pane]
                                              (let [n (.-length rows)]
                                                (when (> n 0)
@@ -340,7 +356,6 @@
                                                 (draw-chart rows (aget charts 1) h1 h2))
                                               (when (> (.-length charts) 2)
                                                 (draw-chart rows (aget charts 2) (+ h1 h2) h3))
-                                              (draw-bars rows pane1 h1)
                                               (draw-date rows pane1)
                                               (draw-buttons pane1 h1))))]
                              (.addChild stage container)

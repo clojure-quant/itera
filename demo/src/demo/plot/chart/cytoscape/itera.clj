@@ -1,4 +1,4 @@
-(ns demo.plot.cytoscape.itera
+(ns demo.plot.chart.cytoscape.itera
   (:require [itera.plot.cytoscape :as cytoscape]))
 
 (def fruit

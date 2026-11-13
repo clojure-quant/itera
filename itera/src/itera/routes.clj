@@ -73,7 +73,13 @@
               [:div.page
                [:div.algo-layout
                 {:style {:display "flex" :gap "1.5rem" :align-items "flex-start"}}
-                [:div.algo-options {:style {:flex "0 0 280px" :min-width "240px"}}
+                [:div.algo-options {:style {:flex "0 0 280px"
+                                            :min-width "240px"
+                                            :max-height "calc(100vh - 1rem)"
+                                            :overflow-y "auto"
+                                            :position "sticky"
+                                            :top "0"
+                                            :padding-right "0.5rem"}}
                  (when (seq (:calc-spec r))
                    (options/options-ui {:group :calculate :spec (:calc-spec r)
                                         :value @(:calc-a r)

@@ -1,4 +1,4 @@
-(ns area.itera)
+(ns demo.plot.misc.area.itera)
 
 (defn calc-area [_ctx {:keys [a b]}]
   {:a a 
