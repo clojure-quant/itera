@@ -8,9 +8,12 @@
   (:require [itera.hyper :as hyper]
             [itera.plot.aggrid :as aggrid]
             [itera.plot.cheetah :as cheetah]
+            [itera.plot.cytoscape :as cytoscape]
+            [itera.plot.echarts :as echarts]
             [itera.plot.fipp :as fipp]
             [itera.plot.highcharts :as highcharts]
             [itera.plot.md :as md]
+            [itera.plot.pixi-timeseries :as pixi-timeseries]
             [itera.plot.plotly :as plotly]
             [itera.plot.rtable :as rtable]
             [itera.plot.vega :as vega]))
@@ -20,9 +23,12 @@
   []
   (vec (concat aggrid/head
                cheetah/head
+               cytoscape/head
+               echarts/head
                fipp/head
                highcharts/head
                md/head
+               pixi-timeseries/head
                plotly/head
                rtable/head
                vega/head)))
