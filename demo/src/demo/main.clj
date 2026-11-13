@@ -14,6 +14,7 @@
             [itera.plot.highcharts :as highcharts]
             [itera.plot.md :as md]
             [itera.plot.pixi-timeseries :as pixi-timeseries]
+            [itera.plot.pixi-timeseries.options]
             [itera.plot.plotly :as plotly]
             [itera.plot.rtable :as rtable]
             [itera.plot.vega :as vega]))

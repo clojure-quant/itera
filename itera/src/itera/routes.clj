@@ -77,11 +77,13 @@
                  (when (seq (:calc-spec r))
                    (options/options-ui {:group :calculate :spec (:calc-spec r)
                                         :value @(:calc-a r)
-                                        :set-fn (fn [p v] (swap! (:calc-a r) assoc-in p v))}))
+                                        :set-fn (fn [p v] (swap! (:calc-a r) assoc-in p v))
+                                        :update-fn (fn [p f] (swap! (:calc-a r) update-in p f))}))
                  (when (seq (:plot-spec r))
                    (options/options-ui {:group :plot :spec (:plot-spec r)
                                         :value @(:plot-a r)
-                                        :set-fn (fn [p v] (swap! (:plot-a r) assoc-in p v))}))]
+                                        :set-fn (fn [p v] (swap! (:plot-a r) assoc-in p v))
+                                        :update-fn (fn [p f] (swap! (:plot-a r) update-in p f))}))]
                 [:div.algo-result {:style {:flex "1" :min-width "0"}}
                  (or (algo/plot-result (:plot-a r) (:res-a r) (:m r)) [:div])]]])
             :unmount

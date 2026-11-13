@@ -4,18 +4,23 @@
    opts:
      :data    rows (vector of maps) or a column map; required
      :charts  vector of panes, each a vector of series maps:
-              {:type :line|:point|:range|:signal
+              {:type one of itera.plot.pixi.plot-type/types
                :col  <keyword> or [<kw> <kw>] for :range
-               :color \"blue-5\" (tailwind name or CSS color)}
+               :color \"blue-5\" (name in itera.plot.color/colors or a CSS color)}
      :step    pixels per row (default 8)
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
+
+   Named colors are resolved to hex server-side with itera.plot.color before
+   the payload reaches the browser: the component below is compiled to
+   client-side JS and cannot call the JVM color namespace itself.
 
    `pixi-timeseries-ds` accepts a dataset-like value (tech.ml dataset when
    available, otherwise rows or a column map) and delegates to
    `pixi-timeseries`.  Column maps whose columns have different lengths are
    truncated to the shortest column."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.plot.color :as colors]))
 
 (def head [])
 
@@ -91,29 +96,6 @@
                                                    "visible" visible
                                                    "container" container
                                                    "slider" slider)
-                                 colors    (js-obj "blue-3" "#93c5fd"
-                                                   "blue-4" "#60a5fa"
-                                                   "blue-5" "#3b82f6"
-                                                   "blue-6" "#2563eb"
-                                                   "blue-7" "#1d4ed8"
-                                                   "blue-8" "#1e40af"
-                                                   "red-3" "#fca5a5"
-                                                   "red-4" "#f87171"
-                                                   "red-5" "#ef4444"
-                                                   "red-6" "#dc2626"
-                                                   "red-7" "#b91c1c"
-                                                   "red-8" "#991b1b"
-                                                   "green-2" "#bbf7d0"
-                                                   "green-3" "#86efac"
-                                                   "green-4" "#4ade80"
-                                                   "green-5" "#22c55e"
-                                                   "green-6" "#16a34a"
-                                                   "green-7" "#15803d"
-                                                   "green-8" "#166534"
-                                                   "green-9" "#14532d"
-                                                   "neutral-1" "#f5f5f5")
-                                 set-color (fn [c]
-                                             (or (aget colors c) c "blue-5"))
                                  true-min (fn [rows col]
                                             (let [n (.-length rows)]
                                               (loop [i 0 m js/Infinity]
@@ -214,8 +196,7 @@
                                                (when series
                                                  (let [t     (aget series "type")
                                                        col   (aget series "col")
-                                                       color (set-color
-                                                              (or (aget series "color") "blue-5"))
+                                                       color (or (aget series "color") "#3b82f6")
                                                        g     (new pixi/Graphics)]
                                                    (cond
                                                      (= t "line")
@@ -241,7 +222,7 @@
                                                     bg-height (max 1 (- height 20))]
                                                 (set! (.-y pane) y-offset)
                                                 (.rect bg 10 10 bg-width bg-height)
-                                                (.fill bg (js-obj "color" (set-color "neutral-1")))
+                                                (.fill bg (js-obj "color" "#f5f5f5"))
                                                 (.addChild pane bg)
                                                 (when series
                                                   (let [n (.-length series)]
@@ -390,16 +371,36 @@
     (when-let [app (.-app ctx)]
       (try (.destroy app true true) (catch :default _ nil)))))
 
+(defn- resolve-color
+  "Resolve a series :color name to a CSS color; default when absent."
+  [c]
+  (or (colors/set-color (or c "blue-5")) "#3b82f6"))
+
+(defn- resolve-charts
+  "Resolve every plot's :color name to a concrete CSS color, server-side, so
+   the client component needs no color table."
+  [charts]
+  (when charts
+    (mapv (fn [pane]
+            (mapv (fn [series]
+                    (if (map? series)
+                      (update series :color resolve-color)
+                      series))
+                  pane))
+          charts)))
+
 (defn pixi-timeseries
   [{:keys [style class rows] :as opts}]
-  (itera-pixi-timeseries
-   (cond-> {:options (cond-> (dissoc opts :style :class :rows)
-                       rows (assoc :data rows))}
-     style (assoc :style (merge {:display "block"
-                                 :width "100%"
-                                 :height "100%"}
-                                style))
-     class (assoc :class class))))
+  (let [options (cond-> (dissoc opts :style :class :rows)
+                  rows           (assoc :data rows)
+                  (:charts opts) (update :charts resolve-charts))]
+    (itera-pixi-timeseries
+     (cond-> {:options options}
+       style (assoc :style (merge {:display "block"
+                                   :width "100%"
+                                   :height "100%"}
+                                  style))
+       class (assoc :class class)))))
 
 (defn pixi-timeseries-ds
   [opts ds]

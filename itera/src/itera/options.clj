@@ -3,9 +3,11 @@
    Renders hiccup and writes edits server-side into an options cursor through
    hyper actions.  All functions must be called inside a Hyper render context.
 
-   Supported option :type values: :bool :string :date :select :select-multiple
+   Built-in option :type values: :bool :string :date :select :select-multiple
    :view :label.  A :date value is a java.time.LocalDate (native
-   <input type=\"date\">; nil when cleared)."
+   <input type=\"date\">; nil when cleared).  Editors are plain functions of
+   the `editor` multimethod, dispatched on (:type opt), so viewer projects add
+   their own with (defmethod editor :type ...)."
   (:require [hyper.core :as h]))
 
 (defn norm-path
@@ -63,53 +65,73 @@
   (when (seq s)
     (try (java.time.LocalDate/parse s) (catch Exception _ nil))))
 
-(defn- editor [opt value set-fn group]
-  (let [{:keys [type name class size]} opt
-        style (or (:style opt) {})
-        path  (norm-path (:path opt))]
-    (case type
-      :bool
-      [:input {:class class :style style :type "checkbox"
-               :checked (boolean value)
-               :data-on:change (h/action (set-fn path $checked))}]
+(defn- base-attrs
+  "Common render attributes for an option's editor: class, style, path."
+  [opt]
+  {:class (:class opt)
+   :style (or (:style opt) {})
+   :path  (norm-path (:path opt))})
 
-      :string
-      [:input {:class class :style style :type "text"
-               :value (str (or value ""))
-               :placeholder (or name "")
-               :data-on:change (h/action (set-fn path $value))}]
+;; The extension point: viewer projects add editors with
+;;   (defmethod editor :my-type [opt value set-fn update-fn group] ...)
+;; Dispatches on (:type opt).
+(defmulti editor
+  "Render an option editor.  Dispatches on (:type opt).
+   Signature: (editor opt value set-fn update-fn group)."
+  (fn [opt _value _set-fn _update-fn _group] (:type opt)))
 
-      :date
-      [:input {:class class :style style :type "date"
-               :value (date->str value)
-               :data-on:change (h/action (set-fn path (str->date $value)))}]
+(defmethod editor :bool [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)]
+    [:input {:class class :style style :type "checkbox"
+             :checked (boolean value)
+             :data-on:change (h/action (set-fn path $checked))}]))
 
-      :select
-      (let [ns-spec (normalize-select (:spec opt))
-            d       (id->val ns-spec)
-            sel     (current-id ns-spec value)]
-        (into [:select {:class class :style style
-                        :data-on:change (h/action (set-fn path (get d $value)))}]
-              (for [{id :id nm :name} ns-spec]
-                [:option {:value id :selected (= id sel)} nm])))
+(defmethod editor :string [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)
+        name (:name opt)]
+    [:input {:class class :style style :type "text"
+             :value (str (or value ""))
+             :placeholder (or name "")
+             :data-on:change (h/action (set-fn path $value))}]))
 
-      :select-multiple
-      (let [ns-spec (normalize-select (:spec opt))
-            d       (id->val ns-spec)
-            ids     (current-ids ns-spec (or value []))
-            sig     (h/signal (into [:itera-options group] path) ids)]
-        (into [:select {:class class :style style
-                        :multiple true :size (or size 5)
-                        :data-bind sig
-                        :data-on:change (h/action (set-fn path (mapv d @sig)))}]
-              (for [{id :id nm :name} ns-spec]
-                (let [i (str id)]
-                  [:option {:value i :selected (boolean (some #{i} ids))} nm]))))
+(defmethod editor :date [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)]
+    [:input {:class class :style style :type "date"
+             :value (date->str value)
+             :data-on:change (h/action (set-fn path (str->date $value)))}]))
 
-      :view
-      [:span {:class class :style style} (pr-str value)]
+(defmethod editor :select [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)
+        ns-spec (normalize-select (:spec opt))
+        d       (id->val ns-spec)
+        sel     (current-id ns-spec value)]
+    (into [:select {:class class :style style
+                    :data-on:change (h/action (set-fn path (get d $value)))}]
+          (for [{id :id nm :name} ns-spec]
+            [:option {:value id :selected (= id sel)} nm]))))
 
-      [:span {:class class :style style} (pr-str value)])))
+(defmethod editor :select-multiple [opt value set-fn _update-fn group]
+  (let [{:keys [class style path]} (base-attrs opt)
+        size    (:size opt)
+        ns-spec (normalize-select (:spec opt))
+        d       (id->val ns-spec)
+        ids     (current-ids ns-spec (or value []))
+        sig     (h/signal (into [:itera-options group] path) ids)]
+    (into [:select {:class class :style style
+                    :multiple true :size (or size 5)
+                    :data-bind sig
+                    :data-on:change (h/action (set-fn path (mapv d @sig)))}]
+          (for [{id :id nm :name} ns-spec]
+            (let [i (str id)]
+              [:option {:value i :selected (boolean (some #{i} ids))} nm])))))
+
+(defmethod editor :view [opt value _set-fn _update-fn _group]
+  (let [{:keys [class style]} (base-attrs opt)]
+    [:span {:class class :style style} (pr-str value)]))
+
+(defmethod editor :default [opt value _set-fn _update-fn _group]
+  (let [{:keys [class style]} (base-attrs opt)]
+    [:span {:class class :style style} (pr-str value)]))
 
 ;; --- public entry -----------------------------------------------------------
 
@@ -120,9 +142,16 @@
      :value   current options map (deref of the options cursor)
      :set-fn  (fn [path value]) invoked inside the server action to write the
               cursor, e.g. (fn [p v] (swap! options-a assoc-in p v))
+     :update-fn (fn [path f]) invoked inside the server action to read-modify-write
+              the cursor value at path, e.g.
+              (fn [p f] (swap! options-a update-in p f))
      :group   keyword used to disambiguate signal names (:calculate / :plot)
-     :class :style  container passthrough"
-  [{:keys [spec value set-fn group class style]}]
+     :class :style  container passthrough
+
+   Each option is rendered by the `editor` multimethod, dispatched on
+   (:type opt); viewer projects extend it with (defmethod editor :type ...).
+   A :label option is layout (a group header), not an editor."
+  [{:keys [spec value set-fn update-fn group class style]}]
   (into [:div.options-ui {:class class :style style}]
         (map (fn [opt]
                (if (= :label (:type opt))
@@ -132,5 +161,5 @@
                  (let [path (norm-path (:path opt))]
                    [:div.options-row
                     (when (:name opt) [:span.options-label (:name opt)])
-                    (editor opt (get-in value path) set-fn group)]))))
+                    (editor opt (get-in value path) set-fn update-fn group)]))))
         spec))

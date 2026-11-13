@@ -1,5 +1,6 @@
 (ns demo.plot.pixi-timeseries.itera
-  (:require [itera.plot.pixi-timeseries :as pixi]))
+  (:require [itera.plot.pixi-timeseries :as pixi]
+            [itera.plot.pixi-timeseries.options]))
 
 (defn- bar [i]
   (let [base  (+ 100 (* 10 (Math/sin (/ i 7.0))) (mod i 5))
@@ -32,13 +33,22 @@
 
 (defn calculate [_ctx _opts] ds)
 
-(defn plot [_opts ds]
-  (pixi/pixi-timeseries-ds
-   {:charts charts
-    :step 8
-    :style {:width "100%" :height "800px"}}
-   ds))
 
 (def algo-pixi-timeseries
   {:calculate/fn calculate
-   :plot/fn      plot})
+   :plot/option-initial {:charts charts
+                         :step 8
+                         :style {:width "100%" :height "800px"}}
+   :plot/options  [{:type :select
+                    :path [:step]
+                    :name "Step"
+                    :spec [4 6 8 10 12 14]}
+                   {:type :chartspec
+                    :path [:charts]
+                    :name "ChartSpec"
+                    :spec {:columns [:open :high :low :close
+                                     :daily-atr-lower :daily-atr-upper :daily-atr-mid
+                                     :p0-low :p1-low :pweek-low
+                                     :p0-high :p1-high :pweek-high]
+                           :colors  ["blue-3" "blue-7" "red-3" "green-2" "green-9"]}}]
+   :plot/fn      pixi/pixi-timeseries-ds})
