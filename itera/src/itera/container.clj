@@ -7,15 +7,9 @@
    - :container (default) — the measured clientWidth/clientHeight are written
      back into :window as the container resizes.  On a fresh mount the
      dimensions may be omitted until the first measurement arrives.
-   - :fixed — caller-supplied :width/:height are authoritative and the
-     measurement action leaves :window unchanged.
-
-   This namespace also registers the :container options editor.  It lives here
-   rather than in itera.options so the generic options namespace stays
-   independent of the container component."
-  (:require [clojure.string :as str]
-            [hyper.core :as h]
-            [itera.options :as options]))
+- :fixed — caller-supplied :width/:height are authoritative and the
+      measurement action leaves :window unchanged."
+  (:require [hyper.core :as h]))
 
 ;; --- window normalization ---------------------------------------------------
 
@@ -166,70 +160,3 @@
                           (assoc w :width width :height height)
                           w)))))}
            children)))
-
-;; --- options editor ---------------------------------------------------------
-
-(def ^:private field-style {:width "100%"})
-
-(def ^:private label-style
-  {:display "flex" :flex-direction "column"
-   :font-size "0.68rem" :color "#374151" :gap "0.1rem"})
-
-(defn- ->int
-  "Parse a number input value; nil for blank/invalid/non-positive input."
-  [v]
-  (let [s (some-> v str str/trim)]
-    (when (seq s)
-      (let [n (parse-long s)]
-        (when (and n (pos? n)) n)))))
-
-(defmethod options/editor :container [opt value set-fn update-fn _group]
-  (let [path     (options/norm-path (:path opt))
-        w        (normalize-window value)
-        mode     (:mode w)
-        fixed?   (= :fixed mode)
-        update*  (or update-fn (fn [p f] (set-fn p (f value))))
-        set-mode (fn [target]
-                   (fn [w]
-                     (let [w (normalize-window w)]
-                       (if (= :fixed target)
-                         {:mode :fixed
-                          :width (or (:width w) 800)
-                          :height (or (:height w) 600)}
-                         {:mode :container}))))]
-    [:div {:class (:class opt)
-           :style (merge {:display "flex" :flex-direction "column" :gap "0.35rem"}
-                         (:style opt))}
-     [:label {:style label-style} "Mode"
-      [:select {:style field-style
-                :data-on:change
-                (h/action
-                 (update* path (set-mode (keyword $value))))}
-       [:option {:value "container" :selected (not fixed?)} "container"]
-       [:option {:value "fixed" :selected fixed?} "fixed"]]]
-     (if fixed?
-       [:div {:style {:display "flex" :gap "0.35rem"}}
-        [:label {:style (assoc label-style :flex "1")} "Width"
-         [:input {:type "number" :min 1 :step 1 :style field-style
-                  :value (str (or (:width w) ""))
-                  :data-on:change
-                  (h/action
-                   (update* path
-                            (fn [w]
-                              (let [w (normalize-window w)
-                                    n (->int $value)]
-                                (if n (assoc w :width n) w)))))}]]
-        [:label {:style (assoc label-style :flex "1")} "Height"
-         [:input {:type "number" :min 1 :step 1 :style field-style
-                  :value (str (or (:height w) ""))
-                  :data-on:change
-                  (h/action
-                   (update* path
-                            (fn [w]
-                              (let [w (normalize-window w)
-                                    n (->int $value)]
-                                (if n (assoc w :height n) w)))))}]]]
-       [:div {:style {:font-size "0.68rem" :color "#6b7280"}}
-        (str "Measured: "
-             (or (:width w) "-") " x " (or (:height w) "-")
-             " px")])]))

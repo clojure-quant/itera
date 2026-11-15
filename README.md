@@ -39,7 +39,3 @@ The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
 
 
-move itera.routes/algo-page to itera.page.algo/algo-page
-move itera.routes/overview-page to itera.page.overview/overview-page
-
-

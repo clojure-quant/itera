@@ -1,0 +1,2 @@
+{:head      [itera.plot.pixi-timeseries/head]
+ :option-ui [itera.plot.pixi-timeseries.options]}

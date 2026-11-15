@@ -498,7 +498,7 @@
    :window :width/:height must be positive integers in both modes; the
    viewer never measures the DOM.  With :mode :container the dimensions are
    supplied by itera.container's measurement loop, so the caller (typically
-   itera.routes/algo-page) must withhold this viewer until that loop has
+   itera.page.algo/algo-page) must withhold this viewer until that loop has
    measured a complete window.  Invalid dimensions render
    \"invalid :width and :height\" and draw nothing.  A caller-supplied :style
    wins over the :window-derived host size."
