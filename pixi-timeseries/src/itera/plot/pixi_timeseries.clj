@@ -119,105 +119,112 @@
                                                              (js/Math.max m v)
                                                              m)))
                                                   m))))
-                                 scale-value (fn [v mn mx height]
-                                               (if (or (not (number? v)) (js/isNaN v))
-                                                 nil
-                                                 (let [rng (- mx mn)]
-                                                   (if (= rng 0)
-                                                     (/ height 2)
-                                                     (* (- 1 (/ (- v mn) rng))
-                                                        height)))))
-                                 add-line (fn [graphics rows height col color]
-                                            (let [mn   (true-min rows col)
-                                                  mx   (true-max rows col)
-                                                  n    (.-length rows)
-                                                  st   (.-step state)]
+                                 get-x (fn [geom i]
+                                         ((aget geom "sx") i))
+                                 get-y (fn [geom mn mx rows col i]
+                                         ((aget geom "sy") (aget (aget rows i) col) mn mx))
+                                 plot-cols (fn [series]
+                                             (let [t (aget series "type")
+                                                   c (aget series "col")]
+                                               (cond
+                                                 (= t "bar")
+                                                 (let [c4 (if (and (array? c)
+                                                                   (>= (.-length c) 4))
+                                                            c
+                                                            (array "open" "high"
+                                                                   "low" "close"))]
+                                                   (array (aget c4 1) (aget c4 2)))
+
+                                                 (= t "range")
+                                                 (if (array? c)
+                                                   (array (aget c 0) (aget c 1))
+                                                   (array))
+
+                                                 (or (= t "line") (= t "point"))
+                                                 (array c)
+
+                                                 :else (array))))
+                                 bounds-of (fn [rows series]
+                                             (let [cols (plot-cols series)
+                                                   nc   (.-length cols)]
+                                               (loop [j 0 mn js/Infinity mx (- js/Infinity)]
+                                                 (if (< j nc)
+                                                   (let [col (aget cols j)]
+                                                     (recur (inc j)
+                                                            (js/Math.min mn (true-min rows col))
+                                                            (js/Math.max mx (true-max rows col))))
+                                                   (array mn mx)))))
+                                 add-line (fn [graphics rows geom mn mx col color]
+                                            (let [n (.-length rows)]
                                               (when (and (js/isFinite mn) (js/isFinite mx))
                                                 (loop [i 0 started false]
                                                   (when (< i n)
-                                                    (let [y (scale-value (aget (aget rows i) col)
-                                                                         mn mx height)]
+                                                    (let [y (get-y geom mn mx rows col i)]
                                                       (if (nil? y)
                                                         (recur (inc i) started)
                                                         (do
                                                           (if started
-                                                            (.lineTo graphics (* i st) y)
-                                                            (.moveTo graphics (* i st) y))
+                                                            (.lineTo graphics (get-x geom i) y)
+                                                            (.moveTo graphics (get-x geom i) y))
                                                           (recur (inc i) true))))))
                                                 (.stroke graphics
                                                          (js-obj "width" 2 "color" color)))))
-                                 add-points (fn [graphics rows height col color]
-                                              (let [mn (true-min rows col)
-                                                    mx (true-max rows col)
-                                                    n  (.-length rows)
-                                                    st (.-step state)]
+                                 add-points (fn [graphics rows geom mn mx col color]
+                                              (let [n (.-length rows)]
                                                 (when (and (js/isFinite mn) (js/isFinite mx))
                                                   (loop [i 0]
                                                     (when (< i n)
-                                                      (let [y (scale-value (aget (aget rows i) col)
-                                                                           mn mx height)]
+                                                      (let [y (get-y geom mn mx rows col i)]
                                                         (when (not (nil? y))
-                                                          (.circle graphics (* i st) y 2))
+                                                          (.circle graphics (get-x geom i) y 2))
                                                         (recur (inc i)))))
                                                   (.fill graphics (js-obj "color" color)))))
-                                 add-range (fn [graphics rows height col1 col2 color]
-                                             (let [mn (js/Math.min (true-min rows col1)
-                                                                   (true-min rows col2))
-                                                   mx (js/Math.max (true-max rows col1)
-                                                                   (true-max rows col2))
-                                                   n  (.-length rows)
-                                                   st (.-step state)]
+                                 add-range (fn [graphics rows geom mn mx col1 col2 color]
+                                             (let [n     (.-length rows)
+                                                   xstep (aget geom "xstep")]
                                                (when (and (js/isFinite mn) (js/isFinite mx))
                                                  (loop [i 0]
                                                    (when (< i n)
-                                                     (let [row (aget rows i)
-                                                           y1  (scale-value (aget row col1)
-                                                                            mn mx height)
-                                                           y2  (scale-value (aget row col2)
-                                                                            mn mx height)]
+                                                     (let [y1 (get-y geom mn mx rows col1 i)
+                                                           y2 (get-y geom mn mx rows col2 i)]
                                                        (when (and (not (nil? y1)) (not (nil? y2)))
                                                          (let [top (js/Math.min y1 y2)
                                                                ht  (js/Math.abs (- y1 y2))]
-                                                           (.rect graphics (* i st) top st ht))))
+                                                           (.rect graphics
+                                                                  (- (get-x geom i) (/ xstep 2))
+                                                                  top xstep ht))))
                                                      (recur (inc i)))))
                                                  (.fill graphics
                                                         (js-obj "color" color "alpha" 0.5))))
-                                 add-signal (fn [graphics rows height col color]
-                                              (let [n  (.-length rows)
-                                                    y  (- height 50)
-                                                    st (.-step state)]
+                                 add-signal (fn [graphics rows geom col color]
+                                              (let [n (.-length rows)
+                                                    y (+ (aget geom "y0") (aget geom "ch"))]
                                                 (loop [i 0]
                                                   (when (< i n)
                                                     (when (aget (aget rows i) col)
-                                                      (.circle graphics (* i st) y 2))
+                                                      (.circle graphics (get-x geom i) y 2))
                                                     (recur (inc i))))
                                                 (.fill graphics
                                                        (js-obj "color" color "alpha" 0.6))))
-                                 add-bars (fn [graphics rows height col]
+                                 add-bars (fn [graphics rows geom mn mx col]
                                             (let [c0        (aget col 0)
                                                   c1        (aget col 1)
                                                   c2        (aget col 2)
                                                   c3        (aget col 3)
-                                                  mn        (true-min rows c2)
-                                                  mx        (true-max rows c1)
                                                   n         (.-length rows)
-                                                  st        (.-step state)
-                                                  bar-width (- st 2)]
+                                                  xstep     (aget geom "xstep")
+                                                  bar-width (max 1 (- xstep 2))]
                                               (when (and (js/isFinite mn) (js/isFinite mx))
                                                 (loop [i 0]
                                                   (when (< i n)
                                                     (let [row (aget rows i)
-                                                          o   (scale-value (aget row c0)
-                                                                           mn mx height)
-                                                          hi  (scale-value (aget row c1)
-                                                                           mn mx height)
-                                                          lo  (scale-value (aget row c2)
-                                                                           mn mx height)
-                                                          c   (scale-value (aget row c3)
-                                                                           mn mx height)]
+                                                          o   (get-y geom mn mx rows c0 i)
+                                                          hi  (get-y geom mn mx rows c1 i)
+                                                          lo  (get-y geom mn mx rows c2 i)
+                                                          c   (get-y geom mn mx rows c3 i)]
                                                       (when (and (not (nil? o)) (not (nil? hi))
                                                                  (not (nil? lo)) (not (nil? c)))
-                                                        (let [x-center (* i st)
+                                                        (let [x-center (get-x geom i)
                                                               x        (- x-center (/ bar-width 2))
                                                               upper    (js/Math.min o c)
                                                               lower    (js/Math.max o c)
@@ -236,7 +243,7 @@
                                                           (.lineTo graphics x-center lo)
                                                           (.stroke graphics (js-obj "width" 1 "color" color)))))
                                                     (recur (inc i)))))))
-                                 draw-series (fn [rows pane height series]
+                                 draw-series (fn [rows pane geom mn mx series]
                                                (when series
                                                  (let [t     (aget series "type")
                                                        col   (aget series "col")
@@ -244,20 +251,20 @@
                                                        g     (new pixi/Graphics)]
                                                    (cond
                                                      (= t "line")
-                                                     (add-line g rows height col color)
+                                                     (add-line g rows geom mn mx col color)
 
                                                      (= t "point")
-                                                     (add-points g rows height col color)
+                                                     (add-points g rows geom mn mx col color)
 
                                                      (= t "range")
-                                                     (add-range g rows height
+                                                     (add-range g rows geom mn mx
                                                                 (aget col 0) (aget col 1) color)
 
                                                      (= t "signal")
-                                                     (add-signal g rows height col color)
+                                                     (add-signal g rows geom col color)
 
                                                      (= t "bar")
-                                                     (add-bars g rows height
+                                                     (add-bars g rows geom mn mx
                                                                (let [c (aget series "col")]
                                                                  (if (and (array? c)
                                                                           (>= (.-length c) 4))
@@ -268,21 +275,53 @@
                                                      :else nil)
                                                    (.addChild pane g))))
                                  draw-chart (fn [rows series y-offset height]
-                                              (let [pane      (new pixi/Container)
-                                                    bg        (new pixi/Graphics)
-                                                    st        (.-step state)
-                                                    bg-width  (max 1 (- (* (.-visible state) st) 20))
-                                                    bg-height (max 1 (- height 20))]
+                                              (let [pane  (new pixi/Container)
+                                                    bg    (new pixi/Graphics)
+                                                    w     (.-width state)
+                                                    pad   10
+                                                    inset 3
+                                                    bw    (max 1 (- w (* 2 pad)))
+                                                    bh    (max 1 (- height (* 2 pad)))
+                                                    x0    (+ pad inset)
+                                                    y0    (+ pad inset)
+                                                    cw    (max 1 (- bw (* 2 inset)))
+                                                    ch    (max 1 (- bh (* 2 inset)))
+                                                    n     (.-length rows)
+                                                    xstep (/ cw (max 1 n))
+                                                    sx    (fn [i] (+ x0 (* (+ i 0.5) xstep)))
+                                                    sy    (fn [v mn mx]
+                                                            (if (or (not (number? v))
+                                                                    (js/isNaN v))
+                                                              nil
+                                                              (if (= mx mn)
+                                                                (+ y0 (/ ch 2))
+                                                                (+ y0 (* (- 1 (/ (- v mn)
+                                                                                 (- mx mn)))
+                                                                         ch)))))
+                                                     geom  (js-obj "sx" sx "sy" sy
+                                                                   "x0" x0 "y0" y0
+                                                                   "cw" cw "ch" ch
+                                                                   "xstep" xstep "n" n)
+                                                    ns    (if series (.-length series) 0)
+                                                    bnds  (loop [i 0 mn js/Infinity mx (- js/Infinity)]
+                                                            (if (< i ns)
+                                                              (let [b (bounds-of rows (aget series i))]
+                                                                (recur (inc i)
+                                                                       (js/Math.min mn (aget b 0))
+                                                                       (js/Math.max mx (aget b 1))))
+                                                              (array mn mx)))
+                                                    mn    (aget bnds 0)
+                                                    mx    (aget bnds 1)]
                                                 (set! (.-y pane) y-offset)
-                                                (.rect bg 10 10 bg-width bg-height)
+                                                (.rect bg pad pad bw bh)
                                                 (.fill bg (js-obj "color" "#f5f5f5"))
                                                 (.addChild pane bg)
                                                 (when series
-                                                  (let [n (.-length series)]
-                                                    (loop [i 0]
-                                                      (when (< i n)
-                                                        (draw-series rows pane height (aget series i))
-                                                        (recur (inc i))))))
+                                                  (loop [i 0]
+                                                    (when (< i ns)
+                                                      (draw-series rows pane geom mn mx
+                                                                   (aget series i))
+                                                      (recur (inc i)))))
                                                 (.addChild container pane)
                                                 pane))
                                  draw-date (fn [rows pane]
