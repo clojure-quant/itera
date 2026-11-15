@@ -1,4 +1,4 @@
-(ns itera.plot.pixi.plot-type
+(ns itera.plot.pixi-timeseries.plot-type
   "Plot types supported by the pixi-timeseries viewer.
 
    This vector is the single source of truth for plot types used by the

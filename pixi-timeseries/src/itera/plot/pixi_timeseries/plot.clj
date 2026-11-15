@@ -1,13 +1,13 @@
-(ns itera.plot.pixi-timeseries
+(ns itera.plot.pixi-timeseries.plot
   "pixi.js time-series viewer as a Hyper client component.
 
    opts:
      :data    rows (vector of maps) or a column map; required
      :charts  vector of panes, each a vector of series maps:
-              {:type one of itera.plot.pixi.plot-type/types
+              {:type one of itera.plot.pixi-timeseries.plot-type/types
                :col  <kw> or [<kw> <kw>] for :range
                      or [<open> <high> <low> <close>] for :bar
-               :color \"blue-5\" (name in itera.plot.color/colors or a CSS color)}
+               :color \"blue-5\" (name in itera.util.color/colors or a CSS color)}
      :step    pixels per row (default 8)
      :window  plot size, a map:
               {:mode :container|:fixed :width <px> :height <px>}
@@ -22,7 +22,7 @@
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
 
-   Named colors are resolved to hex server-side with itera.plot.color before
+   Named colors are resolved to hex server-side with itera.util.color before
    the payload reaches the browser: the component below is compiled to
    client-side JS and cannot call the JVM color namespace itself.
 
@@ -31,7 +31,7 @@
    `pixi-timeseries`.  Column maps whose columns have different lengths are
    truncated to the shortest column."
   (:require [hyper.core :as h]
-            [itera.plot.color :as colors]))
+            [itera.util.color :as colors]))
 
 (def head [])
 

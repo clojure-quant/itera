@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps {ai.dyal/hyper {:mvn/version "0.2.2"}
+ :deps {itera/itera {:local/root "../itera"}
         dev.onionpancakes/chassis {:mvn/version "1.0.365"}
         fipp/fipp {:mvn/version "0.6.29"}
         commonmark-hiccup/commonmark-hiccup {:mvn/version "0.3.0"}}}

@@ -1,6 +1,6 @@
 (ns itera.page.algo
   (:require [hyper.core :as h]
-            [itera.algo :as algo]
+            [itera.algo.core :as algo]
             [itera.container :as container]
             [itera.options :as options]))
 
@@ -52,6 +52,12 @@
                                               :position "sticky"
                                               :top "0"
                                               :padding-right "0.5rem"}}
+                   [:a (merge {:class "algo-back-link"
+                               :style {:display "inline-block"
+                                       :margin-bottom "0.75rem"
+                                       :font-weight "600"}}
+                              (h/navigate :itera))
+                    "← Algos"]
                    (when (seq (:calc-spec r))
                      (options/options-ui {:group :calculate :spec (:calc-spec r)
                                           :value @(:calc-a r)

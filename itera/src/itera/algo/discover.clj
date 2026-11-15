@@ -1,4 +1,4 @@
-(ns itera.discover
+(ns itera.algo.discover
   (:require [clojure.java.classpath :as cp]
             [clojure.java.io :as io]
             [clojure.string :as str]

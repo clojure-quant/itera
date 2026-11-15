@@ -38,4 +38,3 @@ them from the Dali transit-json sources, run from `demo/`:
 The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
 
-

@@ -1,4 +1,4 @@
-(ns itera.algo)
+(ns itera.algo.core)
 
 (def ^:private calculate-watch-key ::calculate)
 

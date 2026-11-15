@@ -1,5 +1,5 @@
 (ns demo.plot.chart.pixi-timeseries.itera
-  (:require [itera.plot.pixi-timeseries :as pixi]))
+  (:require [itera.plot.pixi-timeseries.plot :as pixi]))
 
 (defn- bar [i]
   (let [base  (+ 100 (* 10 (Math/sin (/ i 7.0))) (mod i 5))

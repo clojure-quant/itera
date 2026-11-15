@@ -1,6 +1,6 @@
 (ns demo.discover
   (:require [clojure.pprint :as pprint]
-            [itera.discover :as discover]))
+            [itera.algo.discover :as discover]))
 
 (defn -main [& _]
   (pprint/pprint (discover/discover)))

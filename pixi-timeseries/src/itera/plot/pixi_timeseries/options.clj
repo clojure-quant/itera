@@ -8,11 +8,11 @@
    ([open high low close]); all other types edit a single :col.
 
    The option :spec carries the available columns (required) and, optionally,
-   the colors; plot types always come from itera.plot.pixi.plot-type/types."
+   the colors; plot types always come from itera.plot.pixi-timeseries.plot-type/types."
   (:require [hyper.core :as h]
             [itera.options :as options]
-            [itera.plot.color :as colors]
-            [itera.plot.pixi.plot-type :as plot-type]))
+            [itera.util.color :as colors]
+            [itera.plot.pixi-timeseries.plot-type :as plot-type]))
 
 (def ^:private field-style
   {:width "100%"})
@@ -32,7 +32,7 @@
     (when (seq cols) (vec cols))))
 
 (defn- palette
-  "The spec's optional color names, defaulting to itera.plot.color/colors."
+  "The spec's optional color names, defaulting to itera.util.color/colors."
   [opt]
   (let [cs (get-in opt [:spec :colors])]
     (if (seq cs) (vec cs) (vec (keys colors/colors)))))

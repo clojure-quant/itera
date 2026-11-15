@@ -1,4 +1,4 @@
-(ns itera.plot.color
+(ns itera.util.color
   "Tailwind-style named colors used by the chart viewers.
 
    Pure data, no dependencies.  `set-color` resolves a named color to its hex

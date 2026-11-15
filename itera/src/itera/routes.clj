@@ -4,7 +4,7 @@
 
 (defn routes
   "Build the itera routes. Takes the application ctx and the discovery state
-   returned by itera.discover/discover-start, and returns the routes vector."
+   returned by itera.algo.discover/discover-start, and returns the routes vector."
   [ctx discover]
   (let [result* (:result discover)]
     [["/itera" {:name :itera

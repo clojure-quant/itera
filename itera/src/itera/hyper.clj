@@ -1,6 +1,6 @@
 (ns itera.hyper
   (:require [hyper.core :as h]
-            [itera.discover :as discover]
+            [itera.algo.discover :as discover]
             [itera.plot-discover :as plot-discover]
             [itera.routes :as routes]))
 

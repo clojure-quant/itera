@@ -17,7 +17,7 @@
 
    The stylesheet is served locally from the plot sub-project's resources."
   (:require [hyper.core :as h]
-            [itera.plot.color :as color])
+            [itera.util.color :as color])
   (:import (java.time Instant LocalDate LocalDateTime ZonedDateTime)))
 
 (def head
