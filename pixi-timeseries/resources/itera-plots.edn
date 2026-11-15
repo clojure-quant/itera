@@ -1,2 +1,3 @@
 {:head      [itera.plot.pixi-timeseries.plot/head]
- :option-ui [itera.plot.pixi-timeseries.options]}
+ :option-ui [itera.plot.pixi-timeseries.options.chartspec
+             itera.plot.pixi-timeseries.options.row-select]}

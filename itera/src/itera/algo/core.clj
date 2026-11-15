@@ -31,4 +31,8 @@
   "Render via ((:plot/fn m) @plot-options-a @result-a)."
   [plot-options-a result-a m]
   (when-let [plot (:plot/fn m)]
-    (plot @plot-options-a @result-a)))
+    (let [select (:plot/select m)
+          result (if select
+                   (select plot-options-a @result-a)
+                   @result-a)]
+      (plot @plot-options-a result))))

@@ -1,4 +1,4 @@
-(ns itera.plot.pixi-timeseries.options
+(ns itera.plot.pixi-timeseries.options.chartspec
   "The :chartspec option editor for the pixi-timeseries viewer.
 
    A :chartspec option is a vector of panes, each pane a vector of plot maps

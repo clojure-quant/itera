@@ -34,7 +34,13 @@
 (defn calculate [_ctx _opts] ds)
 
 (def ^:private plot-options
-  [{:type :select
+  [{:type :container
+    :path [:window]
+    :name "Window"}
+   {:type :window-selector
+    :path [:window-selector]
+    :name "Window Selector"}
+   {:type :select
     :path [:step]
     :name "Step"
     :spec [4 6 8 10 12 14]}
@@ -46,22 +52,24 @@
                      :p0-low :p1-low :pweek-low
                      :p0-high :p1-high :pweek-high]
            :colors  ["blue-3" "blue-7" "red-3" "green-2" "green-9"]}}
-   {:type :container
-    :path [:window]
-    :name "Window"}])
+   ])
 
 (def algo-pixi-timeseries
   {:calculate/fn calculate
    :plot/option-initial {:charts charts
                          :step 8
-                         :window {:mode :container}}
+                         :window {:mode :container}
+                         :window-selector {:rows-all (count ds) :end (count ds)}}
    :plot/options  plot-options
+   :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})
 
 (def algo-pixi-timeseries-fixed
   {:calculate/fn calculate
    :plot/option-initial {:charts charts
                          :step 8
-                         :window {:mode :fixed :width 900 :height 700}}
+                         :window {:mode :fixed :width 900 :height 700}
+                         :window-selector {:rows-all (count ds) :end (count ds)}}
    :plot/options  plot-options
+   :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})

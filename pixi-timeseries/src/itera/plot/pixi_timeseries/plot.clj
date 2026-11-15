@@ -8,7 +8,8 @@
                :col  <kw> or [<kw> <kw>] for :range
                      or [<open> <high> <low> <close>] for :bar
                :color \"blue-5\" (name in itera.util.color/colors or a CSS color)}
-     :step    pixels per row (default 8)
+     :step    pixels per row (default 8); server-side only, used to derive the
+              visible row count from the :window :width
      :window  plot size, a map:
               {:mode :container|:fixed :width <px> :height <px>}
               :width and :height must be positive integers in both modes;
@@ -17,8 +18,17 @@
               so the caller/page layer must withhold the viewer until that
               loop has measured a complete window.  Absent or invalid
               dimensions render \"invalid :width and :height\" and draw
-              nothing.  The fixed 24 px slider is subtracted from the window
-              height before the canvas is sized.
+              nothing.
+     :window-selector  window metadata and state, a map:
+              {:end <exclusive end row>
+               :rows-all <total result rows>
+               :rows-visible <rows per page>}
+              When present, rows are windowed server-side and the client
+              receives only the visible slice; the default view is the last
+              page.  The window-selector option editor writes :end, while
+              `init-window-selector!` fills :rows-all and :rows-visible from
+              the result and the window width.  Without this key all rows are
+              sent to the client.
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
 
@@ -57,9 +67,98 @@
         :else            (throw (ex-info "Unsupported dataset value"
                                          {:type (type ds)})))))
 
+(defn- window-width
+  "The window width in pixels, when it is a positive number."
+  [opts]
+  (let [w (get-in opts [:window :width])]
+    (when (and (number? w) (pos? w)) w)))
+
+(defn- row-step
+  "Pixels per row, defaulting to 8 for a missing/invalid :step."
+  [opts]
+  (let [s (:step opts)]
+    (if (and (number? s) (pos? s)) s 8)))
+
+(defn- visible-rows
+  "Rows per viewport from :window :width and :step, clamped to [1 row-count]
+   (0 for an empty result).  A missing/invalid width falls back to row-count."
+  [opts row-count]
+  (if (pos? row-count)
+    (if-let [w (window-width opts)]
+      (max 1 (min row-count
+                  (long (Math/floor (/ (double w) (row-step opts))))))
+      row-count)
+    0))
+
+(defn select-rows
+  "Return the visible server-side row slice for `opts`.
+
+   `opts` is a plain (dereferenced) plot-options map; window metadata comes
+   from :window-selector {:end <exclusive end row>, :rows-all <total rows>,
+   :rows-visible <rows per page>}.  :rows-visible falls back to :window
+   :width / :step, and :end defaults to the row count (the last page).  Both
+   are clamped against the rows actually passed in, not :rows-all.
+
+   Without a :window-selector, or for non-sequential/empty rows, all rows are
+   returned unchanged.
+
+   Do not use this directly as :plot/select: that hook receives the plot
+   options cursor, not a map.  Use `init-window-selector!` there."
+  [opts rows]
+  (let [sel (:window-selector opts)]
+    (if (or (nil? sel) (not (sequential? rows)) (empty? rows))
+      rows
+      (let [rows    (vec rows)
+            n       (count rows)
+            sel     (if (map? sel) sel {:end sel})
+            visible (let [v (:rows-visible sel)]
+                      (max 1 (min n (if (and (number? v) (pos? v))
+                                       (long v)
+                                       (visible-rows opts n)))))
+            end     (let [e (:end sel)]
+                      (if (number? e) (long e) n))
+            end     (max visible (min n end))]
+        (subvec rows (- end visible) end)))))
+
+(defn init-window-selector!
+  "Cursor-aware :plot/select hook for server-side row windowing.
+
+   Receives the plot-options *cursor* plus the algo result (this is why it,
+   not `select-rows`, is the :plot/select function).  It derives :rows-all
+   from the result, :rows-visible from :window :width / :step, and a clamped
+   :end defaulting to the last page, then writes those into the cursor's
+   :window-selector while preserving any other selector keys.  The write only
+   happens when the selector value actually changes, so the extra render it
+   can trigger (first metadata fill, container resize, :step change)
+   converges instead of looping.
+
+   Returns the result unchanged."
+  [plot-options-a result]
+  (let [opts      @plot-options-a
+        row-count (if (nil? result) 0 (count result))
+        visible   (visible-rows opts row-count)
+        current   (:window-selector opts)
+        sel       (cond
+                    (map? current)    current
+                    (number? current) {:end current}
+                    :else             {})
+        end       (let [e (:end sel)]
+                    (if (number? e) (long e) row-count))
+        end       (if (pos? row-count)
+                    (max visible (min row-count end))
+                    0)
+        next-sel  (assoc sel
+                         :end end
+                         :rows-all row-count
+                         :rows-visible visible)]
+    (when (not= current next-sel)
+      (swap! plot-options-a assoc :window-selector next-sel))
+    result))
+
 (h/defc itera-pixi-timeseries
   "pixi.js time-series viewer in a custom element. `options` is the
-   JSON-parsed viewer payload (`:data`, `:charts`, `:step`, `:window`)."
+   JSON-parsed viewer payload (`:data`, `:charts`, `:window`); :data holds
+   only the server-side visible row slice."
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
@@ -67,16 +166,12 @@
     [:div {:class "pixi-canvas" :style "flex:1;min-height:0;position:relative"}]
     [:div {:class "pixi-error"
            :style "display:none;flex:1;min-height:0;align-items:center;justify-content:center;color:#b91c1c;font-size:0.85rem"}
-     "invalid :width and :height"]
-    [:input {:class "pixi-nav" :type "range"
-             :style "width:100%;height:24px;margin:0"}]])
+      "invalid :width and :height"]])
   (mount [root]
     (let [el (.querySelector root ".pixi-canvas")
-          err (.querySelector root ".pixi-error")
-          slider (.querySelector root ".pixi-nav")]
+          err (.querySelector root ".pixi-error")]
       (set! (.-el ctx) el)
       (set! (.-err ctx) err)
-      (set! (.-slider ctx) slider)
       (set! (.-options ctx) options)
       (set! (.-gen ctx) 0)
       (let [init!
@@ -84,7 +179,6 @@
               (let [opts   (.-options ctx)
                     el     (.-el ctx)
                     err    (.-err ctx)
-                    slider (.-slider ctx)
                     win    (aget opts "window")
                     ww     (if win (aget win "width") nil)
                     wh     (if win (aget win "height") nil)
@@ -96,19 +190,16 @@
                   (do
                     (set! (.-innerHTML el) "")
                     (set! (.-display (.-style el)) "none")
-                    (set! (.-display (.-style slider)) "none")
                     (set! (.-display (.-style err)) "flex")
-                    (set! (.-oninput slider) nil)
                     (set! (.-app ctx) nil))
                   (let [w      ww
-                        h      (max 1 (- wh 24))
+                        h      (max 1 wh)
                         app    (new pixi/Application)
                         g      (inc (or (.-gen ctx) 0))]
                     (set! (.-gen ctx) g)
                     (set! (.-app ctx) app)
                     (set! (.-display (.-style err)) "none")
                     (set! (.-display (.-style el)) "")
-                    (set! (.-display (.-style slider)) "")
                     (set! (.-innerHTML el) "")
                     (.then (.init app (js-obj "width" w "height" h
                                               "background" "#1099bb"
@@ -117,19 +208,11 @@
                          (when (= g (.-gen ctx))
                            (let [data      (or (aget opts "data") (array))
                                  charts    (or (aget opts "charts") (array))
-                                 step      (or (aget opts "step") 8)
-                                 row-count (.-length data)
-                                 visible   (min row-count
-                                                (max 1 (js/Math.floor (/ w step))))
                                  stage     (.-stage app)
                                  container (new pixi/Container)
                                  state     (js-obj "width" w "height" h
-                                                   "step" step
                                                    "data" data "charts" charts
-                                                   "end" row-count
-                                                   "visible" visible
-                                                   "container" container
-                                                   "slider" slider)
+                                                   "container" container)
                                  true-min (fn [rows col]
                                             (let [n (.-length rows)]
                                               (loop [i 0 m js/Infinity]
@@ -370,52 +453,8 @@
                                                    (set! (.-x text) (max 10 (- (.-width state) 170)))
                                                    (set! (.-y text) 22)
                                                    (.addChild pane text)))))
-                                 navigate (fn [op value]
-                                            (let [rc  (.-length (.-data state))
-                                                  vis (.-visible state)
-                                                  cur (.-end state)
-                                                  ne  (cond
-                                                        (= op "begin") vis
-                                                        (= op "end")   rc
-                                                        (= op "prior") (max vis (- cur vis))
-                                                        (= op "next")  (min rc (+ cur vis))
-                                                        (= op "idx")   (js/Math.round value)
-                                                        :else          cur)
-                                                  ne  (max vis (min rc ne))
-                                                  sl  (.-slider state)]
-                                              (set! (.-end state) ne)
-                                              (when (not= (.-value sl) (str ne))
-                                                (set! (.-value sl) (str ne)))
-                                              ((.-redraw state))))
-                                 add-button (fn [pane pane-height op label x]
-                                              (let [y (- pane-height 40)
-                                                    g (new pixi/Graphics)
-                                                    t (new pixi/Text
-                                                             (js-obj
-                                                              "text" label
-                                                              "style" (js-obj "fontSize" 12
-                                                                              "fill" "#ffffff")))]
-                                                (.rect g x y 30 30)
-                                                (.fill g (js-obj "color" "#aa4f08"))
-                                                (set! (.-eventMode g) "static")
-                                                (set! (.-cursor g) "pointer")
-                                                (.on g "pointerdown" (fn [_] ((.-navigate state) op)))
-                                                (set! (.-x t) (+ x 8))
-                                                (set! (.-y t) (+ y 8))
-                                                (.addChild pane g)
-                                                (.addChild pane t)))
-                                 draw-buttons (fn [pane pane-height]
-                                                (let [x-base (max 10 (- (.-width state) 160))]
-                                                  (add-button pane pane-height "begin" "<|" x-base)
-                                                  (add-button pane pane-height "prior" "<" (+ x-base 38))
-                                                  (add-button pane pane-height "next" ">" (+ x-base 76))
-                                                  (add-button pane pane-height "end" ">|" (+ x-base 114))))
                                  redraw (fn []
-                                          (let [data      (.-data state)
-                                                end       (.-end state)
-                                                vis       (.-visible state)
-                                                start     (max 0 (- end vis))
-                                                rows      (.slice data start end)
+                                          (let [rows      (.-data state)
                                                 h         (.-height state)
                                                 h1        (/ h 2)
                                                 h2        (/ h 4)
@@ -428,18 +467,8 @@
                                                 (draw-chart rows (aget charts 1) h1 h2))
                                               (when (> (.-length charts) 2)
                                                 (draw-chart rows (aget charts 2) (+ h1 h2) h3))
-                                              (draw-date rows pane1)
-                                              (draw-buttons pane1 h1))))]
+                                              (draw-date rows pane1))))]
                              (.addChild stage container)
-                             (set! (.-min slider) (str visible))
-                             (set! (.-max slider) (str row-count))
-                             (set! (.-value slider) (str row-count))
-                             (set! (.-navigate state) navigate)
-                             (set! (.-redraw state) redraw)
-                             (set! (.-oninput slider)
-                                   (fn [_]
-                                     ((.-navigate state) "idx"
-                                      (js/parseInt (.-value slider)))))
                              (.appendChild el (.-canvas app))
                              (redraw)))))))))]
         (set! (.-init ctx) init!)
@@ -453,8 +482,6 @@
       ((.-init ctx))))
   (unmount [_]
     (set! (.-gen ctx) (inc (or (.-gen ctx) 0)))
-    (when-let [sl (.-slider ctx)]
-      (set! (.-oninput sl) nil))
     (when-let [err (.-err ctx)]
       (set! (.-display (.-style err)) "none"))
     (when-let [app (.-app ctx)]
@@ -495,6 +522,13 @@
 (defn pixi-timeseries
   "Render a pixi.js time-series viewer.
 
+   Rows are windowed server-side.  When the options carry a :window-selector,
+   the client receives only the visible slice (see `select-rows`) and the
+   default view is the last page; without it all rows are sent and nothing is
+   hidden.  :step is server-side only (it derives the visible row count), :end
+   is written by the window-selector option editor, and `init-window-selector!`
+   fills :rows-all/:rows-visible when installed as the algo's :plot/select.
+
    :window :width/:height must be positive integers in both modes; the
    viewer never measures the DOM.  With :mode :container the dimensions are
    supplied by itera.container's measurement loop, so the caller (typically
@@ -502,10 +536,12 @@
    measured a complete window.  Invalid dimensions render
    \"invalid :width and :height\" and draw nothing.  A caller-supplied :style
    wins over the :window-derived host size."
-  [{:keys [style class rows window] :as opts}]
-  (let [options (cond-> (dissoc opts :style :class :rows)
-                  rows           (assoc :data rows)
-                  (:charts opts) (update :charts resolve-charts))
+  [{:keys [style class rows data window] :as opts}]
+  (let [rows    (or rows data)
+        options (-> (dissoc opts :style :class :rows :data
+                            :window-selector :step)
+                    (assoc :data (select-rows opts rows))
+                    (cond-> (:charts opts) (update :charts resolve-charts)))
         host-style (merge {:display "block"
                            :width "100%"
                            :height "100%"}
