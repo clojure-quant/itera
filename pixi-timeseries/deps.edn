@@ -1,4 +1,2 @@
 {:paths ["src" "resources"]
- :deps {ai.dyal/hyper {:mvn/version "0.2.2"}
-        itera/itera {:local/root "../itera"}
-        itera/plot {:local/root "../plot"}}}
+ :deps {itera/itera {:local/root "../itera"}}}
