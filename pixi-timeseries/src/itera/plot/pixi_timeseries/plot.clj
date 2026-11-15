@@ -158,7 +158,9 @@
 (h/defc itera-pixi-timeseries
   "pixi.js time-series viewer in a custom element. `options` is the
    JSON-parsed viewer payload (`:data`, `:charts`, `:window`); :data holds
-   only the server-side visible row slice."
+   only the server-side visible row slice.  Each pane draws a left-side
+   y-axis whose ticks are auto-formatted from that pane's combined series
+   bounds; the plot area shrinks to make room for the labels."
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
@@ -270,6 +272,114 @@
                                                             (js/Math.min mn (true-min rows col))
                                                             (js/Math.max mx (true-max rows col))))
                                                    (array mn mx)))))
+                                 nice-step (fn [span intervals]
+                                             (let [raw (/ span (max 1 intervals))]
+                                               (if (and (number? raw) (js/isFinite raw)
+                                                        (> raw 0))
+                                                 (let [mag (js/Math.pow
+                                                            10 (js/Math.floor
+                                                                (js/Math.log10 raw)))
+                                                       n   (/ raw mag)
+                                                       m   (cond
+                                                             (<= n 1.5) 1
+                                                             (<= n 3)   2
+                                                             (<= n 7)   5
+                                                             :else      10)]
+                                                   (* mag m))
+                                                 1)))
+                                 tick-values (fn [mn mx ch]
+                                               (if (= mn mx)
+                                                 (array (array mn 0))
+                                                 (let [intervals (max 1 (min 4
+                                                             (js/Math.floor (/ ch 35))))
+                                                       step      (nice-step (- mx mn) intervals)]
+                                                   (if (and (number? step) (js/isFinite step)
+                                                            (> step 0))
+                                                     (let [eps   (* step 1e-9)
+                                                           start (* (js/Math.ceil (/ mn step)) step)]
+                                                       (loop [v start acc (array)]
+                                                         (if (<= v (+ mx eps))
+                                                           (do
+                                                             (.push acc (array v step))
+                                                             (recur (+ v step) acc))
+                                                           (if (zero? (.-length acc))
+                                                             (array (array (/ (+ mn mx) 2) step))
+                                                             acc))))
+                                                     (array (array mn 0))))))
+                                 format-tick (fn [v step]
+                                               (let [decimals (if (and (number? step)
+                                                                       (> step 0))
+                                                                (max 0 (min 6
+                                                                         (js/Math.ceil
+                                                                          (- (js/Math.log10 step)))))
+                                                                0)
+                                                     s        (.toFixed v decimals)]
+                                                 (if (pos? decimals)
+                                                   (let [t (loop [t s]
+                                                             (if (and (> (.-length t) 1)
+                                                                      (.endsWith t "0")
+                                                                      (.includes t "."))
+                                                               (recur (.slice t 0 -1))
+                                                               t))
+                                                         t (if (.endsWith t ".")
+                                                             (.slice t 0 -1)
+                                                             t)]
+                                                     (if (= t "-0") "0" t))
+                                                   s)))
+                                 make-labels (fn [ticks]
+                                               (let [n      (.-length ticks)
+                                                     labels (array)]
+                                                 (loop [i 0]
+                                                   (when (< i n)
+                                                     (let [tick (aget ticks i)
+                                                           text (new pixi/Text
+                                                                      (js-obj
+                                                                       "text" (format-tick
+                                                                               (aget tick 0)
+                                                                               (aget tick 1))
+                                                                       "style" (js-obj
+                                                                                "fontSize" 10
+                                                                                "fill" "#374151")))]
+                                                       (.set (.-anchor text) 1 0.5)
+                                                       (.push labels text))
+                                                     (recur (inc i))))
+                                                 labels))
+                                 add-y-axis (fn [pane geom mn mx ticks labels]
+                                              (when (and (js/isFinite mn) (js/isFinite mx))
+                                                (let [axis-x (aget geom "axis-x")
+                                                      y0     (aget geom "y0")
+                                                      ch     (aget geom "ch")
+                                                      sy     (aget geom "sy")
+                                                      n      (.-length ticks)
+                                                      line   (new pixi/Graphics)]
+                                                  (.moveTo line axis-x y0)
+                                                  (.lineTo line axis-x (+ y0 ch))
+                                                  (.stroke line (js-obj "width" 1
+                                                                        "color" "#9ca3af"))
+                                                  (.addChild pane line)
+                                                  (when (pos? n)
+                                                    (let [marks (new pixi/Graphics)]
+                                                      (loop [i 0]
+                                                        (when (< i n)
+                                                          (let [y (sy (aget (aget ticks i) 0)
+                                                                      mn mx)]
+                                                            (when (not (nil? y))
+                                                              (.moveTo marks (- axis-x 3) y)
+                                                              (.lineTo marks axis-x y)))
+                                                          (recur (inc i))))
+                                                      (.stroke marks (js-obj "width" 1
+                                                                             "color" "#9ca3af"))
+                                                      (.addChild pane marks)))
+                                                  (loop [i 0]
+                                                    (when (< i n)
+                                                      (let [y     (sy (aget (aget ticks i) 0)
+                                                                      mn mx)
+                                                            label (aget labels i)]
+                                                        (when (not (nil? y))
+                                                          (set! (.-x label) (- axis-x 6))
+                                                          (set! (.-y label) y)
+                                                          (.addChild pane label)))
+                                                      (recur (inc i)))))))
                                  add-line (fn [graphics rows geom mn mx col color]
                                             (let [n (.-length rows)]
                                               (when (and (js/isFinite mn) (js/isFinite mx))
@@ -391,47 +501,65 @@
                                                      :else nil)
                                                    (.addChild pane g))))
                                  draw-chart (fn [rows series y-offset height]
-                                              (let [pane  (new pixi/Container)
-                                                    bg    (new pixi/Graphics)
-                                                    w     (.-width state)
-                                                    pad   10
-                                                    inset 3
-                                                    bw    (max 1 (- w (* 2 pad)))
-                                                    bh    (max 1 (- height (* 2 pad)))
-                                                    x0    (+ pad inset)
-                                                    y0    (+ pad inset)
-                                                    cw    (max 1 (- bw (* 2 inset)))
-                                                    ch    (max 1 (- bh (* 2 inset)))
-                                                    n     (.-length rows)
-                                                    xstep (/ cw (max 1 n))
-                                                    sx    (fn [i] (+ x0 (* (+ i 0.5) xstep)))
-                                                    sy    (fn [v mn mx]
-                                                            (if (or (not (number? v))
-                                                                    (js/isNaN v))
-                                                              nil
-                                                              (if (= mx mn)
-                                                                (+ y0 (/ ch 2))
-                                                                (+ y0 (* (- 1 (/ (- v mn)
-                                                                                 (- mx mn)))
-                                                                         ch)))))
-                                                     geom  (js-obj "sx" sx "sy" sy
-                                                                   "x0" x0 "y0" y0
-                                                                   "cw" cw "ch" ch
-                                                                   "xstep" xstep "n" n)
-                                                    ns    (if series (.-length series) 0)
-                                                    bnds  (loop [i 0 mn js/Infinity mx (- js/Infinity)]
-                                                            (if (< i ns)
-                                                              (let [b (bounds-of rows (aget series i))]
-                                                                (recur (inc i)
-                                                                       (js/Math.min mn (aget b 0))
-                                                                       (js/Math.max mx (aget b 1))))
-                                                              (array mn mx)))
-                                                    mn    (aget bnds 0)
-                                                    mx    (aget bnds 1)]
+                                              (let [pane    (new pixi/Container)
+                                                    bg      (new pixi/Graphics)
+                                                    w       (.-width state)
+                                                    pad     10
+                                                    inset   3
+                                                    bw      (max 1 (- w (* 2 pad)))
+                                                    bh      (max 1 (- height (* 2 pad)))
+                                                    y0      (+ pad inset)
+                                                    ch      (max 1 (- bh (* 2 inset)))
+                                                    ns      (if series (.-length series) 0)
+                                                    bnds    (loop [i 0 mn js/Infinity mx (- js/Infinity)]
+                                                              (if (< i ns)
+                                                                (let [b (bounds-of rows (aget series i))]
+                                                                  (recur (inc i)
+                                                                         (js/Math.min mn (aget b 0))
+                                                                         (js/Math.max mx (aget b 1))))
+                                                                (array mn mx)))
+                                                    mn      (aget bnds 0)
+                                                    mx      (aget bnds 1)
+                                                    finite? (and (js/isFinite mn) (js/isFinite mx))
+                                                    ticks   (if finite? (tick-values mn mx ch) nil)
+                                                    labels  (if finite? (make-labels ticks) nil)
+                                                    widest  (if finite?
+                                                              (loop [i 0 mw 0]
+                                                                (if (< i (.-length labels))
+                                                                  (recur (inc i)
+                                                                         (js/Math.max
+                                                                          mw (.-width (aget labels i))))
+                                                                  mw))
+                                                              0)
+                                                    gutter  (if finite?
+                                                              (js/Math.min (* w 0.3)
+                                                                           (max 24 (+ widest 10)))
+                                                              0)
+                                                    axis-x  (+ pad gutter)
+                                                    x0      (+ axis-x inset)
+                                                    cw      (max 1 (- (- w pad inset) x0))
+                                                    n       (.-length rows)
+                                                    xstep   (/ cw (max 1 n))
+                                                    sx      (fn [i] (+ x0 (* (+ i 0.5) xstep)))
+                                                    sy      (fn [v mn mx]
+                                                              (if (or (not (number? v))
+                                                                      (js/isNaN v))
+                                                                nil
+                                                                (if (= mx mn)
+                                                                  (+ y0 (/ ch 2))
+                                                                  (+ y0 (* (- 1 (/ (- v mn)
+                                                                                   (- mx mn)))
+                                                                           ch)))))
+                                                    geom    (js-obj "sx" sx "sy" sy
+                                                                    "x0" x0 "y0" y0
+                                                                    "cw" cw "ch" ch
+                                                                    "axis-x" axis-x
+                                                                    "xstep" xstep "n" n)]
                                                 (set! (.-y pane) y-offset)
                                                 (.rect bg pad pad bw bh)
                                                 (.fill bg (js-obj "color" "#f5f5f5"))
                                                 (.addChild pane bg)
+                                                (add-y-axis pane geom mn mx ticks labels)
                                                 (when series
                                                   (loop [i 0]
                                                     (when (< i ns)
