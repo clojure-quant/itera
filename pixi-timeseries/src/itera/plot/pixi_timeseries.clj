@@ -9,6 +9,16 @@
                      or [<open> <high> <low> <close>] for :bar
                :color \"blue-5\" (name in itera.plot.color/colors or a CSS color)}
      :step    pixels per row (default 8)
+     :window  plot size, a map:
+              {:mode :container|:fixed :width <px> :height <px>}
+              :width and :height must be positive integers in both modes;
+              pixi never measures the DOM.  With :mode :container the
+              dimensions are supplied by itera.container's measurement loop,
+              so the caller/page layer must withhold the viewer until that
+              loop has measured a complete window.  Absent or invalid
+              dimensions render \"invalid :width and :height\" and draw
+              nothing.  The fixed 24 px slider is subtracted from the window
+              height before the canvas is sized.
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
 
@@ -49,18 +59,23 @@
 
 (h/defc itera-pixi-timeseries
   "pixi.js time-series viewer in a custom element. `options` is the
-   JSON-parsed viewer payload (`:data`, `:charts`, `:step`)."
+   JSON-parsed viewer payload (`:data`, `:charts`, `:step`, `:window`)."
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
    [:div {:style "display:flex;flex-direction:column;width:100%;height:100%"}
     [:div {:class "pixi-canvas" :style "flex:1;min-height:0;position:relative"}]
+    [:div {:class "pixi-error"
+           :style "display:none;flex:1;min-height:0;align-items:center;justify-content:center;color:#b91c1c;font-size:0.85rem"}
+     "invalid :width and :height"]
     [:input {:class "pixi-nav" :type "range"
              :style "width:100%;height:24px;margin:0"}]])
   (mount [root]
     (let [el (.querySelector root ".pixi-canvas")
+          err (.querySelector root ".pixi-error")
           slider (.querySelector root ".pixi-nav")]
       (set! (.-el ctx) el)
+      (set! (.-err ctx) err)
       (set! (.-slider ctx) slider)
       (set! (.-options ctx) options)
       (set! (.-gen ctx) 0)
@@ -68,18 +83,36 @@
             (fn []
               (let [opts   (.-options ctx)
                     el     (.-el ctx)
+                    err    (.-err ctx)
                     slider (.-slider ctx)
-                    cw     (.-clientWidth el)
-                    ch     (.-clientHeight el)
-                    w      (if (> cw 0) cw 800)
-                    h      (if (> ch 0) ch 600)
-                    app    (new pixi/Application)
-                    g      (inc (or (.-gen ctx) 0))]
-                (set! (.-gen ctx) g)
-                (set! (.-app ctx) app)
-                (.then (.init app (js-obj "width" w "height" h
-                                          "background" "#1099bb"
-                                          "antialias" true))
+                    win    (aget opts "window")
+                    ww     (if win (aget win "width") nil)
+                    wh     (if win (aget win "height") nil)
+                    valid? (and (number? ww) (js/isFinite ww) (> ww 0)
+                                (= ww (js/Math.floor ww))
+                                (number? wh) (js/isFinite wh) (> wh 0)
+                                (= wh (js/Math.floor wh)))]
+                (if (not valid?)
+                  (do
+                    (set! (.-innerHTML el) "")
+                    (set! (.-display (.-style el)) "none")
+                    (set! (.-display (.-style slider)) "none")
+                    (set! (.-display (.-style err)) "flex")
+                    (set! (.-oninput slider) nil)
+                    (set! (.-app ctx) nil))
+                  (let [w      ww
+                        h      (max 1 (- wh 24))
+                        app    (new pixi/Application)
+                        g      (inc (or (.-gen ctx) 0))]
+                    (set! (.-gen ctx) g)
+                    (set! (.-app ctx) app)
+                    (set! (.-display (.-style err)) "none")
+                    (set! (.-display (.-style el)) "")
+                    (set! (.-display (.-style slider)) "")
+                    (set! (.-innerHTML el) "")
+                    (.then (.init app (js-obj "width" w "height" h
+                                              "background" "#1099bb"
+                                              "antialias" true))
                        (fn [_]
                          (when (= g (.-gen ctx))
                            (let [data      (or (aget opts "data") (array))
@@ -408,7 +441,7 @@
                                      ((.-navigate state) "idx"
                                       (js/parseInt (.-value slider)))))
                              (.appendChild el (.-canvas app))
-                             (redraw)))))))]
+                             (redraw)))))))))]
         (set! (.-init ctx) init!)
         (init!))))
   (update [_root]
@@ -422,6 +455,8 @@
     (set! (.-gen ctx) (inc (or (.-gen ctx) 0)))
     (when-let [sl (.-slider ctx)]
       (set! (.-oninput sl) nil))
+    (when-let [err (.-err ctx)]
+      (set! (.-display (.-style err)) "none"))
     (when-let [app (.-app ctx)]
       (try (.destroy app true true) (catch :default _ nil)))))
 
@@ -443,17 +478,41 @@
                   pane))
           charts)))
 
+(defn- valid-size?
+  "True for a positive integer dimension."
+  [x]
+  (and (integer? x) (pos? x)))
+
+(defn- window-size-style
+  "Exact pixel host dimensions from a :window with valid integer width and
+   height, regardless of mode; nil otherwise."
+  [window]
+  (let [w (:width window)
+        h (:height window)]
+    (when (and (valid-size? w) (valid-size? h))
+      {:width (str w "px") :height (str h "px")})))
+
 (defn pixi-timeseries
-  [{:keys [style class rows] :as opts}]
+  "Render a pixi.js time-series viewer.
+
+   :window :width/:height must be positive integers in both modes; the
+   viewer never measures the DOM.  With :mode :container the dimensions are
+   supplied by itera.container's measurement loop, so the caller (typically
+   itera.routes/algo-page) must withhold this viewer until that loop has
+   measured a complete window.  Invalid dimensions render
+   \"invalid :width and :height\" and draw nothing.  A caller-supplied :style
+   wins over the :window-derived host size."
+  [{:keys [style class rows window] :as opts}]
   (let [options (cond-> (dissoc opts :style :class :rows)
                   rows           (assoc :data rows)
-                  (:charts opts) (update :charts resolve-charts))]
+                  (:charts opts) (update :charts resolve-charts))
+        host-style (merge {:display "block"
+                           :width "100%"
+                           :height "100%"}
+                          (window-size-style window)
+                          style)]
     (itera-pixi-timeseries
-     (cond-> {:options options}
-       style (assoc :style (merge {:display "block"
-                                   :width "100%"
-                                   :height "100%"}
-                                  style))
+     (cond-> {:options options :style host-style}
        class (assoc :class class)))))
 
 (defn pixi-timeseries-ds

@@ -34,22 +34,35 @@
 
 (defn calculate [_ctx _opts] ds)
 
+(def ^:private plot-options
+  [{:type :select
+    :path [:step]
+    :name "Step"
+    :spec [4 6 8 10 12 14]}
+   {:type :chartspec
+    :path [:charts]
+    :name "ChartSpec"
+    :spec {:columns [:open :high :low :close
+                     :daily-atr-lower :daily-atr-upper :daily-atr-mid
+                     :p0-low :p1-low :pweek-low
+                     :p0-high :p1-high :pweek-high]
+           :colors  ["blue-3" "blue-7" "red-3" "green-2" "green-9"]}}
+   {:type :container
+    :path [:window]
+    :name "Window"}])
 
 (def algo-pixi-timeseries
   {:calculate/fn calculate
    :plot/option-initial {:charts charts
                          :step 8
-                         :style {:width "100%" :height "800px"}}
-   :plot/options  [{:type :select
-                    :path [:step]
-                    :name "Step"
-                    :spec [4 6 8 10 12 14]}
-                   {:type :chartspec
-                    :path [:charts]
-                    :name "ChartSpec"
-                    :spec {:columns [:open :high :low :close
-                                     :daily-atr-lower :daily-atr-upper :daily-atr-mid
-                                     :p0-low :p1-low :pweek-low
-                                     :p0-high :p1-high :pweek-high]
-                           :colors  ["blue-3" "blue-7" "red-3" "green-2" "green-9"]}}]
-   :plot/fn      pixi/pixi-timeseries-ds})
+                         :window {:mode :container}}
+   :plot/options  plot-options
+   :plot/fn       pixi/pixi-timeseries-ds})
+
+(def algo-pixi-timeseries-fixed
+  {:calculate/fn calculate
+   :plot/option-initial {:charts charts
+                         :step 8
+                         :window {:mode :fixed :width 900 :height 700}}
+   :plot/options  plot-options
+   :plot/fn       pixi/pixi-timeseries-ds})
