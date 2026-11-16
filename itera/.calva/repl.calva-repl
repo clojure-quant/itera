@@ -1,0 +1,343 @@
+; This is the Calva REPL Window.
+; It's just a file, really, with some special treatment from Calva.
+; Use it as a REPL input prompt if you like. (When the REPL is connected.)
+; TIPS: The keyboard shortcut `ctrl+alt+o r` shows and focuses this window
+; Please see https://calva.io/repl-window/ for more info.
+; Happy coding! ♥️
+
+; TIPS: As with any Clojure file when the REPL is connected:
+; - `alt+enter` evaluates the current top level form.
+; - `ctrl+enter` evaluates the current form.
+; Special for this file:
+; - `alt+up` and `alt+down` traverse up and down the REPL command history
+;    when the cursor is after the last contents at the prompt
+; 
+; See also the Calva Inspector: https://calva.io/inspector/
+
+(when-let [requires (resolve 'clojure.main/repl-requires)] (clojure.core/apply clojure.core/require @requires))
+clj꞉user꞉> 
+(ns itera.code.cell)
+clj꞉itera.code.cell꞉> 
+(defn compile [ctx code]
+  (eval code))
+clj꞉itera.code.cell꞉> 
+(compile ctx "15")
+clj꞉itera.code.cell꞉> 
+(def ctx {})
+clj꞉itera.code.cell꞉> 
+(compile ctx "15")
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [ctx code]
+  (let [c (compile ctx code)]
+    (if (and c (fn? c))
+      :fn
+      :no-fn
+      )
+  
+  )
+)
+clj꞉itera.code.cell꞉> 
+(get-inputs ctx "(fn [ctx assets]
+                      (pprintln assets))")
+clj꞉itera.code.cell꞉> 
+(compile ctx "(fn [ctx assets]
+                                 (pprintln assets))")
+clj꞉itera.code.cell꞉> 
+(def r (compile ctx "(fn [ctx assets]
+                                          (pprintln assets))"))
+clj꞉itera.code.cell꞉> 
+r
+clj꞉itera.code.cell꞉> 
+(ns itera.code.cell
+  (:require
+   [clojure.string :as string]
+   [clojure.core :refer [read-string load-string]])
+  (:import
+   [clojure.lang Compiler$CompilerException]))
+clj꞉itera.code.cell꞉> 
+(defmacro with-out-str-data-map
+  [& body]
+  `(let [s# (new java.io.StringWriter)]
+     (binding [*out* s#]
+       (let [r# ~@body]
+         {:value r#
+          :out    (str s#)} ; nrepl compatible!
+         ))))
+clj꞉itera.code.cell꞉> 
+(defn root-cause [^Throwable t]
+  (if-some [c (.getCause t)]
+    (recur c)
+    t))
+clj꞉itera.code.cell꞉> 
+(defn compiler-exception [ex]
+  (let [msg (ex-message (root-cause ex))
+        ^Throwable e (ex-info msg {})]
+    (.setStackTrace e (into-array StackTraceElement []))
+    e))
+clj꞉itera.code.cell꞉> 
+(defn clj-eval-raw [code]
+  (try
+    (with-out-str-data-map (load-string code))
+    (catch Compiler$CompilerException ex  ;Exception ex
+      {:ex ;ex
+       (compiler-exception ex)})))
+clj꞉itera.code.cell꞉> 
+(ns itera.code.cell
+  (:require
+   [clojure.string :as string]
+   [clojure.core :refer [read-string load-string]])
+  (:import
+   [clojure.lang Compiler$CompilerException]))
+clj꞉itera.code.cell꞉> 
+(defmacro with-out-str-data-map
+  [& body]
+  `(let [s# (new java.io.StringWriter)]
+     (binding [*out* s#]
+       (let [r# ~@body]
+         {:value r#
+          :out    (str s#)} ; nrepl compatible!
+         ))))
+clj꞉itera.code.cell꞉> 
+(defn root-cause [^Throwable t]
+  (if-some [c (.getCause t)]
+    (recur c)
+    t))
+clj꞉itera.code.cell꞉> 
+(defn compiler-exception [ex]
+  (let [msg (ex-message (root-cause ex))
+        ^Throwable e (ex-info msg {})]
+    (.setStackTrace e (into-array StackTraceElement []))
+    e))
+clj꞉itera.code.cell꞉> 
+(defn clj-eval-raw [code]
+  (try
+    (with-out-str-data-map (load-string code))
+    (catch Compiler$CompilerException ex  ;Exception ex
+      {:ex ;ex
+       (compiler-exception ex)})))
+clj꞉itera.code.cell꞉> 
+(defn clj-eval
+  "evaluate code in namespace ns
+   if no ns is passed, it will execute the code in the current ns (*ns*)
+   returns the result of the last form in code.
+   (it would be very easy to return all results as well)"
+  [{:keys [code ns]}]
+  (let [code-ns (if (and ns (not (string/blank? ns)))
+                  (str "(in-ns '" ns " ) ")
+                  "")
+       ; _ (error "code-to-set-ns: " code-ns)
+        ;code-with-ns (str code-ns " [ " code " (str *ns*) ]")
+        code-with-ns (str code-ns code)
+        er-code (clj-eval-raw code-with-ns)
+       ; _ (error "er-code: " er-code)
+        ; [[nil] "notebook.study.movies"]
+        {:keys [value]} er-code
+        ;ns-after (if (:err er-code)
+        ;           ns  ; on compile exception the ns does not change
+        ;           (last value))
+        ;values-new (drop-last value)
+        ;last-value (last values-new)
+        ;er-code (clj-eval-raw code)
+        ;er-ns-after (clj-eval-raw "*ns*")
+        ;ns-after  (-> er-ns-after :value str) ; (str *ns*)
+        ;last-value value
+        ;new-ns (:value (clj-eval-raw "(str *ns*)"))
+        r (merge er-code
+                 {:code code
+                  :ns ns ; new-ns  ;:ns ns-after
+                  })]
+    ;(info "eval-result: " r)
+    r))
+clj꞉itera.code.cell꞉> 
+(clj-eval {:code "(println 3) (def x 777) (+ 3 4)" :ns "bongo"})
+clj꞉itera.code.cell꞉> 
+(clj-eval {:code "(def x 777) (+ 3 4)" :ns "bongo"})
+clj꞉itera.code.cell꞉> 
+(load-string "(def x 777) (+ 3 4)" )
+clj꞉itera.code.cell꞉> 
+(clj-eval-raw "(def x 777) (+ 3 4)")
+clj꞉itera.code.cell꞉> 
+(load-string "(def x 777) (+ 3 4)" )
+clj꞉itera.code.cell꞉> 
+(clj-eval-raw "(def x 777) (+ 3 4)")
+clj꞉itera.code.cell꞉> 
+(clj-eval {:code "(def x 777) (+ 3 4)" :ns "bongo"})
+clj꞉itera.code.cell꞉> 
+(clj-eval {:code "(def x 777) (+ 3 4)" :ns "my.bongo"})
+clj꞉itera.code.cell꞉> 
+(clj-eval-raw "(ns my.bongo) (+ 3 4)")
+clj꞉itera.code.cell꞉> 
+(clj-eval {:code "(def x 777) (+ 3 4)" :ns "my.bongo"})
+clj꞉itera.code.cell꞉> 
+(def ctx {})
+clj꞉itera.code.cell꞉> 
+(def dag-ns "my.bongo")
+clj꞉itera.code.cell꞉> 
+(defn create-workbook [ctx workbook-ns]
+  (clj-eval-raw (str "(ns " workbook-ns ")")))
+clj꞉itera.code.cell꞉> 
+(defn create-workbook [workbook-ns]
+  (clj-eval-raw (str "(ns " workbook-ns ")")))
+clj꞉itera.code.cell꞉> 
+(defn compile [workbook-ns code]
+  (clj-eval {:code code :ns workbook-ns}))
+clj꞉itera.code.cell꞉> 
+(defn create-workbook [workbook-ns]
+  (clj-eval-raw (str "(ns " workbook-ns ")")))
+clj꞉itera.code.cell꞉> 
+(create-workbook dag-ns)
+clj꞉itera.code.cell꞉> 
+(def dag-ns "my.bongo.3")
+clj꞉itera.code.cell꞉> 
+(create-workbook dag-ns)
+clj꞉itera.code.cell꞉> 
+(compile dag-ns "(def x 777) (+ 3 4)")
+clj꞉itera.code.cell꞉> 
+(compile dag-ns "(fn [ctx assets]
+                     (pprintln assets))")
+clj꞉itera.code.cell꞉> 
+(compile dag-ns "(fn [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [ctx code]
+  (let [{:keys [value]} (compile ctx code)]
+    (if (and value (fn? value))
+      :fn
+      :no-fn
+      )
+  
+  )
+)
+clj꞉itera.code.cell꞉> 
+(compile dag-ns "(fn [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      :fn
+      :no-fn
+      )
+  
+  )
+)
+clj꞉itera.code.cell꞉> 
+(get-inputs dag-ns "(fn [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      :fn
+      []
+      )
+  
+  )
+)
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      (meta value)
+      []
+      )
+  
+  )
+)
+clj꞉itera.code.cell꞉> 
+(get-inputs dag-ns "(fn [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(defn arglists
+  "Arglist metadata for a var, or for a symbol resolvable in the current ns."
+  [v]
+  (let [v (cond (var? v)    v
+                (symbol? v) (resolve v)
+                :else       nil)]
+    (:arglists (meta v))))
+clj꞉itera.code.cell꞉> 
+(get-inputs dag-ns "(defn p [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(arglists #'my.bongo.3/p)
+clj꞉itera.code.cell꞉> 
+(ns itera.code.cell
+  (:require
+   [clojure.string :as string]
+   [clojure.edn :as edn]
+   [clojure.core :refer [read-string load-string]])
+  (:import
+   [clojure.lang Compiler$CompilerException]))
+clj꞉itera.code.cell꞉> 
+(defn fn-arglist
+  "Reads a single form from s and returns the parameter vector
+   of an (fn [args] ...) form."
+  [s]
+  (let [form (edn/read-string s)]
+    (when (and (seq? form) (= 'fn (first form)))
+      (second form))))
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      (fn-arglist code)
+      [])))
+clj꞉itera.code.cell꞉> 
+(get-inputs dag-ns "(fn [ctx assets]
+                     (println assets))")
+clj꞉itera.code.cell꞉> 
+(->(get-inputs dag-ns "(fn [ctx assets]
+                          (println assets))")
+   first
+ 
+ )
+clj꞉itera.code.cell꞉> 
+(->(get-inputs dag-ns "(fn [ctx assets]
+                          (println assets))")
+   first
+   type
+ )
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      (->> (fn-arglist code)
+           (remove (contains? #{'_ 'ctx}))
+       )
+      
+      [])))
+clj꞉itera.code.cell꞉> 
+(-> (get-inputs dag-ns "(fn [ctx assets]
+                          (println assets))")
+    
+    )
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      (->> (fn-arglist code)
+           (remove #(contains? #{'_ 'ctx} %))
+       )
+      
+      [])))
+clj꞉itera.code.cell꞉> 
+(-> (get-inputs dag-ns "(fn [ctx assets]
+                          (println assets))")
+    
+    )
+clj꞉itera.code.cell꞉> 
+(defn get-inputs [workbook-ns code]
+  (let [{:keys [value]} (compile workbook-ns code)]
+    (if (and value (fn? value))
+      (->> (fn-arglist code)
+           (remove #(contains? #{'_ 'ctx} %))
+           (into []))
+      [])))
+clj꞉itera.code.cell꞉> 
+(-> (get-inputs dag-ns "(fn [ctx assets]
+                          (println assets))")
+    
+    )
+clj꞉itera.code.cell꞉> 
+(get-inputs dag-ns "(fn [ctx assets] (println assets))")
+clj꞉itera.code.cell꞉> 

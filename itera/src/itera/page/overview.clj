@@ -90,7 +90,11 @@
       (let [{:keys [algos error]} @result*
             tree (build-tree algos)]
         [:div.page
-         [:h1 "Itera"]
+         [:div {:style {:display "flex" :align-items "baseline" :gap "1rem"}}
+          [:h1 "Itera"]
+          [:a (merge {:style {:font-weight "600"}}
+                     (h/navigate :itera-graph))
+           "Graph editor"]]
          (tree-view tree)
          (when (seq error)
            [:div.errors
