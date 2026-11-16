@@ -8,8 +8,6 @@
                :col  <kw> or [<kw> <kw>] for :range
                      or [<open> <high> <low> <close>] for :bar
                :color \"blue-5\" (name in itera.util.color/colors or a CSS color)}
-     :step    pixels per row (default 8); server-side only, used to derive the
-              visible row count from the :window :width
      :window  plot size, a map:
               {:mode :container|:fixed :width <px> :height <px>}
               :width and :height must be positive integers in both modes;
@@ -20,15 +18,20 @@
               dimensions render \"invalid :width and :height\" and draw
               nothing.
      :window-selector  window metadata and state, a map:
-              {:end <exclusive end row>
+              {:display :nice|:all
+               :step <pixels per row>
+               :end <exclusive end row>
                :rows-all <total result rows>
                :rows-visible <rows per page>}
               When present, rows are windowed server-side and the client
               receives only the visible slice; the default view is the last
-              page.  The window-selector option editor writes :end, while
-              `init-window-selector!` fills :rows-all and :rows-visible from
-              the result and the window width.  Without this key all rows are
-              sent to the client.
+              page.  :display defaults to :nice (windowed); with :all every
+              row is sent and nothing is windowed.  :step (default 8) is
+              server-side only and derives :rows-visible from :window :width
+              in :nice mode.  The window-selector option editor writes :end,
+              :display and :step, while `init-window-selector!` fills
+              :rows-all and :rows-visible from the result and the window
+              width.  Without this key all rows are sent to the client.
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
 
@@ -74,9 +77,10 @@
     (when (and (number? w) (pos? w)) w)))
 
 (defn- row-step
-  "Pixels per row, defaulting to 8 for a missing/invalid :step."
+  "Pixels per row from :window-selector :step, defaulting to 8 for a
+   missing/invalid step."
   [opts]
-  (let [s (:step opts)]
+  (let [s (get-in opts [:window-selector :step])]
     (if (and (number? s) (pos? s)) s 8)))
 
 (defn- visible-rows
@@ -94,10 +98,12 @@
   "Return the visible server-side row slice for `opts`.
 
    `opts` is a plain (dereferenced) plot-options map; window metadata comes
-   from :window-selector {:end <exclusive end row>, :rows-all <total rows>,
-   :rows-visible <rows per page>}.  :rows-visible falls back to :window
-   :width / :step, and :end defaults to the row count (the last page).  Both
-   are clamped against the rows actually passed in, not :rows-all.
+   from :window-selector {:display :nice|:all, :step <pixels per row>,
+   :end <exclusive end row>, :rows-all <total rows>, :rows-visible <rows per
+   page>}.  :display defaults to :nice; :all returns every row with no
+   windowing.  In :nice mode :rows-visible falls back to :window :width /
+   :step, and :end defaults to the row count (the last page).  Both are
+   clamped against the rows actually passed in, not :rows-all.
 
    Without a :window-selector, or for non-sequential/empty rows, all rows are
    returned unchanged.
@@ -111,14 +117,17 @@
       (let [rows    (vec rows)
             n       (count rows)
             sel     (if (map? sel) sel {:end sel})
-            visible (let [v (:rows-visible sel)]
-                      (max 1 (min n (if (and (number? v) (pos? v))
-                                      (long v)
-                                      (visible-rows opts n)))))
-            end     (let [e (:end sel)]
-                      (if (number? e) (long e) n))
-            end     (max visible (min n end))]
-        (subvec rows (- end visible) end)))))
+            display (or (:display sel) :nice)]
+        (if (= display :all)
+          rows
+          (let [visible (let [v (:rows-visible sel)]
+                          (max 1 (min n (if (and (number? v) (pos? v))
+                                          (long v)
+                                          (visible-rows opts n)))))
+                end     (let [e (:end sel)]
+                          (if (number? e) (long e) n))
+                end     (max visible (min n end))]
+            (subvec rows (- end visible) end)))))))
 
 (defn init-window-selector!
   "Cursor-aware :plot/select hook for server-side row windowing.
@@ -927,8 +936,10 @@
    Rows are windowed server-side.  When the options carry a :window-selector,
    the client receives only the visible slice (see `select-rows`) and the
    default view is the last page; without it all rows are sent and nothing is
-   hidden.  :step is server-side only (it derives the visible row count), :end
-   is written by the window-selector option editor, and `init-window-selector!`
+   hidden.  A :window-selector :display of :nice (the default) windows rows,
+   while :all sends every row.  :step lives under :window-selector and is
+   server-side only (it derives the visible row count), :end/:display/:step are
+   written by the window-selector option editor, and `init-window-selector!`
    fills :rows-all/:rows-visible when installed as the algo's :plot/select.
 
    The visible slice's :date column is normalized to strings/numbers before
@@ -945,7 +956,7 @@
   [{:keys [style class rows data window] :as opts}]
   (let [rows    (or rows data)
         options (-> (dissoc opts :style :class :rows :data
-                            :window-selector :step)
+                            :window-selector)
                     (assoc :data (normalize-dates (select-rows opts rows)))
                     (cond-> (:charts opts) (update :charts resolve-charts)))
         host-style (merge {:display "block"

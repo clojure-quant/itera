@@ -39,11 +39,8 @@
     :name "Window"}
    {:type :window-selector
     :path [:window-selector]
-    :name "Window Selector"}
-   {:type :select
-    :path [:step]
-    :name "Step"
-    :spec [4 6 8 10 12 14]}
+    :name "Window Selector"
+    :spec {:step [4 6 8 10 12 14]}}
    {:type :chartspec
     :path [:charts]
     :name "ChartSpec"
@@ -57,10 +54,8 @@
 (def algo-pixi-timeseries
   {:calculate/fn calculate
    :plot/option-initial {:charts charts
-                         :step 8
                          :window {:mode :container}
-                         ;:window-selector {:rows-all (count ds) :end (count ds)}
-                         }
+                         :window-selector {:display :nice :step 8}}
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})
@@ -68,10 +63,8 @@
 (def algo-pixi-timeseries-fixed
   {:calculate/fn calculate
    :plot/option-initial {:charts charts
-                         :step 8
                          :window {:mode :fixed :width 900 :height 700}
-                         ;:window-selector {:rows-all (count ds) :end (count ds)}
-                         }
+                         :window-selector {:display :nice :step 8}}
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})
