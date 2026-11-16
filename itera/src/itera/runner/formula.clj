@@ -1,4 +1,4 @@
-(ns itera.code.cell
+(ns itera.runner.formula
   (:require
    [clojure.string :as string]
    [clojure.edn :as edn]
@@ -70,7 +70,7 @@
 (defn create-workbook [workbook-ns]
   (clj-eval-raw (str "(ns " workbook-ns ")")))
 
-(defn compile [workbook-ns code]
+(defn compile-formula [workbook-ns code]
   (clj-eval {:code code :ns workbook-ns}))
 
 
@@ -82,26 +82,70 @@
     (when (and (seq? form) (= 'fn (first form)))
       (second form))))
 
+(defn create-formula [{:keys [value code]}]
+  (when (and value (fn? value))
+    (let [args (fn-arglist code)]
+      {:fn value
+       :args (->> args
+                  (remove #(contains? #{'_ 'ctx} %))
+                  (map name)
+                  (into []))
+       :ctx? (->> args
+                  (some #(contains? #{'_ 'ctx} %)))})))
 
-(defn get-inputs [workbook-ns code]
-  (let [{:keys [value]} (compile workbook-ns code)]
-    (if (and value (fn? value))
-      (->> (fn-arglist code)
-           (remove #(contains? #{'_ 'ctx} %))
-           (into []))
-      [])))
+
+(defn args-val [{:keys [args]} available-arg-dict]
+  (when (->> args
+             (map (fn [arg]
+                    (contains? available-arg-dict arg)))
+             (reduce (fn [a b] (and a b)) true))
+    (->> args 
+         (map (fn [arg]
+                (get available-arg-dict arg)
+                ))
+         (into []))))
+
+(defn run-formula [ctx {:keys [fn ctx?]} args-vec]
+  (cond
+    (and ctx? args-vec)
+    (apply fn ctx args-vec)
+
+    :else
+    (apply fn args-vec)))
+
 
 
 (comment
   (def ctx {})
   (def dag-ns "my.bongo.3")
+  
+  (args-val {:args ["a" "b"]} {"b" 16 "a" 3 "c" 5})
+  (args-val {:args ["a" "b"]} {"b" 16 "A" 3 "c" 5})
 
 
   (create-workbook dag-ns)
-  (compile dag-ns "(def x 777) (+ 3 4)")
-  (get-inputs dag-ns "(fn [ctx assets] (println assets))")
-  ;;=> [assets]
-    
+
+  (-> (compile-formula dag-ns "(fn [ctx assets] (println assets))")
+      (create-formula))
+  ;;=> {:fn #function[my.bongo.3/eval16262/fn--16263], :args ["assets"], :ctx? true}
+  
+  (-> (compile-formula dag-ns "(fn [_ assets] (println assets))")
+      (create-formula))
+  ;;=> {:fn #function[my.bongo.3/eval16270/fn--16271], :args ["assets"], :ctx? true}
+  
+  (-> (compile-formula dag-ns "(fn [assets] (println assets))")
+      (create-formula))
+  ;;=> {:fn #function[my.bongo.3/eval16278/fn--16279], :args ["assets"], :ctx? nil}
+  
+
+  (def f (-> (compile-formula dag-ns "(fn [a b] (+ a b))")
+             (create-formula)))
+  
+  (let [ctx {}
+        args-vec (args-val f {"a" 1 "b" 10})]
+    (run-formula ctx f args-vec)
+    )
+  
 
  ; 
   )

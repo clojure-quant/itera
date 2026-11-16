@@ -1,6 +1,7 @@
 {:paths ["src" "resources"]
  :deps {resource-seq/resource-seq {:mvn/version "0.2.0"}
         org.clojure/java.classpath {:mvn/version "0.3.0"}
+        missionary/missionary {:mvn/version "b.44"}
         ai.dyal/hyper {:mvn/version "0.2.2"}}
  :aliases {:build {:deps {io.github.clojure/tools.build {:git/tag "v0.6.1" :git/sha "515b334"}
                           io.github.seancorfield/build-clj {:git/tag "v0.5.4" :git/sha "bc9c0cc"}}

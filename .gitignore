@@ -11,3 +11,5 @@ plot/.cpcache
 todo/
 pixi-timeseries/.cpcache
 itera/.nrepl-port
+itera/.calva
+demo/.nrepl-port
