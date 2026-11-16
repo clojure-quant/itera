@@ -1,1 +1,2 @@
-{:option-ui [itera.option.default-ui itera.option.container]}
+{:head      [itera.page.algo/head]
+ :option-ui [itera.option.default-ui itera.option.container]}

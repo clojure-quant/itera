@@ -4,6 +4,10 @@
             [itera.container :as container]
             [itera.options :as options]))
 
+(def head
+  [[:link {:rel  "stylesheet"
+           :href "/itera/options-ui.css"}]])
+
 (defn- find-algo
   "Find the discovery entry whose :name matches name."
   [algos name]

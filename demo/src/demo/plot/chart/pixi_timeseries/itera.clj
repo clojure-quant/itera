@@ -59,7 +59,8 @@
    :plot/option-initial {:charts charts
                          :step 8
                          :window {:mode :container}
-                         :window-selector {:rows-all (count ds) :end (count ds)}}
+                         ;:window-selector {:rows-all (count ds) :end (count ds)}
+                         }
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})
@@ -69,7 +70,8 @@
    :plot/option-initial {:charts charts
                          :step 8
                          :window {:mode :fixed :width 900 :height 700}
-                         :window-selector {:rows-all (count ds) :end (count ds)}}
+                         ;:window-selector {:rows-all (count ds) :end (count ds)}
+                         }
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
    :plot/fn       pixi/pixi-timeseries-ds})
