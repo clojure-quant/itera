@@ -5,6 +5,7 @@ demo/.clj-kondo
 demo/.lsp
 demo/.cpcache
 .playwright-mcp
+target
 itera/.cpcache
 plot/.cpcache
 todo/

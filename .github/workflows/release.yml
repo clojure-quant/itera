@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@13.0
+        with:
+          cli: 1.12.0.1479
+      - name: Release itera
+        working-directory: itera
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+        run: |
+          clojure -T:build jar
+          clojure -T:build install
+          clojure -T:build deploy
+      - name: Release itera-plot
+        working-directory: plot
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+        run: |
+          clojure -T:build jar
+          clojure -T:build deploy
+      - name: Release itera-pixi-timeseries
+        working-directory: pixi-timeseries
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+        run: |
+          clojure -T:build jar
+          clojure -T:build deploy

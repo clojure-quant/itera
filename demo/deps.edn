@@ -1,7 +1,7 @@
 {:paths ["src" "resources"]
- :deps {itera/itera {:local/root "../itera"}
-        plot/plot   {:local/root "../plot"}
-        pixi-timeseries/pixi-timeseries {:local/root "../pixi-timeseries"}
+ :deps {io.github.clojure-quant/itera {:local/root "../itera"}
+        io.github.clojure-quant/itera-plot {:local/root "../plot"}
+        io.github.clojure-quant/itera-pixi-timeseries {:local/root "../pixi-timeseries"}
         org.clojure/data.csv {:mvn/version "1.0.1"}}
  :aliases {:discover {:main-opts ["-m" "demo.discover"]}
            :itera {:exec-fn demo.main/start

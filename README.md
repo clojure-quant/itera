@@ -37,28 +37,3 @@ them from the Dali transit-json sources, run from `demo/`:
 
 The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
-
-create github ci that releases 3 artefacts:
-io.github.clojure-quant/itera
-io.github.clojure-quant/itera-plot
-io.github.clojure-quant/itera-pixi-timeseries
-
-a project that releases one artefact is:
-/home/florian/repo/clojure-quant/quanta-eodhd
-
-the issue is, that in my sourcecode, all 3 projects are
-local git references. but to release them on clojars, they
-need to be clojaurs references. to release itera-plot, 
-it is mandatory that first itera is released. because otherwise
-the project that it depends on would not even exist on clojars.
-
-perhaps you need to create a new folder to release the 3 
-projects to clojars. 
-
-perhaps you need to search the web to find a tool that supports monorepos,
-and perhaps this tool has all we need already in it. 
-
-in github ci, the secrets needed to publish to clojars are stored in  
-environment variables. they are global for all clojure-quant projects.
-
-

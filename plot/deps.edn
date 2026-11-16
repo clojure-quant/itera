@@ -1,5 +1,8 @@
 {:paths ["src" "resources"]
- :deps {itera/itera {:local/root "../itera"}
+ :deps {io.github.clojure-quant/itera {:local/root "../itera"}
         dev.onionpancakes/chassis {:mvn/version "1.0.365"}
         fipp/fipp {:mvn/version "0.6.29"}
-        commonmark-hiccup/commonmark-hiccup {:mvn/version "0.3.0"}}}
+        commonmark-hiccup/commonmark-hiccup {:mvn/version "0.3.0"}}
+ :aliases {:build {:deps {io.github.clojure/tools.build {:git/tag "v0.6.1" :git/sha "515b334"}
+                          io.github.seancorfield/build-clj {:git/tag "v0.5.4" :git/sha "bc9c0cc"}}
+                  :ns-default build}}}
