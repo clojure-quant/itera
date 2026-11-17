@@ -1,7 +1,7 @@
 (ns itera.option.container
   "The options editor for :container windows.
 
-   Registers the `itera.options/editor` method dispatched on :type :container,
+   Registers the `itera.option.core/editor` method dispatched on :type :container,
    the measured/fixed window editor (:mode :container|:fixed, :width, :height).
 
    This namespace is not required by itera.container (that would be circular);
@@ -10,7 +10,7 @@
   (:require [clojure.string :as str]
             [hyper.core :as h]
             [itera.container :as container]
-            [itera.options :as options]))
+            [itera.option.core :as options]))
 
 ;; --- helpers ----------------------------------------------------------------
 

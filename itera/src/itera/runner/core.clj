@@ -1,6 +1,7 @@
 (ns itera.runner.core
   (:require
    [missionary.core :as m]
+   [itera.util.clj :as util]
    [itera.runner.formula :as f]))
 
 (defn node-dict [{:keys [nodes edges] :as persistent-data}]
@@ -60,7 +61,7 @@
                              (map (fn [[arg node-id]]
                                     [arg (:out (get-node r node-id))]))
                              (into {}))
-        {:keys [fn args ctx? value flow?] :as formula} (-> (f/compile-formula graph-ns code)
+        {:keys [fn args ctx? value flow?] :as formula} (-> (util/compile-formula graph-ns code)
                                                            (f/create-formula))
         args-vec (f/args-val formula input-flow-dict)]
     (cond
@@ -80,7 +81,7 @@
 
 (defn create-runner [ctx {:keys [nodes edges] :as persistent-data}]
   (let [graph-ns (str "itera.user." (:graph/name persistent-data))
-        _ (f/create-workbook graph-ns (or (:requires ctx) []))
+        _ (util/create-workbook graph-ns (or (:requires ctx) []))
         this  {:graph-ns graph-ns
                :ctx ctx
                :node-dict-a (atom {})

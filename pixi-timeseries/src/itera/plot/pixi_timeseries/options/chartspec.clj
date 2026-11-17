@@ -10,7 +10,7 @@
    The option :spec carries the available columns (required) and, optionally,
    the colors; plot types always come from itera.plot.pixi-timeseries.plot-type/types."
   (:require [hyper.core :as h]
-            [itera.options :as options]
+            [itera.option.core :as options]
             [itera.util.color :as colors]
             [itera.plot.pixi-timeseries.plot-type :as plot-type]))
 

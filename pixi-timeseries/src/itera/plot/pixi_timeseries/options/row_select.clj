@@ -26,7 +26,7 @@
    This namespace is loaded via :option-ui in a project's itera-plots.edn by
    `itera.hyper/start`; it deliberately does not depend on the plot namespace."
   (:require [hyper.core :as h]
-            [itera.options :as options]))
+            [itera.option.core :as options]))
 
 (def ^:private field-style
   {:width "100%"})

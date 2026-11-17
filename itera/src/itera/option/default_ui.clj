@@ -1,16 +1,16 @@
 (ns itera.option.default-ui
   "The built-in option editors.
 
-   Registers the generic `itera.options/editor` methods dispatched on the
+   Registers the generic `itera.option.core/editor` methods dispatched on the
    built-in option :type values: :bool :string :date :select :select-multiple
    :view :default.  A :date value is a java.time.LocalDate (native
    <input type=\"date\">; nil when cleared).
 
-   This namespace is not required by itera.options (that would be circular);
+   This namespace is not required by itera.option.core (that would be circular);
    it is loaded from the itera project's `itera-plots.edn` :option-ui entry by
    `itera.hyper/start`."
   (:require [hyper.core :as h]
-            [itera.options :as options]))
+            [itera.option.core :as options]))
 
 ;; --- select spec normalization (mirrors pink-gorilla/options) ---------------
 

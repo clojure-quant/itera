@@ -10,9 +10,7 @@
            :code "(fn [_ s] [:h1 (str (df/EST-time s))])"}
           {:id "local-ui" :type :formula :show? true
            :position {:x 150 :y 150}
-           :code "(fn [_ s] [:h1 (str (df/local-time s))])"}
-          
-          ]
+           :code "(fn [_ s] [:h1 (str (df/local-time s))])"}]
   :edges [{:id "e-1" :source-node "time" :source-port "out"
            :target-node "time-ui" :target-port "s"}
           {:id "e-2" :source-node "time" :source-port "out"

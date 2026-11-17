@@ -2,7 +2,7 @@
   (:require [hyper.core :as h]
             [itera.algo.core :as algo]
             [itera.container :as container]
-            [itera.options :as options]))
+            [itera.option.core :as options]))
 
 (def head
   [[:link {:rel  "stylesheet"

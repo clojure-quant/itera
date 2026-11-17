@@ -13,7 +13,7 @@
    components) and their values concatenated.
 
    `:option-ui` lists namespace symbols whose loading registers
-   `itera.options/editor` implementations.
+   `itera.option.core/editor` implementations.
 
    Both keys are optional.  `discover` reads every such resource;
    `itera.hyper/start` requires the option-UI namespaces and resolves the
@@ -90,7 +90,7 @@
        vec))
 
 (defn require-option-uis!
-  "Load every option-UI namespace so its `itera.options/editor` methods
+  "Load every option-UI namespace so its `itera.option.core/editor` methods
    register.  Throws with the offending symbol when a namespace fails."
   [syms]
   (doseq [sym (distinct syms)]

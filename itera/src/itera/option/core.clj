@@ -1,4 +1,4 @@
-(ns itera.options
+(ns itera.option.core
   "Server-side options UI from a spec (pink-gorilla/options spec format).
    Renders hiccup and writes edits server-side into an options cursor through
    hyper actions.  All functions must be called inside a Hyper render context.
