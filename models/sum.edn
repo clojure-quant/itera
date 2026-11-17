@@ -1,0 +1,14 @@
+ {:graph/name "sum"
+  :nodes [{:id "a-node" :type :value
+           :position {:x 60 :y 120}
+           :value 15}
+          {:id "b-node" :type :value
+           :position {:x 90 :y 120}
+           :value 5}
+          {:id "sum" :type :formula
+           :position {:x 120 :y 120}
+           :code "(fn [_ a b] (+ a b))"}]
+  :edges [{:id "e-1" :source-node "a-node" :source-port "out"
+           :target-node "sum" :target-port "a"}
+          {:id "e-2" :source-node "b-node" :source-port "out"
+           :target-node "sum" :target-port "b"}]}

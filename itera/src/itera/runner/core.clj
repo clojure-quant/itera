@@ -17,9 +17,9 @@
 (defn create-value-node [{:keys [id value] :as persistent}]
   (let [value-a (atom value)
         out (m/signal (m/watch value-a))]
-    {:id id
-     :value-a value-a
-     :out out}))
+    (assoc persistent 
+           :value-a value-a
+           :out out)))
 
 (defn inputs-for-formula [edges formula-id]
   (->> edges
@@ -66,11 +66,12 @@
     (cond
       (nil? fn) (create-no-val "no fn")
       (nil? args-vec) (create-no-val "not all inputs are connected")
-      :else  {:id id
-               ;:input-flow-dict input-flow-dict
-               ;:formula formula
-               ;:args-vec args-vec
-              :out (clj-calculate ctx formula args-vec)})))
+      :else  (assoc persistent
+                    :out (clj-calculate ctx formula args-vec)
+                   ;:input-flow-dict input-flow-dict
+                   ;:formula formula
+                   ;:args-vec args-vec
+                    ))))
 
 (defn create-runner [ctx {:keys [nodes edges] :as persistent-data}]
   (let [graph-ns (str "itera.user." (:graph/name persistent-data))
@@ -119,10 +120,10 @@
       :out
       (current-v)
       (m/?)))
-  
+
 
 (comment
-  
+
   (inputs-for-formula [{:id "e-1" :source-node "a-node" :source-port "out"
                         :target-node "sum" :target-port "a"}
                        {:id "e-2" :source-node "b-node" :source-port "out"
