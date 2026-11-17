@@ -15,17 +15,22 @@
           {:head [<qualified symbols>] :option-ui [<namespace symbols>]}; the
           :option-ui namespaces are always required, registering their option
           editors.
+   Extra optional key:
+     :routes - extra reitit route entries appended after the discovered itera
+               routes (see itera.routes/routes).
+
    Starts the discovery watcher, then builds the routes from its state.
    Returns a state map to pass to stop."
-  [{:keys [ctx opts]}]
+  [{:keys [ctx opts] :as m}]
   (let [{:keys [head option-ui]} (plot-discover/discover)
         _ (plot-discover/require-option-uis! option-ui)
         opts (update opts :head #(or % (plot-discover/resolve-heads head)))
         discovery (discover/discover-start)
-        routes (routes/routes ctx discovery)
+        itera-routes (routes/routes ctx discovery)
+        all-routes (into (vec itera-routes) (:routes m))
         ;; create-handler takes kwargs; forward the Hyper-creation keys.
         handler (apply h/create-handler
-                       routes
+                       all-routes
                        (mapcat identity (select-keys opts
                                                      [:head :static-resources :static-dir
                                                       :watches :middleware :render-middleware
