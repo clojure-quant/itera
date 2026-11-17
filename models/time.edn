@@ -1,0 +1,22 @@
+ {:graph/name "time"
+  :nodes [{:id "time" :type :formula :show? false
+           :position {:x 120 :y 120}
+           :code "df/dt-flow"}
+          {:id "time-ui" :type :formula :show? true
+           :position {:x 150 :y 150}
+           :code "(fn [_ s] [:h1 (str s)])"}
+          {:id "est-ui" :type :formula :show? true
+           :position {:x 150 :y 150}
+           :code "(fn [_ s] [:h1 (str (df/EST-time s))])"}
+          {:id "local-ui" :type :formula :show? true
+           :position {:x 150 :y 150}
+           :code "(fn [_ s] [:h1 (str (df/local-time s))])"}
+          
+          ]
+  :edges [{:id "e-1" :source-node "time" :source-port "out"
+           :target-node "time-ui" :target-port "s"}
+          {:id "e-2" :source-node "time" :source-port "out"
+           :target-node "est-ui" :target-port "s"}
+          {:id "e-3" :source-node "time" :source-port "out"
+           :target-node "local-ui" :target-port "s"}
+          ]}

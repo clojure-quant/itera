@@ -34,7 +34,7 @@
   (let [node (rc/get-node runner node-id)
         a (atom nil)
         r (m/reduce (fn [_ v]
-                      (println "r: " v)
+                      ;(println "r: " v)
                       (reset! a v)
                       nil) nil (:out node))
         dispose! (r #(pr-str "started " node-id %)

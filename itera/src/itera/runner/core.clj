@@ -17,7 +17,7 @@
 (defn create-value-node [{:keys [id value] :as persistent}]
   (let [value-a (atom value)
         out (m/signal (m/watch value-a))]
-    (assoc persistent 
+    (assoc persistent
            :value-a value-a
            :out out)))
 
@@ -60,10 +60,15 @@
                              (map (fn [[arg node-id]]
                                     [arg (:out (get-node r node-id))]))
                              (into {}))
-        {:keys [fn args ctx?] :as formula} (-> (f/compile-formula graph-ns code)
-                                               (f/create-formula))
+        {:keys [fn args ctx? value flow?] :as formula} (-> (f/compile-formula graph-ns code)
+                                                           (f/create-formula))
         args-vec (f/args-val formula input-flow-dict)]
     (cond
+      ; a value that is a flow
+      (and flow? value) (assoc persistent
+                               :out value)
+
+      ; a function
       (nil? fn) (create-no-val "no fn")
       (nil? args-vec) (create-no-val "not all inputs are connected")
       :else  (assoc persistent

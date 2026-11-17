@@ -88,7 +88,13 @@
       (second form))))
 
 (defn create-formula [{:keys [value code]}]
-  (when (and value (fn? value))
+  (cond
+    ; flow "variable"
+    (and value (-> value meta :itera/output))
+    {:value value
+     :flow? true}
+    ; function with args 
+    (and value (fn? value))
     (let [args (fn-arglist code)]
       {:fn value
        :args (->> args
@@ -96,7 +102,9 @@
                   (map name)
                   (into []))
        :ctx? (->> args
-                  (some #(contains? #{'_ 'ctx} %)))})))
+                  (some #(contains? #{'_ 'ctx} %)))})
+    
+    ))
 
 
 (defn args-val [{:keys [args]} available-arg-dict]
@@ -128,7 +136,9 @@
   (args-val {:args ["a" "b"]} {"b" 16 "A" 3 "c" 5})
 
 
-  (create-workbook dag-ns nil)
+  (create-workbook dag-ns '[[clojure.string :as string]
+                            [clojure.edn :as edn]
+                            [demo.flow :as df]])
 
   (-> (compile-formula dag-ns "(fn [ctx assets] (println assets))")
       (create-formula))
@@ -145,7 +155,16 @@
 
   (def f (-> (compile-formula dag-ns "(fn [a b] (+ a b))")
              (create-formula)))
+  f
   
+  (def f (-> (compile-formula dag-ns "34")
+           (create-formula)))
+f
+  
+  (def f (-> (compile-formula dag-ns "df/dt-flow")
+            (create-formula)))
+  f
+
   (let [ctx {}
         args-vec (args-val f {"a" 1 "b" 10})]
     (run-formula ctx f args-vec)
