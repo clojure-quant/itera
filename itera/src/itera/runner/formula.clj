@@ -67,8 +67,13 @@
     r))
 
 
-(defn create-workbook [workbook-ns]
-  (clj-eval-raw (str "(ns " workbook-ns ")")))
+(defn create-workbook [workbook-ns requires]
+  (clj-eval-raw
+   (if (seq requires)
+     (str "(ns " workbook-ns " (:require "
+          (string/join "\n  " (map pr-str requires))
+          "))")
+     (str "(ns " workbook-ns ")"))))
 
 (defn compile-formula [workbook-ns code]
   (clj-eval {:code code :ns workbook-ns}))
@@ -123,7 +128,7 @@
   (args-val {:args ["a" "b"]} {"b" 16 "A" 3 "c" 5})
 
 
-  (create-workbook dag-ns)
+  (create-workbook dag-ns nil)
 
   (-> (compile-formula dag-ns "(fn [ctx assets] (println assets))")
       (create-formula))

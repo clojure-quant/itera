@@ -2,7 +2,9 @@
  :deps {io.github.clojure-quant/itera {:local/root "../itera"}
         io.github.clojure-quant/itera-plot {:local/root "../plot"}
         io.github.clojure-quant/itera-pixi-timeseries {:local/root "../pixi-timeseries"}
-        org.clojure/data.csv {:mvn/version "1.0.1"}}
+        org.clojure/data.csv {:mvn/version "1.0.1"}
+        tick/tick {:mvn/version "0.6.2"} 
+        }
  :aliases {:discover {:main-opts ["-m" "demo.discover"]}
            :itera {:exec-fn demo.main/start
                    :exec-args {:opts {:port 5000}}}

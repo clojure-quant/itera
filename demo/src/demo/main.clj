@@ -13,6 +13,9 @@
   "Hyper :exec-fn. Receives {:opts {...}} from the :itera alias exec-args."
   [{:keys [opts]}]
   (hyper/start {:ctx  {:graph {:node-types demo-graph/node-types
-                               :initial-graph demo-graph/initial-graph}}
+                               :initial-graph demo-graph/initial-graph}
+                       :requires '[[clojure.string :as string]
+                                   [clojure.edn :as edn]
+                                   [demo.flow :as df]]}
                 :opts (merge {:port 5000 :static-resources "public"}
                              opts)}))

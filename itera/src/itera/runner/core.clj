@@ -75,7 +75,7 @@
 
 (defn create-runner [ctx {:keys [nodes edges] :as persistent-data}]
   (let [graph-ns (str "itera.user." (:graph/name persistent-data))
-        _ (f/create-workbook graph-ns)
+        _ (f/create-workbook graph-ns (or (:requires ctx) []))
         this  {:graph-ns graph-ns
                :ctx ctx
                :node-dict-a (atom {})
