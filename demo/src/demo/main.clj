@@ -7,6 +7,7 @@
    namespaces register the option editors, before the handler assembles the
    JS bundle."
   (:require [demo.graph :as demo-graph]
+            [demo.page.codemirror :as page-codemirror]
             [demo.page.option :as page-option]
             [itera.hyper :as hyper]))
 
@@ -15,6 +16,7 @@
   [{:keys [opts]}]
   (let [ctx {:graph {:node-types demo-graph/node-types
                      :initial-graph demo-graph/initial-graph}
+             :itera/model-path "../models"
              :requires '[[clojure.string :as string]
                          [clojure.edn :as edn]
                          [demo.flow :as df]]}]
@@ -22,6 +24,9 @@
      {:ctx ctx
       :routes [["/demo/options" {:name :demo-options
                                  :title "Options Playground"
-                                 :get (page-option/page-option-playground ctx)}]]
+                                 :get (page-option/page-option-playground ctx)}]
+               ["/demo/codemirror" {:name :demo-codemirror
+                                    :title "CodeMirror Demo"
+                                    :get (page-codemirror/page-codemirror ctx)}]]
       :opts (merge {:port 5000 :static-resources "public"}
                    opts)})))

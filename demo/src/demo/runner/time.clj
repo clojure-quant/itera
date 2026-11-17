@@ -2,7 +2,8 @@
   (:require
    [itera.runner.ui :as ui]))
 
-(def ctx {:requires '[[clojure.string :as string]
+(def ctx {:itera/model-path "../models"
+          :requires '[[clojure.string :as string]
                       [clojure.edn :as edn]
                       [demo.flow :as df]]})
 

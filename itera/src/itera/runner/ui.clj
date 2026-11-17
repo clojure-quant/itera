@@ -9,18 +9,20 @@
    [java.io File]))
 
 
-(def model-path "/home/florian/repo/clojure-quant/itera/models")
+(defn- model-path [ctx]
+  (or (:itera/model-path ctx)
+      (throw (ex-info "missing :itera/model-path in ctx" {:ctx ctx}))))
 
-(defn available-models []
-  (->> (.listFiles (io/file model-path))
+(defn available-models [ctx]
+  (->> (.listFiles (io/file (model-path ctx)))
        (filter #(and (.isFile ^File %)
                      (string/ends-with? (.getName ^File %) ".edn")))
        (map #(string/replace (.getName ^File %) #"\.edn$" ""))
        (sort)
        (into [])))
 
-(defn load-model [model-name]
-  (edn/read-string (slurp (io/file model-path (str model-name ".edn")))))
+(defn load-model [ctx model-name]
+  (edn/read-string (slurp (io/file (model-path ctx) (str model-name ".edn")))))
 
 
 (defn show? [{:keys [:node-dict-a]}]
@@ -53,7 +55,7 @@
 
 
 (defn start-model [ctx model-name]
-  (let [m (load-model model-name)
+  (let [m (load-model ctx model-name)
         r (rc/create-runner ctx m)
         this {:runner r
               :showing (atom {})
@@ -83,9 +85,9 @@
   (get @showing node-id))
 
 (comment
-  (available-models)
-  (load-model "sum")
-  (def ctx {})
+  (def ctx {:itera/model-path "../models"})
+  (available-models ctx)
+  (load-model ctx "sum")
   (def x (start-model ctx "sum_ui"))
   (currently-showing x)
   (get-atom x "sum-ui") 
