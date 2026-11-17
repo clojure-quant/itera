@@ -30,7 +30,7 @@
                  show?))
        (into {})))
 
-(defn watch-cell [{:keys [runner showing disposers]} node-id]
+(defn watch-cell [{:keys [runner showing disposers index]} node-id]
   (let [node (rc/get-node runner node-id)
         a (atom nil)
         r (m/reduce (fn [_ v]
@@ -39,13 +39,15 @@
                       nil) nil (:out node))
         dispose! (r #(pr-str "started " node-id %)
                     #(pr-str "stoped " node-id %))]
+    (swap! index conj node-id)
     (swap! showing assoc node-id a)
     (swap! disposers assoc node-id dispose!)))
 
-(defn unwatch-cell [{:keys [runner showing disposers]} node-id]
+(defn unwatch-cell [{:keys [runner showing disposers index]} node-id]
   (when (contains? @showing node-id)
     (let [d! (get @disposers node-id)]
       (d!)
+      (swap! index disj node-id)
       (swap! showing dissoc node-id)
       (swap! disposers dissoc node-id))))
 
@@ -55,11 +57,17 @@
         r (rc/create-runner ctx m)
         this {:runner r
               :showing (atom {})
-              :disposers (atom {})}
+              :disposers (atom {})
+              :index (atom #{})
+              }
         start-nodes (-> r show? keys)
         ]
     (doall (map #(watch-cell this %) start-nodes))
     this))
+
+(defn index-a [{:keys [index]}]
+  index)
+
 
 (defn currently-showing [{:keys [showing]}]
   (keys @showing))
@@ -82,6 +90,10 @@
   (currently-showing x)
   (get-atom x "sum-ui") 
   (stop-model x)
+
+  (-> #{"a"}
+      (conj  "B")
+      (disj "a"))
 
 
  ; 
