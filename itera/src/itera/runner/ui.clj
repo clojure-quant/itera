@@ -41,6 +41,16 @@
   (or (:itera/model-path ctx)
       (throw (ex-info "missing :itera/model-path in ctx" {:ctx ctx}))))
 
+(defn- model-file [ctx model-name]
+  (io/file (model-path ctx) (str model-name ".edn")))
+
+(defn model-exists?
+  "True when <model-path>/<name>.edn exists as a regular file."
+  [ctx model-name]
+  (let [file (model-file ctx model-name)]
+    (and (.exists ^File file)
+         (.isFile ^File file))))
+
 (defn available-models [ctx]
   (try
     (->> (.listFiles (io/file (model-path ctx)))
@@ -52,7 +62,7 @@
     (catch Exception _ [])))
 
 (defn load-model [ctx model-name]
-  (edn/read-string (slurp (io/file (model-path ctx) (str model-name ".edn")))))
+  (edn/read-string (slurp (model-file ctx model-name))))
 
 (defn- normalize-position [p]
   (when (and (map? p) (some? (:x p)) (some? (:y p)))
@@ -109,21 +119,25 @@
 ;; lifecycle
 ;; ---------------------------------------------------------------------------
 
-(defn start-model [ctx model-name]
-  (let [m (normalize-model (load-model ctx model-name))
-        r (rc/create-runner ctx m)
-        this {:ctx ctx
-              :model-name model-name
-              :graph-ns (:graph-ns r)
-              :runner r
-              :model-a (atom m)
-              :graph-rev (atom 0)
-              :showing (atom {})
-              :disposers (atom {})
-              :index (atom #{})}
-        start-nodes (-> r show? keys)]
-    (doall (map #(watch-cell this %) start-nodes))
-    this))
+(defn start-model
+  "Load a model and build its runner, returning the model handle, or `nil`
+   when <model-path>/<name>.edn does not exist."
+  [ctx model-name]
+  (when (model-exists? ctx model-name)
+    (let [m (normalize-model (load-model ctx model-name))
+          r (rc/create-runner ctx m)
+          this {:ctx ctx
+                :model-name model-name
+                :graph-ns (:graph-ns r)
+                :runner r
+                :model-a (atom m)
+                :graph-rev (atom 0)
+                :showing (atom {})
+                :disposers (atom {})
+                :index (atom #{})}
+          start-nodes (-> r show? keys)]
+      (doall (map #(watch-cell this %) start-nodes))
+      this)))
 
 (defn index-a [{:keys [index]}]
   index)
@@ -514,6 +528,36 @@
     (= :formula type) (assoc :code code)
     (seq option-ui) (assoc :option-ui option-ui)))
 
+(defn create-model!
+  "Create an empty model file `<model-path>/<name>.edn` (plus its parent
+   directories).  Never overwrites: an existing file is an error.
+
+   The name is trimmed and must match `[A-Za-z0-9_-]+`.  Returns
+   `{:ok? true :name <name>}` or `{:ok? false :error <message>}`."
+  [ctx model-name]
+  (let [name (string/trim (or model-name ""))]
+    (cond
+      (not (re-matches #"[A-Za-z0-9_-]+" name))
+      {:ok? false
+       :error "Model name must be non-blank and use only letters, digits, \"_\" and \"-\"."}
+
+      (model-exists? ctx name)
+      {:ok? false
+       :error (str "Model \"" name "\" already exists.")}
+
+      :else
+      (try
+        (let [file (model-file ctx name)]
+          (io/make-parents file)
+          (spit file (with-out-str
+                       (binding [pprint/*print-right-margin* 110]
+                         (pprint/pprint {:graph/name name
+                                         :nodes []
+                                         :edges []}))))
+          {:ok? true :name name})
+        (catch Exception e
+          {:ok? false :error (str "Could not create model: " (ex-message e))})))))
+
 (defn save-model-edn!
   "Serialize :model-a and write <path>/<name>.edn."
   [this]
@@ -523,7 +567,7 @@
                    :edges (mapv #(select-keys % [:id :source-node :source-port
                                                  :target-node :target-port])
                                 (:edges model))}
-        file (io/file (model-path (:ctx this)) (str (:model-name this) ".edn"))]
+        file (model-file (:ctx this) (:model-name this))]
     (io/make-parents file)
     (spit file (with-out-str (binding [pprint/*print-right-margin* 110]
                                (pprint/pprint persisted))))))
