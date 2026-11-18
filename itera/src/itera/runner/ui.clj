@@ -1,88 +1,529 @@
 (ns itera.runner.ui
+  "Model state ownership for the model page.
+
+   `start-model` loads a model file, builds the runner, and keeps the loaded
+   model in `:model-a` (in addition to the runner and its watch bookkeeping).
+   Every mutation of the model goes through a function here: the graph editor
+   and the interact sidebar never touch the model edn directly.
+
+   Node shape (in `:model-a`):
+     {:id \"a-node\" :uid \"a-node\" :type :value|:formula
+      :show? bool :position {:x 0 :y 0}
+      :value <any>            ; :value nodes
+      :code \"(fn [..] ..)\"    ; :formula nodes
+      :option-ui [<rows>]}    ; optional, :value nodes
+
+   `:uid` is the editor's stable identity: it survives id renames so the graph
+   editor keeps its cell (and edges) while the displayed/editable :id changes."
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
+   [clojure.pprint :as pprint]
    [clojure.string :as string]
    [missionary.core :as m]
-   [itera.runner.core :as rc])
+   [itera.input.option :as input-option]
+   [itera.runner.core :as rc]
+   [itera.runner.formula :as f]
+   [itera.util.clj :as util])
   (:import
    [java.io File]))
 
+
+;; ---------------------------------------------------------------------------
+;; loading / normalization
+;; ---------------------------------------------------------------------------
 
 (defn- model-path [ctx]
   (or (:itera/model-path ctx)
       (throw (ex-info "missing :itera/model-path in ctx" {:ctx ctx}))))
 
 (defn available-models [ctx]
-  (->> (.listFiles (io/file (model-path ctx)))
-       (filter #(and (.isFile ^File %)
-                     (string/ends-with? (.getName ^File %) ".edn")))
-       (map #(string/replace (.getName ^File %) #"\.edn$" ""))
-       (sort)
-       (into [])))
+  (try
+    (->> (.listFiles (io/file (model-path ctx)))
+         (filter #(and (.isFile ^File %)
+                       (string/ends-with? (.getName ^File %) ".edn")))
+         (map #(string/replace (.getName ^File %) #"\.edn$" ""))
+         (sort)
+         (into []))
+    (catch Exception _ [])))
 
 (defn load-model [ctx model-name]
   (edn/read-string (slurp (io/file (model-path ctx) (str model-name ".edn")))))
 
+(defn- normalize-position [p]
+  (when (and (map? p) (some? (:x p)) (some? (:y p)))
+    {:x (:x p) :y (:y p)}))
+
+(defn- normalize-node [node]
+  (let [id (str (:id node))]
+    (cond-> (assoc node
+                   :id id
+                   :uid (str (or (:uid node) id))
+                   :type (keyword (:type node))
+                   :show? (boolean (:show? node)))
+      (some? (:position node))
+      (assoc :position (normalize-position (:position node))))))
+
+(defn- normalize-model [m]
+  (-> m
+      (update :nodes #(mapv normalize-node (or % [])))
+      (update :edges #(vec (or % [])))))
+
+;; ---------------------------------------------------------------------------
+;; runner watch bookkeeping (unchanged helpers)
+;; ---------------------------------------------------------------------------
 
 (defn show? [{:keys [:node-dict-a]}]
   (->> @node-dict-a
-       (filter (fn [[id {:keys [show?]
-                         :or {show? false}}]]
+       (filter (fn [[_ {:keys [show?]
+                        :or {show? false}}]]
                  show?))
        (into {})))
 
 (defn watch-cell [{:keys [runner showing disposers index]} node-id]
-  (let [node (rc/get-node runner node-id)
-        a (atom nil)
-        r (m/reduce (fn [_ v]
-                      ;(println "r: " v)
-                      (reset! a v)
-                      nil) nil (:out node))
-        dispose! (r #(pr-str "started " node-id %)
-                    #(pr-str "stoped " node-id %))]
-    (swap! index conj node-id)
-    (swap! showing assoc node-id a)
-    (swap! disposers assoc node-id dispose!)))
+  (let [node (rc/get-node runner node-id)]
+    (when-let [out (:out node)]
+      (let [a (atom nil)
+            r (m/reduce (fn [_ v]
+                          (reset! a v)
+                          nil) nil out)
+            dispose! (r #(pr-str "started " node-id %)
+                        #(pr-str "stoped " node-id %))]
+        (swap! index conj node-id)
+        (swap! showing assoc node-id a)
+        (swap! disposers assoc node-id dispose!)))))
 
-(defn unwatch-cell [{:keys [runner showing disposers index]} node-id]
+(defn unwatch-cell [{:keys [showing disposers index]} node-id]
   (when (contains? @showing node-id)
     (let [d! (get @disposers node-id)]
-      (d!)
+      (when d! (d!))
       (swap! index disj node-id)
       (swap! showing dissoc node-id)
       (swap! disposers dissoc node-id))))
 
+;; ---------------------------------------------------------------------------
+;; lifecycle
+;; ---------------------------------------------------------------------------
 
 (defn start-model [ctx model-name]
-  (let [m (load-model ctx model-name)
+  (let [m (normalize-model (load-model ctx model-name))
         r (rc/create-runner ctx m)
-        this {:runner r
+        this {:ctx ctx
+              :model-name model-name
+              :graph-ns (:graph-ns r)
+              :runner r
+              :model-a (atom m)
+              :graph-rev (atom 0)
               :showing (atom {})
               :disposers (atom {})
-              :index (atom #{})
-              }
-        start-nodes (-> r show? keys)
-        ]
+              :index (atom #{})}
+        start-nodes (-> r show? keys)]
     (doall (map #(watch-cell this %) start-nodes))
     this))
 
 (defn index-a [{:keys [index]}]
   index)
 
-
 (defn currently-showing [{:keys [showing]}]
   (keys @showing))
 
 (defn stop-model [this]
   (let [nodes-running (currently-showing this)]
-    (doall (map #(unwatch-cell this %) nodes-running))
-    ))
-
-
+    (doall (map #(unwatch-cell this %) nodes-running))))
 
 (defn get-atom [{:keys [showing]} node-id]
   (get @showing node-id))
+
+(defn node-by-id
+  "The model node with :id `id`, or nil."
+  [this id]
+  (some #(when (= id (:id %)) %) (:nodes @(:model-a this))))
+
+(defn graph-rev [this]
+  (when-let [a (:graph-rev this)] @a))
+
+(defn- bump-rev! [this]
+  (when-let [a (:graph-rev this)] (swap! a inc)))
+
+;; ---------------------------------------------------------------------------
+;; ports
+;; ---------------------------------------------------------------------------
+
+(defn- formula-args-for-code [this code]
+  (try
+    (let [{:keys [args flow?]} (-> (util/compile-formula (:graph-ns this) code)
+                                   (f/create-formula))]
+      (if flow? [] (vec (or args []))))
+    (catch Exception _ [])))
+
+(defn node-ports
+  "Compute a node's ports.  :value nodes have no inputs and one \"out\"
+   output; :formula nodes take their inputs from the compiled formula's :args
+   (flow-valued formulas have no inputs).  Also one \"out\" output."
+  [this {:keys [id type code]}]
+  (let [rn (rc/get-node (:runner this) id)
+        args (cond
+               (not= :formula type) []
+               (and rn (contains? rn :args)) (vec (or (:args rn) []))
+               :else (formula-args-for-code this code))]
+    {:inputs (mapv (fn [a] {:id a :label a}) args)
+     :outputs [{:id "out" :label "out"}]}))
+
+;; ---------------------------------------------------------------------------
+;; graph <-> editor
+;; ---------------------------------------------------------------------------
+
+(declare reconcile!)
+
+(defn render-graph
+  "JSON-friendly graph for the editor.  Nodes carry a stable :uid (the X6 cell
+   id) plus the editable :id; edges reference :uid endpoints."
+  [this]
+  (let [m @(:model-a this)
+        uid-by-id (into {} (map (juxt :id :uid)) (:nodes m))]
+    {:nodes (mapv (fn [n]
+                    (let [p (node-ports this n)
+                          pos (or (:position n) {:x 0 :y 0})]
+                      {:uid (:uid n)
+                       :id (:id n)
+                       :type (name (:type n))
+                       :show? (boolean (:show? n))
+                       :position {:x (:x pos) :y (:y pos)}
+                       :inputs (:inputs p)
+                       :outputs (:outputs p)
+                       :code (:code n)
+                       :value (:value n)
+                       :option-ui (:option-ui n)}))
+                  (:nodes m))
+     :edges (mapv (fn [e]
+                    {:id (:id e)
+                     :source-node (uid-by-id (:source-node e))
+                     :source-port (:source-port e)
+                     :target-node (uid-by-id (:target-node e))
+                     :target-port (:target-port e)})
+                  (:edges m))}))
+
+(defn- valid-id? [s]
+  (and (string? s) (not (string/blank? s))))
+
+(defn- port-id-set [this node]
+  (set (map :id (:inputs (node-ports this node)))))
+
+(defn apply-graph!
+  "Replace nodes/edges with the editor's serialized graph.  Ids must be
+   unique; edges with unknown endpoints or undeclared target ports are dropped,
+   and at most one edge may target an input port.
+
+   Existing nodes (matched by :uid) keep their :code/:value/:option-ui — those
+   are mutated only through set-node-code / set-node-value / set-node-option-ui."
+  [this graph]
+  (let [old @(:model-a this)
+        old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))
+        seen-ids (volatile! #{})
+        new-nodes
+        (into []
+              (keep (fn [n]
+                      (let [uid (str (:uid n))
+                            o (get old-by-uid uid)
+                            raw (str (:id n))
+                            nid (cond
+                                  (and (valid-id? raw) (not (contains? @seen-ids raw))) raw
+                                  (and o (valid-id? (:id o))
+                                       (not (contains? @seen-ids (:id o)))) (:id o)
+                                  :else nil)]
+                        (when nid
+                          (vswap! seen-ids conj nid)
+                          (if o
+                            (assoc o
+                                   :id nid
+                                   :show? (boolean (:show? n))
+                                   :position (or (normalize-position (:position n))
+                                                 (:position o)))
+                            (let [type (keyword (:type n))]
+                              (cond-> {:uid uid
+                                       :id nid
+                                       :type type
+                                       :show? (boolean (:show? n))
+                                       :position (normalize-position (:position n))}
+                                (= :formula type) (assoc :code (or (:code n) ""))
+                                (= :value type) (assoc :value (:value n)))))))))
+              (:nodes graph))
+        uid->id (into {} (map (juxt :uid :id)) new-nodes)
+        node-by-id (into {} (map (juxt :id identity)) new-nodes)
+        seen-in (volatile! #{})
+        new-edges
+        (into []
+              (keep (fn [e]
+                      (let [sid (uid->id (str (:source-node e)))
+                            tid (uid->id (str (:target-node e)))
+                            tp (str (:target-port e))
+                            tnode (get node-by-id tid)]
+                        (when (and sid tid tnode
+                                   (= "out" (str (:source-port e)))
+                                   (contains? (port-id-set this tnode) tp)
+                                   (not (contains? @seen-in [tid tp])))
+                          (vswap! seen-in conj [tid tp])
+                          {:id (str (or (:id e) (str "e-" (Math/abs (hash [sid tid tp])))))
+                           :source-node sid
+                           :source-port "out"
+                           :target-node tid
+                           :target-port tp}))))
+              (:edges graph))
+        new-model (assoc old :nodes new-nodes :edges new-edges)]
+    (reset! (:model-a this) new-model)
+    (reconcile! this old new-model)))
+
+;; ---------------------------------------------------------------------------
+;; reconcile (targeted where possible, else rebuild)
+;; ---------------------------------------------------------------------------
+
+(defn- rename-key [a old new]
+  (when (contains? @a old)
+    (swap! a #(-> % (dissoc old) (assoc new (get % old))))))
+
+(defn- rename-node! [this old-id new-id]
+  (when (not= old-id new-id)
+    (let [r (:runner this)]
+      (swap! (:node-dict-a r)
+             (fn [d]
+               (if (contains? d old-id)
+                 (-> d (dissoc old-id) (assoc new-id (assoc (get d old-id) :id new-id)))
+                 d)))
+      (swap! (:edges-a r)
+             (fn [es]
+               (mapv (fn [e]
+                       (cond-> e
+                         (= old-id (:source-node e)) (assoc :source-node new-id)
+                         (= old-id (:target-node e)) (assoc :target-node new-id)))
+                     es)))
+      (rename-key (:showing this) old-id new-id)
+      (rename-key (:disposers this) old-id new-id)
+      (when (contains? @(:index this) old-id)
+        (swap! (:index this) #(-> % (disj old-id) (conj new-id))))
+      this)))
+
+(defn- edge-signature [model]
+  (let [uid (into {} (map (juxt :id :uid)) (:nodes model))]
+    (->> (:edges model)
+         (map (fn [e] [(uid (:source-node e)) (:source-port e)
+                       (uid (:target-node e)) (:target-port e)]))
+         (sort-by pr-str)
+         vec)))
+
+(defn rebuild!
+  "Dispose watches and recreate the runner from :model-a, then re-watch the
+   :show? nodes.  The runner map (and its atoms) is reused so callers keeping a
+   reference to `this` see the fresh nodes."
+  [this]
+  (stop-model this)
+  (let [r (:runner this)
+        model @(:model-a this)
+        fresh (rc/create-runner (:ctx this) model)]
+    (reset! (:node-dict-a r) @(:node-dict-a fresh))
+    (reset! (:edges-a r) @(:edges-a fresh))
+    (doseq [id (-> r show? keys)]
+      (watch-cell this id))
+    this))
+
+(defn- targeted-update! [this old new]
+  (let [old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))]
+    (doseq [n (:nodes new)
+            :let [o (get old-by-uid (:uid n))]
+            :when (and o (not= (:id o) (:id n)))]
+      (rename-node! this (:id o) (:id n)))
+    (doseq [n (:nodes new)
+            :let [o (get old-by-uid (:uid n))]
+            :when o]
+      (let [was? (boolean (:show? o))
+            now? (boolean (:show? n))]
+        (cond
+          (and now? (not was?)) (watch-cell this (:id n))
+          (and was? (not now?)) (unwatch-cell this (:id n)))))
+    this))
+
+(defn reconcile! [this old new]
+  (let [old-uid (set (map :uid (:nodes old)))
+        new-uid (set (map :uid (:nodes new)))
+        old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))
+        code-changed? (some (fn [n]
+                              (let [o (get old-by-uid (:uid n))]
+                                (or (nil? o) (not= (:code o) (:code n)))))
+                            (:nodes new))
+        edges-changed? (not= (edge-signature old) (edge-signature new))]
+    (if (or (not= old-uid new-uid) code-changed? edges-changed?)
+      (rebuild! this)
+      (targeted-update! this old new))))
+
+;; ---------------------------------------------------------------------------
+;; recompute a formula node + its downstream dependents
+;; ---------------------------------------------------------------------------
+
+(defn- formula-id-set [model]
+  (->> (:nodes model)
+       (filter #(= :formula (:type %)))
+       (map :id)
+       (set)))
+
+(defn- descendant-formulas [model start-id]
+  (let [adj (reduce (fn [m e]
+                      (update m (:source-node e) (fnil conj []) (:target-node e)))
+                    {}
+                    (:edges model))
+        fids (formula-id-set model)]
+    (loop [seen #{} queue [start-id]]
+      (if (empty? queue)
+        (set (filter fids seen))
+        (let [id (peek queue)]
+          (if (contains? seen id)
+            (recur seen (pop queue))
+            (recur (conj seen id) (into (pop queue) (get adj id [])))))))))
+
+(defn- topo-formula-order [model]
+  (let [fids (formula-id-set model)
+        fedges (filter #(and (contains? fids (:source-node %))
+                             (contains? fids (:target-node %)))
+                       (:edges model))
+        deps (reduce (fn [m e]
+                       (update m (:target-node e) (fnil conj #{}) (:source-node e)))
+                     {}
+                     fedges)]
+    (loop [done #{} out [] remaining fids]
+      (if (empty? remaining)
+        out
+        (let [ready (filter (fn [id] (every? done (get deps id #{}))) remaining)]
+          (if (empty? ready)
+            (into out remaining)
+            (recur (into done ready)
+                   (into out ready)
+                   (reduce disj remaining ready))))))))
+
+(defn- recompute-formula! [this start-id]
+  (let [r (:runner this)
+        model @(:model-a this)
+        affected (descendant-formulas model start-id)]
+    (doseq [id (filter affected (topo-formula-order model))]
+      (let [shown? (contains? @(:showing this) id)]
+        (when shown? (unwatch-cell this id))
+        (rc/update-formula-node! r id)
+        (when shown? (watch-cell this id))))
+    this))
+
+(defn- prune-edges [edges node-id args]
+  (let [as (set args)]
+    (vec (remove #(and (= node-id (:target-node %))
+                       (not (contains? as (:target-port %))))
+                 edges))))
+
+(defn set-node-code
+  "Update a formula node's :code, drop edges now pointing at removed args,
+   recompile the node and its downstream formulas in place (never duplicating
+   nodes), and ask the editor to re-read the graph (ports may have changed)."
+  [this node-id code]
+  (let [args (formula-args-for-code this code)
+        r (:runner this)]
+    (swap! (:model-a this)
+           (fn [m]
+             (-> m
+                 (update :edges prune-edges node-id args)
+                 (update :nodes
+                         (fn [ns]
+                           (mapv (fn [n] (if (= node-id (:id n)) (assoc n :code code) n)) ns))))))
+    (swap! (:edges-a r) prune-edges node-id args)
+    (when (contains? @(:node-dict-a r) node-id)
+      (swap! (:node-dict-a r) update node-id assoc :code code))
+    (recompute-formula! this node-id)
+    (bump-rev! this)
+    this))
+
+(defn set-node-option-ui
+  "Update a :value node's :option-ui rows and re-initialize its :value."
+  [this node-id rows]
+  (let [rows (vec (or rows []))]
+    (swap! (:model-a this)
+           (fn [m]
+             (update m :nodes
+                     (fn [ns]
+                       (mapv (fn [n]
+                               (if (= node-id (:id n))
+                                 (assoc n :option-ui rows :value {})
+                                 n))
+                             ns)))))
+    (when-let [node (rc/get-node (:runner this) node-id)]
+      (when (:value-a node) (reset! (:value-a node) {})))
+    (bump-rev! this)
+    this))
+
+(defn set-node-value
+  "Update a :value node's value (writes :model-a and its live :value-a)."
+  [this node-id value]
+  (swap! (:model-a this)
+         (fn [m]
+           (update m :nodes
+                   (fn [ns]
+                     (mapv (fn [n] (if (= node-id (:id n)) (assoc n :value value) n)) ns)))))
+  (when-let [node (rc/get-node (:runner this) node-id)]
+    (when (:value-a node) (reset! (:value-a node) value)))
+  this)
+
+;; ---------------------------------------------------------------------------
+;; sidebar option-uis
+;; ---------------------------------------------------------------------------
+
+(defn option-ui-nodes
+  "Every :value node whose :option-ui rows compile to a non-empty spec, as
+   {:node-id <id> :spec <compiled spec> :value <value>}."
+  [this]
+  (let [m @(:model-a this)]
+    (->> (:nodes m)
+         (filter #(= :value (:type %)))
+         (keep (fn [n]
+                 (let [spec (input-option/create-option-spec (:graph-ns this) (:option-ui n))]
+                   (when (seq spec)
+                     {:node-id (:id n) :spec spec :value (:value n)}))))
+         vec)))
+
+;; ---------------------------------------------------------------------------
+;; positions / persistence
+;; ---------------------------------------------------------------------------
+
+(defn assign-missing-positions
+  "Grid-place nodes whose :position is missing into the visible area."
+  [this]
+  (swap! (:model-a this)
+         (fn [m]
+           (update m :nodes
+                   (fn [ns]
+                     (vec (map-indexed
+                           (fn [i node]
+                             (if (:position node)
+                               node
+                               (assoc node :position
+                                      {:x (+ 60 (* 260 (mod i 4)))
+                                       :y (+ 60 (* 160 (quot i 4)))})))
+                           ns))))))
+  this)
+
+(defn- persist-node [{:keys [id type show? position value code option-ui]}]
+  (cond-> (array-map :id id :type type :show? (boolean show?))
+    position (assoc :position {:x (:x position) :y (:y position)})
+    (= :value type) (assoc :value value)
+    (= :formula type) (assoc :code code)
+    (seq option-ui) (assoc :option-ui option-ui)))
+
+(defn save-model-edn!
+  "Serialize :model-a (stripping the runtime :uid) and write <path>/<name>.edn."
+  [this]
+  (let [model @(:model-a this)
+        persisted {:graph/name (:graph/name model)
+                   :nodes (mapv persist-node (:nodes model))
+                   :edges (mapv #(select-keys % [:id :source-node :source-port
+                                                 :target-node :target-port])
+                                (:edges model))}
+        file (io/file (model-path (:ctx this)) (str (:model-name this) ".edn"))]
+    (io/make-parents file)
+    (spit file (with-out-str (binding [pprint/*print-right-margin* 110]
+                               (pprint/pprint persisted))))
+    {:status "ok" :path (str file)}))
 
 (comment
   (def ctx {:itera/model-path "../models"})
@@ -90,14 +531,8 @@
   (load-model ctx "sum")
   (def x (start-model ctx "sum_ui"))
   (currently-showing x)
-  (get-atom x "sum-ui") 
-  (stop-model x)
-
-  (-> #{"a"}
-      (conj  "B")
-      (disj "a"))
-
-
- ; 
-  )
-
+  (get-atom x "sum-ui")
+  (render-graph x)
+  (option-ui-nodes x)
+  (assign-missing-positions x)
+  (stop-model x))

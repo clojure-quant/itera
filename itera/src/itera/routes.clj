@@ -1,8 +1,9 @@
 (ns itera.routes
   (:require [itera.page.algo :as page-algo]
             [itera.page.graph :as page-graph]
-            [itera.page.overview :as page-overview]
-            [itera.page.runner :as page-runner]))
+            [itera.page.model :as page-model]
+            [itera.page.model-overview :as page-model-overview]
+            [itera.page.overview :as page-overview]))
 
 (defn routes
   "Build the itera routes. Takes the application ctx and the discovery state
@@ -18,6 +19,9 @@
      ["/itera/algo/:ns/:symbol" {:name  :itera-algo
                                  :title "Algo"
                                  :get   (page-algo/algo-page ctx result*)}]
-     ["/itera/run/:model-name" {:name  :itera-runner
-                                :title "Runner"
-                                :get   (page-runner/runner-page ctx)}]]))
+     ["/itera/model" {:name :itera-model-list
+                      :title "Models"
+                      :get (page-model-overview/model-overview-page ctx)}]
+     ["/itera/model/:model-name" {:name  :itera-model
+                                  :title "Model"
+                                  :get   (page-model/model-page ctx)}]]))

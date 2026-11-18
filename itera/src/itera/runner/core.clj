@@ -63,21 +63,30 @@
                              (into {}))
         {:keys [fn args ctx? value flow?] :as formula} (-> (util/compile-formula graph-ns code)
                                                            (f/create-formula))
-        args-vec (f/args-val formula input-flow-dict)]
+        args-vec (f/args-val formula input-flow-dict)
+        persistent (assoc persistent :args (vec (or args [])) :formula formula)]
     (cond
       ; a value that is a flow
       (and flow? value) (assoc persistent
                                :out value)
 
-      ; a function
-      (nil? fn) (create-no-val "no fn")
-      (nil? args-vec) (create-no-val "not all inputs are connected")
+      ; a function that does not compile (or is not a function)
+      (nil? fn) persistent
+
+      ; not all inputs are connected
+      (nil? args-vec) persistent
       :else  (assoc persistent
-                    :out (clj-calculate ctx formula args-vec)
-                   ;:input-flow-dict input-flow-dict
-                   ;:formula formula
-                   ;:args-vec args-vec
-                    ))))
+                    :out (clj-calculate ctx formula args-vec)))))
+
+(defn update-formula-node!
+  "Recompute a formula node in place (the same :node-dict-a key), mirroring
+   create-formula-node's rules so an existing node is never duplicated.  Uses
+   the node's current :code and the current :edges-a / upstream :out flows."
+  [r node-id]
+  (when-let [node (get-node r node-id)]
+    (let [updated (create-formula-node r node)]
+      (swap! (:node-dict-a r) assoc node-id updated)
+      updated)))
 
 (defn create-runner [ctx {:keys [nodes edges] :as persistent-data}]
   (let [graph-ns (str "itera.user." (:graph/name persistent-data))

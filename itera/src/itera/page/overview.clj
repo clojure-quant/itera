@@ -94,7 +94,10 @@
           [:h1 "Itera"]
           [:a (merge {:style {:font-weight "600"}}
                      (h/navigate :itera-graph))
-           "Graph editor"]]
+           "Graph editor"]
+          [:a (merge {:style {:font-weight "600"}}
+                     (h/navigate :itera-model-list))
+           "Models"]]
          (tree-view tree)
          (when (seq error)
            [:div.errors

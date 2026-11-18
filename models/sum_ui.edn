@@ -1,15 +1,15 @@
  {:graph/name "sum-ui"
-  :nodes [{:id "a-node" :type :value
-           :position {:x 60 :y 120}
+  :nodes [          {:id "a-node" :type :value
+           :position {:x 60 :y 60}
            :value 15}
           {:id "b-node" :type :value
-           :position {:x 90 :y 120}
+           :position {:x 60 :y 260}
            :value 5}
           {:id "sum" :type :formula :show? false
-           :position {:x 120 :y 120}
+           :position {:x 420 :y 120}
            :code "(fn [_ a b] (+ a b))"}
           {:id "sum-ui" :type :formula :show? true
-           :position {:x 150 :y 150}
+           :position {:x 780 :y 120}
            :code "(fn [_ s] [:h1 (str s)])"}
           ]
   :edges [{:id "e-1" :source-node "a-node" :source-port "out"
