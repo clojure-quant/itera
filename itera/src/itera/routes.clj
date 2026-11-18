@@ -1,6 +1,5 @@
 (ns itera.routes
   (:require [itera.page.algo :as page-algo]
-            [itera.page.graph :as page-graph]
             [itera.page.model :as page-model]
             [itera.page.model-overview :as page-model-overview]
             [itera.page.overview :as page-overview]))
@@ -13,9 +12,6 @@
     [["/itera" {:name :itera
                 :title "Itera"
                 :get (page-overview/overview-page result*)}]
-     ["/itera/graph" {:name :itera-graph
-                      :title "Graph"
-                      :get (page-graph/graph-page ctx)}]
      ["/itera/algo/:ns/:symbol" {:name  :itera-algo
                                  :title "Algo"
                                  :get   (page-algo/algo-page ctx result*)}]

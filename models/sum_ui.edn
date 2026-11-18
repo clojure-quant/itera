@@ -1,21 +1,32 @@
- {:graph/name "sum-ui"
-  :nodes [          {:id "a-node" :type :value
-           :position {:x 60 :y 60}
-           :value 15}
-          {:id "b-node" :type :value
-           :position {:x 60 :y 260}
-           :value 5}
-          {:id "sum" :type :formula :show? false
-           :position {:x 420 :y 120}
-           :code "(fn [_ a b] (+ a b))"}
-          {:id "sum-ui" :type :formula :show? true
-           :position {:x 780 :y 120}
-           :code "(fn [_ s] [:h1 (str s)])"}
-          ]
-  :edges [{:id "e-1" :source-node "a-node" :source-port "out"
-           :target-node "sum" :target-port "a"}
-          {:id "e-2" :source-node "b-node" :source-port "out"
-           :target-node "sum" :target-port "b"}
-          {:id "e-3" :source-node "sum" :source-port "out"
-           :target-node "sum-ui" :target-port "s"}
-          ]}
+{:graph/name "sum-ui",
+ :nodes
+ [{:id "StK0mX51f9Igeh2Y", :label "a-node", :type :value, :position {:x 60, :y 60}, :value 15}
+  {:id "FEaXfoT65gke1gH-", :label "b-node", :type :value, :position {:x 60, :y 260}, :value 5}
+  {:id "Ey8lQZ40PlkopwFI",
+   :label "sum",
+   :type :formula,
+   :show? false,
+   :position {:x 420, :y 120},
+   :code "(fn [_ a b] (+ a b))"}
+  {:id "THnJJNqBZMQhkKDX",
+   :label "sum-ui",
+   :type :formula,
+   :show? true,
+   :position {:x 780, :y 120},
+   :code "(fn [_ s] [:h1 (str s)])"}],
+ :edges
+ [{:id "e-1",
+   :source-node "StK0mX51f9Igeh2Y",
+   :source-port "out",
+   :target-node "Ey8lQZ40PlkopwFI",
+   :target-port "a"}
+  {:id "e-2",
+   :source-node "FEaXfoT65gke1gH-",
+   :source-port "out",
+   :target-node "Ey8lQZ40PlkopwFI",
+   :target-port "b"}
+  {:id "e-3",
+   :source-node "Ey8lQZ40PlkopwFI",
+   :source-port "out",
+   :target-node "THnJJNqBZMQhkKDX",
+   :target-port "s"}]}

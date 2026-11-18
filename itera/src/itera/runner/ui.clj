@@ -7,20 +7,24 @@
    and the interact sidebar never touch the model edn directly.
 
    Node shape (in `:model-a`):
-     {:id \"a-node\" :uid \"a-node\" :type :value|:formula
+     {:id \"V1StGXR8_Z5jdHi6\"  ; immutable, server-generated nano-id
+      :label \"a-node\"          ; editable display name (need not be unique)
+      :type :value|:formula
       :show? bool :position {:x 0 :y 0}
       :value <any>            ; :value nodes
       :code \"(fn [..] ..)\"    ; :formula nodes
       :option-ui [<rows>]}    ; optional, :value nodes
 
-   `:uid` is the editor's stable identity: it survives id renames so the graph
-   editor keeps its cell (and edges) while the displayed/editable :id changes."
+   `:id` is the node's permanent identity (also the X6 cell id and the value
+   edges reference); `:label` is only what the editor and the interact tab
+   display."
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
    [clojure.string :as string]
    [missionary.core :as m]
+   [nano-id.core :as nano-id]
    [itera.input.option :as input-option]
    [itera.runner.core :as rc]
    [itera.runner.formula :as f]
@@ -56,9 +60,9 @@
 
 (defn- normalize-node [node]
   (let [id (str (:id node))]
-    (cond-> (assoc node
+    (cond-> (assoc (dissoc node :uid)
                    :id id
-                   :uid (str (or (:uid node) id))
+                   :label (str (or (:label node) id))
                    :type (keyword (:type node))
                    :show? (boolean (:show? node)))
       (some? (:position node))
@@ -176,16 +180,15 @@
 (declare reconcile!)
 
 (defn render-graph
-  "JSON-friendly graph for the editor.  Nodes carry a stable :uid (the X6 cell
-   id) plus the editable :id; edges reference :uid endpoints."
+  "JSON-friendly graph for the editor.  Each node's :id is the X6 cell id and
+   the node :label is the displayed/editable name; edges reference node ids."
   [this]
-  (let [m @(:model-a this)
-        uid-by-id (into {} (map (juxt :id :uid)) (:nodes m))]
+  (let [m @(:model-a this)]
     {:nodes (mapv (fn [n]
                     (let [p (node-ports this n)
                           pos (or (:position n) {:x 0 :y 0})]
-                      {:uid (:uid n)
-                       :id (:id n)
+                      {:id (:id n)
+                       :label (:label n)
                        :type (name (:type n))
                        :show? (boolean (:show? n))
                        :position {:x (:x pos) :y (:y pos)}
@@ -197,118 +200,81 @@
                   (:nodes m))
      :edges (mapv (fn [e]
                     {:id (:id e)
-                     :source-node (uid-by-id (:source-node e))
+                     :source-node (:source-node e)
                      :source-port (:source-port e)
-                     :target-node (uid-by-id (:target-node e))
+                     :target-node (:target-node e)
                      :target-port (:target-port e)})
                   (:edges m))}))
-
-(defn- valid-id? [s]
-  (and (string? s) (not (string/blank? s))))
 
 (defn- port-id-set [this node]
   (set (map :id (:inputs (node-ports this node)))))
 
 (defn apply-graph!
-  "Replace nodes/edges with the editor's serialized graph.  Ids must be
-   unique; edges with unknown endpoints or undeclared target ports are dropped,
-   and at most one edge may target an input port.
+  "Replace nodes/edges with the editor's serialized graph, unless the client's
+   echoed `client-rev` is stale (a graph-change emitted before a server-side
+   rebuild would otherwise omit a just-created node).
 
-   Existing nodes (matched by :uid) keep their :code/:value/:option-ui — those
-   are mutated only through set-node-code / set-node-value / set-node-option-ui."
-  [this graph]
-  (let [old @(:model-a this)
-        old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))
-        seen-ids (volatile! #{})
-        new-nodes
-        (into []
-              (keep (fn [n]
-                      (let [uid (str (:uid n))
-                            o (get old-by-uid uid)
-                            raw (str (:id n))
-                            nid (cond
-                                  (and (valid-id? raw) (not (contains? @seen-ids raw))) raw
-                                  (and o (valid-id? (:id o))
-                                       (not (contains? @seen-ids (:id o)))) (:id o)
-                                  :else nil)]
-                        (when nid
-                          (vswap! seen-ids conj nid)
-                          (if o
+   Nodes are matched by :id; unknown ids are dropped (the server is the only
+   creator).  Edges with unknown endpoints or undeclared target ports are
+   dropped, and at most one edge may target an input port.
+
+   Existing nodes keep their :id and :code/:value/:option-ui — those are
+   mutated only through set-node-code / set-node-value / set-node-option-ui.
+   :label, :show? and :position come from the editor; a blank :label falls
+   back to the previous label."
+  [this graph client-rev]
+  (when (= (graph-rev this) client-rev)
+    (let [old @(:model-a this)
+          old-by-id (into {} (map (juxt :id identity)) (:nodes old))
+          new-nodes
+          (into []
+                (keep (fn [n]
+                        (let [id (str (:id n))
+                              o (get old-by-id id)
+                              label (str (or (:label n) ""))]
+                          (when o
                             (assoc o
-                                   :id nid
+                                   :label (if (string/blank? label)
+                                            (:label o)
+                                            label)
                                    :show? (boolean (:show? n))
                                    :position (or (normalize-position (:position n))
-                                                 (:position o)))
-                            (let [type (keyword (:type n))]
-                              (cond-> {:uid uid
-                                       :id nid
-                                       :type type
-                                       :show? (boolean (:show? n))
-                                       :position (normalize-position (:position n))}
-                                (= :formula type) (assoc :code (or (:code n) ""))
-                                (= :value type) (assoc :value (:value n)))))))))
-              (:nodes graph))
-        uid->id (into {} (map (juxt :uid :id)) new-nodes)
-        node-by-id (into {} (map (juxt :id identity)) new-nodes)
-        seen-in (volatile! #{})
-        new-edges
-        (into []
-              (keep (fn [e]
-                      (let [sid (uid->id (str (:source-node e)))
-                            tid (uid->id (str (:target-node e)))
-                            tp (str (:target-port e))
-                            tnode (get node-by-id tid)]
-                        (when (and sid tid tnode
-                                   (= "out" (str (:source-port e)))
-                                   (contains? (port-id-set this tnode) tp)
-                                   (not (contains? @seen-in [tid tp])))
-                          (vswap! seen-in conj [tid tp])
-                          {:id (str (or (:id e) (str "e-" (Math/abs (hash [sid tid tp])))))
-                           :source-node sid
-                           :source-port "out"
-                           :target-node tid
-                           :target-port tp}))))
-              (:edges graph))
-        new-model (assoc old :nodes new-nodes :edges new-edges)]
-    (reset! (:model-a this) new-model)
-    (reconcile! this old new-model)))
+                                                 (:position o)))))))
+                (:nodes graph))
+          node-by-id (into {} (map (juxt :id identity)) new-nodes)
+          seen-in (volatile! #{})
+          new-edges
+          (into []
+                (keep (fn [e]
+                        (let [sid (str (:source-node e))
+                              tid (str (:target-node e))
+                              tp (str (:target-port e))
+                              tnode (get node-by-id tid)]
+                          (when (and sid tid tnode
+                                     (= "out" (str (:source-port e)))
+                                     (contains? (port-id-set this tnode) tp)
+                                     (not (contains? @seen-in [tid tp])))
+                            (vswap! seen-in conj [tid tp])
+                            {:id (str (or (:id e) (str "e-" (Math/abs (hash [sid tid tp])))))
+                             :source-node sid
+                             :source-port "out"
+                             :target-node tid
+                             :target-port tp}))))
+                (:edges graph))
+          new-model (assoc old :nodes new-nodes :edges new-edges)]
+      (reset! (:model-a this) new-model)
+      (reconcile! this old new-model))))
 
 ;; ---------------------------------------------------------------------------
 ;; reconcile (targeted where possible, else rebuild)
 ;; ---------------------------------------------------------------------------
 
-(defn- rename-key [a old new]
-  (when (contains? @a old)
-    (swap! a #(-> % (dissoc old) (assoc new (get % old))))))
-
-(defn- rename-node! [this old-id new-id]
-  (when (not= old-id new-id)
-    (let [r (:runner this)]
-      (swap! (:node-dict-a r)
-             (fn [d]
-               (if (contains? d old-id)
-                 (-> d (dissoc old-id) (assoc new-id (assoc (get d old-id) :id new-id)))
-                 d)))
-      (swap! (:edges-a r)
-             (fn [es]
-               (mapv (fn [e]
-                       (cond-> e
-                         (= old-id (:source-node e)) (assoc :source-node new-id)
-                         (= old-id (:target-node e)) (assoc :target-node new-id)))
-                     es)))
-      (rename-key (:showing this) old-id new-id)
-      (rename-key (:disposers this) old-id new-id)
-      (when (contains? @(:index this) old-id)
-        (swap! (:index this) #(-> % (disj old-id) (conj new-id))))
-      this)))
-
 (defn- edge-signature [model]
-  (let [uid (into {} (map (juxt :id :uid)) (:nodes model))]
-    (->> (:edges model)
-         (map (fn [e] [(uid (:source-node e)) (:source-port e)
-                       (uid (:target-node e)) (:target-port e)]))
-         (sort-by pr-str)
-         vec)))
+  (->> (:edges model)
+       (map (fn [e] [(:source-node e) (:source-port e)
+                     (:target-node e) (:target-port e)]))
+       (sort-by pr-str)
+       vec))
 
 (defn rebuild!
   "Dispose watches and recreate the runner from :model-a, then re-watch the
@@ -326,13 +292,9 @@
     this))
 
 (defn- targeted-update! [this old new]
-  (let [old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))]
+  (let [old-by-id (into {} (map (juxt :id identity)) (:nodes old))]
     (doseq [n (:nodes new)
-            :let [o (get old-by-uid (:uid n))]
-            :when (and o (not= (:id o) (:id n)))]
-      (rename-node! this (:id o) (:id n)))
-    (doseq [n (:nodes new)
-            :let [o (get old-by-uid (:uid n))]
+            :let [o (get old-by-id (:id n))]
             :when o]
       (let [was? (boolean (:show? o))
             now? (boolean (:show? n))]
@@ -342,17 +304,55 @@
     this))
 
 (defn reconcile! [this old new]
-  (let [old-uid (set (map :uid (:nodes old)))
-        new-uid (set (map :uid (:nodes new)))
-        old-by-uid (into {} (map (juxt :uid identity)) (:nodes old))
+  (let [old-ids (set (map :id (:nodes old)))
+        new-ids (set (map :id (:nodes new)))
+        old-by-id (into {} (map (juxt :id identity)) (:nodes old))
         code-changed? (some (fn [n]
-                              (let [o (get old-by-uid (:uid n))]
+                              (let [o (get old-by-id (:id n))]
                                 (or (nil? o) (not= (:code o) (:code n)))))
                             (:nodes new))
         edges-changed? (not= (edge-signature old) (edge-signature new))]
-    (if (or (not= old-uid new-uid) code-changed? edges-changed?)
+    (if (or (not= old-ids new-ids) code-changed? edges-changed?)
       (rebuild! this)
       (targeted-update! this old new))))
+
+;; ---------------------------------------------------------------------------
+;; node creation (server-owned ids)
+;; ---------------------------------------------------------------------------
+
+(defn- fresh-node-id [this]
+  (let [ids (set (map :id (:nodes @(:model-a this))))]
+    (loop []
+      (let [id (nano-id/nano-id 16)]
+        (if (contains? ids id)
+          (recur)
+          id)))))
+
+(defn- next-node-position [this]
+  (let [i (count (:nodes @(:model-a this)))]
+    {:x (+ 60 (* 260 (mod i 4)))
+     :y (+ 60 (* 160 (quot i 4)))}))
+
+(defn add-node!
+  "Create a :value or :formula node server-side with a fresh nano-id, rebuild
+   the runner, and bump `graph-rev` so the editor rebuilds from the server
+   graph.  Returns `this`."
+  [this type]
+  (let [type (keyword (or type :value))]
+    (when (contains? #{:value :formula} type)
+      (let [old @(:model-a this)
+            node (cond-> {:id (fresh-node-id this)
+                          :label (str (name type) "-" (inc (count (:nodes old))))
+                          :type type
+                          :show? false
+                          :position (next-node-position this)}
+                   (= :formula type) (assoc :code "(fn [ctx x] x)")
+                   (= :value type) (assoc :value 0))
+            new (update old :nodes conj node)]
+        (bump-rev! this)
+        (reset! (:model-a this) new)
+        (reconcile! this old new)))
+    this))
 
 ;; ---------------------------------------------------------------------------
 ;; recompute a formula node + its downstream dependents
@@ -421,6 +421,7 @@
   [this node-id code]
   (let [args (formula-args-for-code this code)
         r (:runner this)]
+    (bump-rev! this)
     (swap! (:model-a this)
            (fn [m]
              (-> m
@@ -432,13 +433,13 @@
     (when (contains? @(:node-dict-a r) node-id)
       (swap! (:node-dict-a r) update node-id assoc :code code))
     (recompute-formula! this node-id)
-    (bump-rev! this)
     this))
 
 (defn set-node-option-ui
   "Update a :value node's :option-ui rows and re-initialize its :value."
   [this node-id rows]
   (let [rows (vec (or rows []))]
+    (bump-rev! this)
     (swap! (:model-a this)
            (fn [m]
              (update m :nodes
@@ -450,7 +451,6 @@
                              ns)))))
     (when-let [node (rc/get-node (:runner this) node-id)]
       (when (:value-a node) (reset! (:value-a node) {})))
-    (bump-rev! this)
     this))
 
 (defn set-node-value
@@ -471,7 +471,7 @@
 
 (defn option-ui-nodes
   "Every :value node whose :option-ui rows compile to a non-empty spec, as
-   {:node-id <id> :spec <compiled spec> :value <value>}."
+   {:node-id <id> :label <label> :spec <compiled spec> :value <value>}."
   [this]
   (let [m @(:model-a this)]
     (->> (:nodes m)
@@ -479,7 +479,10 @@
          (keep (fn [n]
                  (let [spec (input-option/create-option-spec (:graph-ns this) (:option-ui n))]
                    (when (seq spec)
-                     {:node-id (:id n) :spec spec :value (:value n)}))))
+                     {:node-id (:id n)
+                      :label (:label n)
+                      :spec spec
+                      :value (:value n)}))))
          vec)))
 
 ;; ---------------------------------------------------------------------------
@@ -503,15 +506,15 @@
                            ns))))))
   this)
 
-(defn- persist-node [{:keys [id type show? position value code option-ui]}]
-  (cond-> (array-map :id id :type type :show? (boolean show?))
+(defn- persist-node [{:keys [id label type show? position value code option-ui]}]
+  (cond-> (array-map :id id :label label :type type :show? (boolean show?))
     position (assoc :position {:x (:x position) :y (:y position)})
     (= :value type) (assoc :value value)
     (= :formula type) (assoc :code code)
     (seq option-ui) (assoc :option-ui option-ui)))
 
 (defn save-model-edn!
-  "Serialize :model-a (stripping the runtime :uid) and write <path>/<name>.edn."
+  "Serialize :model-a and write <path>/<name>.edn."
   [this]
   (let [model @(:model-a this)
         persisted {:graph/name (:graph/name model)
@@ -531,7 +534,7 @@
   (load-model ctx "sum")
   (def x (start-model ctx "sum_ui"))
   (currently-showing x)
-  (get-atom x "sum-ui")
+  (get-atom x (first (currently-showing x)))
   (render-graph x)
   (option-ui-nodes x)
   (assign-missing-positions x)

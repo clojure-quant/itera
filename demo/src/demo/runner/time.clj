@@ -10,10 +10,10 @@
 (def r (ui/start-model ctx "time"))
 
 
-(ui/get-atom r "time-ui")
+(ui/get-atom r "gCXaw4JYslAskzOB")
 
-(ui/get-atom r "est-ui") 
-(ui/get-atom r "local-ui")
+(ui/get-atom r "GZJoZ0bizloz46-b") 
+(ui/get-atom r "TKrK2syZ0a0zVc1g")
 
 
 (ui/stop-model r)

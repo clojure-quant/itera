@@ -7,7 +7,6 @@
    namespaces register the option editors, before the handler assembles the
    JS bundle."
   (:require [clojure.string :as str]
-            [demo.graph :as demo-graph]
             [demo.page.codemirror :as page-codemirror]
             [demo.page.option :as page-option]
             [demo.page.overview :as page-overview]
@@ -26,9 +25,7 @@
 (defn start
   "Hyper :exec-fn. Receives {:opts {...}} from the :itera alias exec-args."
   [{:keys [opts]}]
-  (let [ctx {:graph {:node-types demo-graph/node-types
-                     :initial-graph demo-graph/initial-graph}
-             :itera/model-path "../models"
+  (let [ctx {:itera/model-path "../models"
              :requires '[[clojure.string :as string]
                          [clojure.edn :as edn]
                          [demo.flow :as df]]}

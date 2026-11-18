@@ -1,18 +1,66 @@
 {:graph/name "time",
  :nodes
- [{:id "time", :type :formula, :show? false, :position {:x 36, :y 120}, :code "df/dt-flow"}
-  {:id "time-ui", :type :formula, :show? true, :position {:x 336, :y 120}, :code "(fn [_ s] [:h1 (str s)])"}
-  {:id "est-ui",
+ [{:id "-qG0eHrg2WoJVB-q",
+   :label "time-emitter",
+   :type :formula,
+   :show? false,
+   :position {:x -12, :y 144},
+   :code "df/dt-flow"}
+  {:id "gCXaw4JYslAskzOB",
+   :label "time-ui",
    :type :formula,
    :show? true,
-   :position {:x 312, :y 264},
+   :position {:x 372, :y 120},
+   :code "(fn [_ s] [:h1 (str s)])"}
+  {:id "GZJoZ0bizloz46-b",
+   :label "est-ui",
+   :type :formula,
+   :show? true,
+   :position {:x 324, :y 252},
    :code "(fn [_ s] [:h1 (str (df/EST-time s))])"}
-  {:id "local-ui",
+  {:id "TKrK2syZ0a0zVc1g",
+   :label "local-ui",
    :type :formula,
    :show? true,
-   :position {:x 300, :y 48},
-   :code "(fn [_ s] [:h1 (str (df/local-time s))])"}],
+   :position {:x 288, :y 36},
+   :code "(fn [_ s] [:h1 (str (df/local-time s))])"}
+  {:id "9WvbnF-oyj14-bHY",
+   :label "time-table",
+   :type :formula,
+   :show? false,
+   :position {:x 120, :y 396},
+   :code
+   "(fn [ctx dt]\n  [{:zone \"UTC\" :time (str dt)}\n   {:zone \"EST\" :time (str (df/EST-time dt))}\n   {:zone \"Local\" :time (str (df/local-time dt))}])\n"}
+  {:id "SHmxCKN1XQ8Vm6Ak",
+   :label "time-zone-table",
+   :type :formula,
+   :show? true,
+   :position {:x 444, :y 480},
+   :code
+   "(fn [ctx rows]\n  (->> rows\n    (map (fn [{:keys [zone time]}]\n           [:tr [:td zone] [:td time]]\n           ))\n    (into\n      [:table {:style {:background-color \"yellow\"}}\n     [:tr [:td \"zone\"] [:td \"time\"]]]\n    \n    )\n    ))"}],
  :edges
- [{:id "e-1", :source-node "time", :source-port "out", :target-node "time-ui", :target-port "s"}
-  {:id "e-2", :source-node "time", :source-port "out", :target-node "est-ui", :target-port "s"}
-  {:id "e-3", :source-node "time", :source-port "out", :target-node "local-ui", :target-port "s"}]}
+ [{:id "e-1",
+   :source-node "-qG0eHrg2WoJVB-q",
+   :source-port "out",
+   :target-node "gCXaw4JYslAskzOB",
+   :target-port "s"}
+  {:id "e-2",
+   :source-node "-qG0eHrg2WoJVB-q",
+   :source-port "out",
+   :target-node "GZJoZ0bizloz46-b",
+   :target-port "s"}
+  {:id "e-3",
+   :source-node "-qG0eHrg2WoJVB-q",
+   :source-port "out",
+   :target-node "TKrK2syZ0a0zVc1g",
+   :target-port "s"}
+  {:id "077a9130-430c-4224-922d-0ef5cbcaf5e9",
+   :source-node "-qG0eHrg2WoJVB-q",
+   :source-port "out",
+   :target-node "9WvbnF-oyj14-bHY",
+   :target-port "dt"}
+  {:id "d660fd70-2c7e-41ca-8408-43c59f6bca9a",
+   :source-node "9WvbnF-oyj14-bHY",
+   :source-port "out",
+   :target-node "SHmxCKN1XQ8Vm6Ak",
+   :target-port "rows"}]}

@@ -1,25 +1,34 @@
-(ns itera.runner.editor
+(ns itera.model-ui.graph-editor
   "AntV X6 model-graph editor as a Hyper client component.
 
-   A fork of itera.graph.editor specialised for the model page: node types are
+   The model-page graph editor: node types are
    just :value and :formula, ports come from the server (formula :args), node
-   boxes expose an editable id, an edit box and a show/hide eye, and the graph
-   area scrolls (outer overflow:auto over a content-sized X6 host) with zoom
-   in/out buttons.
+   boxes expose an editable label, an edit box and a show/hide eye, and the
+   graph area scrolls (outer overflow:auto over a content-sized X6 host) with
+   zoom in/out buttons.
+
+   Graph nodes carry :id (the X6 cell id, an immutable server-generated
+   nano-id) and :label (displayed/editable, may repeat).  Creating a node is
+   server-owned: the Add buttons emit :add-node and the server replies with a
+   rebuilt graph.
 
    Attrs:
-     graph        - server-rendered graph {:nodes [...] :edges [...]} with :uid
-                    cell ids and :id display ids, plus ports
+     graph        - server-rendered graph {:nodes [...] :edges [...]} where
+                    each node's :id is the X6 cell id and :label is the display
+                    name, plus ports
      graph-rev    - server counter; a change forces the client to rebuild from
-                    `graph` (used when ports change after a code edit)
+                    `graph` (used when ports change after a code edit and after
+                    a server-created node)
      save-result  - {:status \"ok\"|\"error\"} from the last save action
-     data-on:graph-change - server action; detail {:graph <serialized>}
+     data-on:graph-change - server action; detail {:graph <serialized>
+                                                   :graph-rev <rev>}
+     data-on:add-node     - server action; detail {:type \"value\"|\"formula\"}
      data-on:edit         - server action; detail {:node-id <id> :type <type>}
      data-on:save         - server action (no detail)
 
    The client edits the graph locally and emits the full serialized graph on
-   every structural change (add/delete/connect/disconnect/drag/id/show?), so
-   the server can reconcile without the client rebuilding on its own echo."
+   every structural change (delete/connect/disconnect/drag/show?/label), so the
+   server can reconcile without the client rebuilding on its own echo."
   (:require [hyper.core :as h]))
 
 (h/defc itera-model-graph-editor
@@ -90,6 +99,29 @@
                                   "text" (js-obj "fontSize" 9 "fill" "#475569"))
                          "label" (js-obj "position" "right")))
           as-array (fn [v] (if v v (array)))
+          editable? (fn [n]
+                      (when n
+                        (let [tag (.-tagName n)]
+                          (or (= tag "INPUT") (= tag "SELECT") (= tag "TEXTAREA")
+                              (.-isContentEditable n)))))
+          editable-in-path? (fn [evt]
+                              (let [path (if (.-composedPath evt)
+                                           (.composedPath evt)
+                                           (array (.-target evt)))
+                                    n (.-length path)]
+                                (loop [i 0]
+                                  (if (< i n)
+                                    (if (editable? (aget path i))
+                                      true
+                                      (recur (inc i)))
+                                    false))))
+          typing? (fn [evt]
+                    (or (editable? (.-target evt))
+                        (editable-in-path? evt)
+                        (editable? js/document.activeElement)
+                        (let [el js/document.activeElement
+                              sr (when el (.-shadowRoot el))]
+                          (editable? (when sr (.-activeElement sr))))))
           node-height (fn [ins outs]
                         (max 74 (+ 44 (* 22 (max (.-length (as-array ins))
                                                  (.-length (as-array outs)))))))
@@ -187,38 +219,27 @@
                                                   "args" (js-obj "radius" 8))
                               "validateConnection" validate-connection)))
           emit-graph! (fn []
-                        (when-not (.-loading ctx)
-                          (let [sig (js/JSON.stringify ((.-serialize ctx)))]
+                        (when-not (or (.-loading ctx) (.-adding ctx))
+                          (let [ser ((.-serialize ctx))
+                                sig (js/JSON.stringify ser)]
                             (when (not= sig (.-lastSig ctx))
                               (set! (.-lastSig ctx) sig)
                               (set-status "Unsaved changes" "#b45309")
-                              (emit "graph-change" (js-obj "graph" ((.-serialize ctx))))))))
+                              (emit "graph-change"
+                                    (js-obj "graph" ser
+                                            "graph-rev" (.-rev ctx)))))))
           clone-data (fn [d overrides]
                        (let [o (js-obj)]
-                         (.forEach (array "uid" "nodeId" "type" "show?" "inputs"
+                         (.forEach (array "label" "type" "show?" "inputs"
                                           "outputs" "code" "value" "optionUi")
                                    (fn [k] (aset o k (aget d k))))
                          (.assign js/Object o overrides)
                          o))
-          node-id-taken? (fn [except-cell val]
-                           (let [nodes (.getNodes graph-instance)
-                                 n (.-length nodes)]
-                             (loop [i 0]
-                               (when (< i n)
-                                 (let [c (aget nodes i)]
-                                   (if (and (not= c except-cell)
-                                            (= (aget (.getData c) "nodeId") val))
-                                     true
-                                     (recur (inc i))))))))
-          unique-id (fn [base]
-                      (loop [i 1]
-                        (let [cand (str base "-" i)]
-                          (if (node-id-taken? nil cand) (recur (inc i)) cand))))
           render-html
           (fn [cell]
             (let [data (.getData cell)
                   type-kw (aget data "type")
-                  node-id (aget data "nodeId")
+                  label (aget data "label")
                   shown? (aget data "show?")
                   outer (.createElement js/document "div")
                   card (.createElement js/document "div")
@@ -251,7 +272,7 @@
               (set! (.-opacity (.-style eye-btn)) (if shown? "1" "0.3"))
               (set! (.-filter (.-style eye-btn)) (if shown? "none" "grayscale(1)"))
               (set! (.-type id-input) "text")
-              (set! (.-value id-input) (or node-id ""))
+              (set! (.-value id-input) (or label ""))
               (set! (.-cssText (.-style id-input))
                     "width:100%;box-sizing:border-box;font-size:10px;padding:1px 3px;border:1px solid #cbd5e1;border-radius:3px")
               (.appendChild tools edit-btn)
@@ -265,7 +286,7 @@
                edit-btn "click"
                (fn [_]
                  (let [d (.getData cell)]
-                   (emit "edit" (js-obj "node-id" (aget d "nodeId")
+                   (emit "edit" (js-obj "node-id" (.-id cell)
                                         "type" (aget d "type"))))))
               (.addEventListener
                eye-btn "click"
@@ -279,12 +300,12 @@
                (fn [_]
                  (let [d (.getData cell)
                        raw (.trim (.-value id-input))
-                       cur (aget d "nodeId")
+                       cur (aget d "label")
                        val (if (> (.-length raw) 0) raw cur)]
-                   (if (or (= val cur) (node-id-taken? cell val))
+                   (if (= val cur)
                      (set! (.-value id-input) cur)
                      (do
-                       (.setData cell (clone-data d (js-obj "nodeId" val)))
+                       (.setData cell (clone-data d (js-obj "label" val)))
                        (emit-graph!))))))
               outer))
           _ (when (and Shape host)
@@ -387,20 +408,19 @@
                   node-ids (js-obj)]
               (.forEach (as-array (aget data "nodes"))
                         (fn [n]
-                          (let [uid (aget n "uid")
+                          (let [node-id (aget n "id")
                                 pos (or (aget n "position") (js-obj "x" 0 "y" 0))
                                 ins (as-array (aget n "inputs"))
                                 outs (as-array (aget n "outputs"))]
-                            (aset node-ids uid true)
+                            (aset node-ids node-id true)
                             (.push nodes
-                                   (js-obj "id" uid
+                                   (js-obj "id" node-id
                                            "shape" "itera-model-node"
                                            "x" (aget pos "x")
                                            "y" (aget pos "y")
                                            "width" 240
                                            "height" (node-height ins outs)
-                                           "data" (js-obj "uid" uid
-                                                          "nodeId" (aget n "id")
+                                           "data" (js-obj "label" (aget n "label")
                                                           "type" (aget n "type")
                                                           "show?" (aget n "show?")
                                                           "inputs" ins
@@ -432,8 +452,8 @@
                           (let [d (.getData n)
                                 pos (.getPosition n)]
                             (.push nodes
-                                   (js-obj "uid" (.-id n)
-                                           "id" (aget d "nodeId")
+                                   (js-obj "id" (.-id n)
+                                           "label" (aget d "label")
                                            "type" (aget d "type")
                                            "show?" (aget d "show?")
                                            "position" (js-obj "x" (.-x pos) "y" (.-y pos))
@@ -452,44 +472,12 @@
                                            "target-node" (.getTargetCellId e)
                                            "target-port" (.getTargetPortId e))))))
               (js-obj "nodes" nodes "edges" edges)))
-          add-node
+          request-add-node
           (fn [type-kw]
-            (let [nodes (.getNodes graph-instance)
-                  n (.-length nodes)
-                  max-y (loop [i 0 m 0]
-                          (if (< i n)
-                            (let [p (.getPosition (aget nodes i))
-                                  sz (.getSize (aget nodes i))]
-                              (recur (inc i) (js/Math.max m (+ (.-y p) (.-height sz)))))
-                            m))
-                  uid (str "u-" (js/Date.now) "-" n)
-                  node-id (unique-id type-kw)
-                  ins (if (= type-kw "formula")
-                        (array (js-obj "id" "x" "label" "x"))
-                        (array))
-                  outs (array (js-obj "id" "out" "label" "out"))
-                  code (if (= type-kw "formula") "(fn [x] x)" nil)
-                  value (if (= type-kw "value") 0 nil)
-                  node (.addNode graph-instance
-                                 (js-obj "id" uid
-                                         "shape" "itera-model-node"
-                                         "x" 60
-                                         "y" (if (> n 0) (+ max-y 40) 60)
-                                         "width" 240
-                                         "height" (node-height ins outs)
-                                         "data" (js-obj "uid" uid
-                                                        "nodeId" node-id
-                                                        "type" type-kw
-                                                        "show?" false
-                                                        "inputs" ins
-                                                        "outputs" outs
-                                                        "code" code
-                                                        "value" value
-                                                        "optionUi" nil)
-                                         "ports" (build-ports ins outs)))]
-              (select-cell node)
-              (refresh-size!)
-              (emit-graph!)))
+            (when-not (.-adding ctx)
+              (set! (.-adding ctx) true)
+              (set-status "Adding..." "#475569")
+              (emit "add-node" (js-obj "type" type-kw))))
           delete-selected
           (fn []
             (when-let [cell (.-selected ctx)]
@@ -513,15 +501,12 @@
                  (emit "save" (js-obj)))
           key-handler
           (fn [evt]
-            (let [target (.-target evt)
-                  tag (.-tagName target)
-                  typing (or (= tag "INPUT") (= tag "SELECT") (= tag "TEXTAREA")
-                             (.-isContentEditable target))]
-              (when (and (not typing) (= (.-key evt) "Delete"))
-                (.preventDefault evt)
-                (delete-selected))))
+            (when (and (not (typing? evt)) (= (.-key evt) "Delete"))
+              (.preventDefault evt)
+              (delete-selected)))
           rebuild
           (fn [g]
+            (set! (.-adding ctx) false)
             (set! (.-loading ctx) true)
             (set! (.-selected ctx) nil)
             (build-graph! g)
@@ -537,10 +522,11 @@
       (set! (.-pendingR ctx) false)
       (set! (.-selected ctx) nil)
       (set! (.-loading ctx) true)
+      (set! (.-adding ctx) false)
       (set! (.-scale ctx) 1)
       (set! (.-rev ctx) graph-rev)
-      (set! (.-add-value ctx) (fn [] (add-node "value")))
-      (set! (.-add-formula ctx) (fn [] (add-node "formula")))
+      (set! (.-add-value ctx) (fn [] (request-add-node "value")))
+      (set! (.-add-formula ctx) (fn [] (request-add-node "formula")))
       (set! (.-delete-selected ctx) delete-selected)
       (set! (.-fit ctx) fit)
       (set! (.-zoom-in ctx) (fn [] (zoom-by 0.1)))
@@ -552,13 +538,9 @@
       (set! (.-saveStatus ctx) nil)
       (.addEventListener host "click"
                          (fn [evt]
-                           (let [target (.-target evt)
-                                 tag (.-tagName target)
-                                 typing (or (= tag "INPUT") (= tag "SELECT") (= tag "TEXTAREA")
-                                            (.-isContentEditable target))]
-                             (when-not typing
-                               (let [view (.findViewByElem graph-instance target)]
-                                 (select-cell (when view (.-cell view))))))))
+                           (when-not (typing? evt)
+                             (let [view (.findViewByElem graph-instance (.-target evt))]
+                               (select-cell (when view (.-cell view)))))))
       (.on graph-instance "edge:connected" (fn [_] (emit-graph!)))
       (.on graph-instance "edge:removed" (fn [_] (emit-graph!)))
       (.on graph-instance "node:removed" (fn [_] (emit-graph!)))
