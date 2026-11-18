@@ -1,76 +1,64 @@
 (ns itera.model-ui.graph-editor
-  "AntV X6 model-graph editor as a Hyper client component.
+  "Model-graph editor in two layers: the server-side `graph-editor` wrapper and
+   the client-side `itera-model-graph-editor` canvas component.
 
-   The model-page graph editor: node types are
-   just :value and :formula, ports come from the server (formula :args), node
-   boxes expose an editable label, an edit box and a show/hide eye, and the
-   graph area scrolls (outer overflow:auto over a content-sized X6 host) with
-   zoom in/out buttons.
+   `graph-editor` takes the model runner handle and owns every server action
+   the component emits: it derives the rendered graph and its revision from
+   itera.runner.ui, creates the popup tab cursors,
+   and builds the graph-change / edit actions.  It also owns the toolbar's
+   Add/Save actions.  The node-edit popup also lives here: CodeMirror for
+   :formula nodes and itera.input.option for :value nodes, writing the node
+   through itera.runner.ui when the popup closes.
+
+   It renders the toolbar and the component as siblings; the toolbar is not a
+   child of the custom element.  Add (:value / :formula) and Save are
+   :data-on:click server actions: Add runs itera.runner.ui/add-node! and the
+   server replies by bumping graph-rev so the component rebuilds; Save runs
+   itera.runner.ui/save-model-edn!.  The remaining
+   toolbar buttons carry :data-cmd (delete / zoom-in / zoom-out / fit), and
+   the component, on mount, attaches one delegated click listener to its
+   closest `.itera-graph-editor` wrapper; those commands run client-local with
+   no request.
+
+   The component renders only the scroll/canvas column: node types are just
+   :value and :formula, ports come from the server (formula :args), node boxes
+   expose an editable label, an edit box and a show/hide eye, and the graph
+   area scrolls (outer overflow:auto over a content-sized X6 host) with zoom
+   in/out.  Nodes carry topology/display data only (:id, :label, :type, :show?,
+   :position, :inputs, :outputs) — :code, :value and :option-ui stay on the
+   server, where the edit popup resolves them by node id through
+   itera.runner.ui/node-by-id.
 
    Graph nodes carry :id (the X6 cell id, an immutable server-generated
    nano-id) and :label (displayed/editable, may repeat).  Creating a node is
-   server-owned: the Add buttons emit :add-node and the server replies with a
-   rebuilt graph.
+   server-owned: the Add buttons run the add-node! action and the server
+   replies with a rebuilt graph.
 
-   Attrs:
+   Component attrs (supplied by `graph-editor`):
      graph        - server-rendered graph {:nodes [...] :edges [...]} where
                     each node's :id is the X6 cell id and :label is the display
                     name, plus ports
      graph-rev    - server counter; a change forces the client to rebuild from
                     `graph` (used when ports change after a code edit and after
                     a server-created node)
-     save-result  - {:status \"ok\"|\"error\"} from the last save action
      data-on:graph-change - server action; detail {:graph <serialized>
                                                    :graph-rev <rev>}
-     data-on:add-node     - server action; detail {:type \"value\"|\"formula\"}
      data-on:edit         - server action; detail {:node-id <id> :type <type>}
-     data-on:save         - server action (no detail)
 
    The client edits the graph locally and emits the full serialized graph on
    every structural change (delete/connect/disconnect/drag/show?/label), so the
    server can reconcile without the client rebuilding on its own echo."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.input.codemirror :as input-cm]
+            [itera.input.option :as input-opt]
+            [itera.runner.ui :as rui]))
 
 (h/defc itera-model-graph-editor
-  "X6 model-graph editor web component."
+  "X6 canvas web component.  The toolbar lives in the graph-editor wrapper."
   {:require [["https://esm.sh/@antv/x6@3.1.8?bundle" :as x6]]}
-  [{:keys [graph graph-rev save-result]}]
+  [{:keys [graph graph-rev]}]
   (render
    [:div {:style "display:flex;flex-direction:column;height:100%;min-height:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif"}
-    [:div {:class "itera-model-toolbar"
-           :style "display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;padding:0.4rem 0.5rem;border-bottom:1px solid #e2e8f0;background:#fff;flex:0 0 auto"}
-     [:button {:type "button" :title "Add a value node"
-               :on {:click (fn [_] ((.-add-value ctx)))}
-               :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
-      "Add :value"]
-     [:button {:type "button" :title "Add a formula node"
-               :on {:click (fn [_] ((.-add-formula ctx)))}
-               :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
-      "Add :formula"]
-     [:button {:type "button" :title "Delete the selected node or edge"
-               :on {:click (fn [_] ((.-delete-selected ctx)))}
-               :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #fca5a5;background:#fef2f2;border-radius:4px;cursor:pointer;color:#b91c1c"}
-      "Delete"]
-     [:span {:style "flex:1"}]
-     [:button {:type "button" :title "Zoom out"
-               :on {:click (fn [_] ((.-zoom-out ctx)))}
-               :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
-      "−"]
-     [:button {:type "button" :title "Zoom in"
-               :on {:click (fn [_] ((.-zoom-in ctx)))}
-               :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
-      "+"]
-     [:button {:type "button" :title "Reset the view"
-               :on {:click (fn [_] ((.-fit ctx)))}
-               :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
-      "Fit"]
-     [:span {:class "itera-model-status"
-             :style "font-size:0.7rem;color:#475569;white-space:nowrap;min-width:5rem;text-align:right"}
-      "Saved"]
-     [:button {:type "button" :title "Validate and save the model"
-               :on {:click (fn [_] ((.-save ctx)))}
-               :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #86efac;background:#f0fdf4;border-radius:4px;cursor:pointer;color:#166534"}
-      "Save"]]
     [:div {:class "itera-model-scroll"
            :style "flex:1;min-height:0;overflow:auto;position:relative;background:#f8fafc"}
      [:div {:class "itera-model-canvas"
@@ -80,7 +68,8 @@
     (let [Shape (.-HTML (.-Shape x6))
           wrap (.querySelector root ".itera-model-scroll")
           host (.querySelector root ".itera-model-canvas")
-          status (.querySelector root ".itera-model-status")
+          host-el (.-host (.getRootNode root))
+          container (.closest host-el ".itera-graph-editor")
           groups (js-obj
                   "in" (js-obj
                         "position" "left"
@@ -131,10 +120,6 @@
                            (when (< i n)
                              (let [p (aget ports i)]
                                (if (= (aget p "id") id) p (recur (inc i))))))))
-          set-status (fn [text color]
-                       (when status
-                         (set! (.-textContent status) text)
-                         (set! (.-color (.-style status)) color)))
           clear-highlight (fn [cell]
                             (if (.isNode cell)
                               (do (.attr cell "body/stroke" "none")
@@ -219,19 +204,18 @@
                                                   "args" (js-obj "radius" 8))
                               "validateConnection" validate-connection)))
           emit-graph! (fn []
-                        (when-not (or (.-loading ctx) (.-adding ctx))
+                        (when-not (.-loading ctx)
                           (let [ser ((.-serialize ctx))
                                 sig (js/JSON.stringify ser)]
                             (when (not= sig (.-lastSig ctx))
                               (set! (.-lastSig ctx) sig)
-                              (set-status "Unsaved changes" "#b45309")
                               (emit "graph-change"
                                     (js-obj "graph" ser
                                             "graph-rev" (.-rev ctx)))))))
           clone-data (fn [d overrides]
                        (let [o (js-obj)]
                          (.forEach (array "label" "type" "show?" "inputs"
-                                          "outputs" "code" "value" "optionUi")
+                                          "outputs")
                                    (fn [k] (aset o k (aget d k))))
                          (.assign js/Object o overrides)
                          o))
@@ -424,10 +408,7 @@
                                                           "type" (aget n "type")
                                                           "show?" (aget n "show?")
                                                           "inputs" ins
-                                                          "outputs" outs
-                                                          "code" (aget n "code")
-                                                          "value" (aget n "value")
-                                                          "optionUi" (aget n "option-ui"))
+                                                          "outputs" outs)
                                            "ports" (build-ports ins outs))))))
               (.forEach (as-array (aget data "edges"))
                         (fn [e]
@@ -458,10 +439,7 @@
                                            "show?" (aget d "show?")
                                            "position" (js-obj "x" (.-x pos) "y" (.-y pos))
                                            "inputs" (aget d "inputs")
-                                           "outputs" (aget d "outputs")
-                                           "code" (aget d "code")
-                                           "value" (aget d "value")
-                                           "option-ui" (aget d "optionUi"))))))
+                                           "outputs" (aget d "outputs"))))))
               (.forEach (.getEdges graph-instance)
                         (fn [e]
                           (when (and (.getSourceCellId e) (.getTargetCellId e))
@@ -472,12 +450,6 @@
                                            "target-node" (.getTargetCellId e)
                                            "target-port" (.getTargetPortId e))))))
               (js-obj "nodes" nodes "edges" edges)))
-          request-add-node
-          (fn [type-kw]
-            (when-not (.-adding ctx)
-              (set! (.-adding ctx) true)
-              (set-status "Adding..." "#475569")
-              (emit "add-node" (js-obj "type" type-kw))))
           delete-selected
           (fn []
             (when-let [cell (.-selected ctx)]
@@ -496,9 +468,16 @@
                       (set! (.-scale ctx) s)
                       (.zoomTo graph-instance s)
                       (refresh-size!)))
-          save (fn []
-                 (set-status "Saving..." "#475569")
-                 (emit "save" (js-obj)))
+          toolbar-click
+          (fn [evt]
+            (let [btn (.closest (.-target evt) "[data-cmd]")]
+              (when btn
+                (let [cmd (.-cmd (.-dataset btn))]
+                  (cond
+                    (= cmd "delete") (delete-selected)
+                    (= cmd "zoom-in") (zoom-by 0.1)
+                    (= cmd "zoom-out") (zoom-by -0.1)
+                    (= cmd "fit") (fit))))))
           key-handler
           (fn [evt]
             (when (and (not (typing? evt)) (= (.-key evt) "Delete"))
@@ -506,12 +485,10 @@
               (delete-selected)))
           rebuild
           (fn [g]
-            (set! (.-adding ctx) false)
             (set! (.-loading ctx) true)
             (set! (.-selected ctx) nil)
             (build-graph! g)
             (set! (.-loading ctx) false)
-            (set-status "Unsaved changes" "#b45309")
             (refresh-size!))]
       (set! (.-graph ctx) graph-instance)
       (set! (.-serialize ctx) serialize)
@@ -522,20 +499,13 @@
       (set! (.-pendingR ctx) false)
       (set! (.-selected ctx) nil)
       (set! (.-loading ctx) true)
-      (set! (.-adding ctx) false)
       (set! (.-scale ctx) 1)
       (set! (.-rev ctx) graph-rev)
-      (set! (.-add-value ctx) (fn [] (request-add-node "value")))
-      (set! (.-add-formula ctx) (fn [] (request-add-node "formula")))
-      (set! (.-delete-selected ctx) delete-selected)
-      (set! (.-fit ctx) fit)
-      (set! (.-zoom-in ctx) (fn [] (zoom-by 0.1)))
-      (set! (.-zoom-out ctx) (fn [] (zoom-by -0.1)))
-      (set! (.-save ctx) save)
+      (set! (.-container ctx) container)
+      (set! (.-toolbarClick ctx) toolbar-click)
       (set! (.-rebuild ctx) rebuild)
-      (set! (.-statusEl ctx) status)
-      (set! (.-setStatus ctx) set-status)
-      (set! (.-saveStatus ctx) nil)
+      (when container
+        (.addEventListener container "click" toolbar-click))
       (.addEventListener host "click"
                          (fn [evt]
                            (when-not (typing? evt)
@@ -547,7 +517,6 @@
       (.on graph-instance "node:moved" (fn [_] (emit-graph!)))
       (build-graph! graph)
       (set! (.-loading ctx) false)
-      (set-status "Saved" "#475569")
       (refresh-size!)
       (js/setTimeout refresh-size! 60)
       (when (exists? js/window)
@@ -560,17 +529,10 @@
           (set! (.-ro ctx) ro)
           (.observe ro wrap)))))
   (update [_root]
-    (let [sr (when save-result (js/JSON.stringify save-result))
-          save-status (when save-result (aget save-result "status"))]
-      (when (and save-status (not= sr (.-saveStatus ctx)))
-        (set! (.-saveStatus ctx) sr)
-        (if (= save-status "ok")
-          ((.-setStatus ctx) "Saved" "#475569")
-          ((.-setStatus ctx) "Save failed" "#b91c1c")))
-      (when (and (not (nil? graph-rev)) (not= graph-rev (.-rev ctx)))
-        (set! (.-rev ctx) graph-rev)
-        (when-let [rebuild (.-rebuild ctx)]
-          (rebuild graph)))))
+    (when (and (not (nil? graph-rev)) (not= graph-rev (.-rev ctx)))
+      (set! (.-rev ctx) graph-rev)
+      (when-let [rebuild (.-rebuild ctx)]
+        (rebuild graph))))
   (unmount [_root]
     (when-let [ro (.-ro ctx)]
       (.disconnect ro))
@@ -580,7 +542,108 @@
       (.dispose g))
     (when-let [kh (.-keyHandler ctx)]
       (.removeEventListener js/document "keydown" kh))
+    (when-let [tc (.-toolbarClick ctx)]
+      (when-let [c (.-container ctx)]
+        (.removeEventListener c "click" tc)))
     (set! (.-graph ctx) nil)
     (set! (.-ro ctx) nil)
     (set! (.-resizeHandler ctx) nil)
-    (set! (.-keyHandler ctx) nil)))
+    (set! (.-keyHandler ctx) nil)
+    (set! (.-toolbarClick ctx) nil)
+    (set! (.-container ctx) nil)))
+
+;; ---------------------------------------------------------------------------
+;; popup (edit a node's code or option-ui)
+;; ---------------------------------------------------------------------------
+
+(defn- open-popup! [r node-id type]
+  (let [{:keys [this popup-a code-a rows-a]} r
+        node (rui/node-by-id this node-id)]
+    (reset! code-a (or (:code node) ""))
+    (reset! rows-a (vec (or (:option-ui node) [])))
+    (reset! popup-a {:id node-id :label (:label node) :type type})))
+
+(defn- close-popup! [r]
+  (let [{:keys [this popup-a code-a rows-a]} r
+        {:keys [id type]} @popup-a]
+    (when id
+      (if (= "formula" (name (keyword (or type "value"))))
+        (rui/set-node-code this id @code-a)
+        (rui/set-node-option-ui this id @rows-a)))
+    (reset! popup-a nil)))
+
+(defn- popup-view [r]
+  (let [{:keys [popup-a code-a rows-a]} r
+        {:keys [id label type]} @popup-a
+        formula? (= "formula" (name (keyword (or type "value"))))]
+    [:div {:style "position:fixed;inset:0;background:rgba(17,24,39,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem"
+           :data-on:click (h/action (close-popup! r))}
+     [:div {:style "background:white;border-radius:0.5rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);width:min(820px,100%);max-height:92vh;display:flex;flex-direction:column;gap:0.6rem;padding:0.85rem"
+            :data-on:click (h/expr (.stopPropagation evt))}
+      [:div {:style "font-weight:600;font-size:0.85rem;font-family:monospace"}
+       (str "Edit " (or label id) (if formula? " (:formula)" " (:value)"))]
+      (if formula?
+        (input-cm/codemirror-ui code-a {:style {:height "440px"}})
+        (input-opt/option-input rows-a))
+      [:div {:style "display:flex;justify-content:flex-end;gap:0.5rem"}
+       [:button {:type "button"
+                 :data-on:click (h/action (close-popup! r))
+                 :style "font-size:0.8rem;padding:0.3rem 0.8rem;border:1px solid #2563eb;background:#2563eb;color:white;border-radius:0.375rem;cursor:pointer;font-weight:600"}
+        "Close"]]]]))
+
+(defn graph-editor
+  "Toolbar, canvas and node-edit popup for one model runner handle.
+
+   Owns every server action the itera-model-graph-editor component emits:
+   graph-change and edit.  It also owns the direct toolbar actions: Add
+   (:value / :formula) runs itera.runner.ui/add-node! and Save runs
+   itera.runner.ui/save-model-edn!.  The toolbar is a sibling of the
+   component, not a child; its other buttons (delete / zoom-in / zoom-out /
+   fit) carry :data-cmd and are delegated to the component's client-side
+   commands.  `graph` nodes must not include :code, :value or :option-ui —
+   the edit popup resolves those server-side by node id."
+  [this]
+  (let [base    [:itera-model (:model-name this) :graph-editor]
+        popup-a (h/tab-cursor (conj base :popup) nil)
+        code-a  (h/tab-cursor (conj base :code) "")
+        rows-a  (h/tab-cursor (conj base :rows) [])
+        r       {:this this :popup-a popup-a :code-a code-a
+                 :rows-a rows-a}]
+    [:div {:class "itera-graph-editor"
+           :style "display:flex;flex-direction:column;height:100%;min-height:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif"}
+     [:div {:class "itera-model-toolbar"
+            :style "display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;padding:0.4rem 0.5rem;border-bottom:1px solid #e2e8f0;background:#fff;flex:0 0 auto"}
+      [:button {:type "button" :title "Add a value node"
+                :data-on:click (h/action (rui/add-node! this :value))
+                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+       "Add :value"]
+      [:button {:type "button" :title "Add a formula node"
+                :data-on:click (h/action (rui/add-node! this :formula))
+                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+       "Add :formula"]
+      [:button {:type "button" :title "Delete the selected node or edge" :data-cmd "delete"
+                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #fca5a5;background:#fef2f2;border-radius:4px;cursor:pointer;color:#b91c1c"}
+       "Delete"]
+      [:span {:style "flex:1"}]
+      [:button {:type "button" :title "Zoom out" :data-cmd "zoom-out"
+                :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+       "−"]
+      [:button {:type "button" :title "Zoom in" :data-cmd "zoom-in"
+                :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+       "+"]
+      [:button {:type "button" :title "Reset the view" :data-cmd "fit"
+                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+       "Fit"]
+      [:button {:type "button" :title "Validate and save the model"
+                :data-on:click (h/action (rui/save-model-edn! this))
+                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #86efac;background:#f0fdf4;border-radius:4px;cursor:pointer;color:#166534"}
+       "Save"]]
+     (itera-model-graph-editor
+      {:graph (rui/render-graph this)
+       :graph-rev (rui/graph-rev this)
+       :data-on:graph-change (h/action (rui/apply-graph! this (get $detail :graph)
+                                                         (get $detail :graph-rev)))
+       :data-on:edit (h/action (open-popup! r (get $detail :node-id) (get $detail :type)))
+       :style "display:block;flex:1 1 auto;min-height:0;width:100%"})
+     (when @popup-a
+       (popup-view r))]))

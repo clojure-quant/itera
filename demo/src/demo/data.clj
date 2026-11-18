@@ -116,3 +116,14 @@
   "Stocks dataset: :price double, :date string, :symbol string."
   []
   @stocks*)
+
+
+(try
+
+  (long "34")
+  (catch Exception ex
+    (ex-message ex)))
+
+
+(parse-long "34")
+

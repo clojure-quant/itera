@@ -181,7 +181,11 @@
 
 (defn render-graph
   "JSON-friendly graph for the editor.  Each node's :id is the X6 cell id and
-   the node :label is the displayed/editable name; edges reference node ids."
+   the node :label is the displayed/editable name; edges reference node ids.
+
+   Nodes carry topology/display data only — :code, :value and :option-ui stay
+   on the server and are read from :model-a by `node-by-id` when the edit popup
+   opens."
   [this]
   (let [m @(:model-a this)]
     {:nodes (mapv (fn [n]
@@ -193,10 +197,7 @@
                        :show? (boolean (:show? n))
                        :position {:x (:x pos) :y (:y pos)}
                        :inputs (:inputs p)
-                       :outputs (:outputs p)
-                       :code (:code n)
-                       :value (:value n)
-                       :option-ui (:option-ui n)}))
+                       :outputs (:outputs p)}))
                   (:nodes m))
      :edges (mapv (fn [e]
                     {:id (:id e)
@@ -525,8 +526,7 @@
         file (io/file (model-path (:ctx this)) (str (:model-name this) ".edn"))]
     (io/make-parents file)
     (spit file (with-out-str (binding [pprint/*print-right-margin* 110]
-                               (pprint/pprint persisted))))
-    {:status "ok" :path (str file)}))
+                               (pprint/pprint persisted))))))
 
 (comment
   (def ctx {:itera/model-path "../models"})

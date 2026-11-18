@@ -1,19 +1,45 @@
 {:graph/name "sum-ui",
  :nodes
- [{:id "StK0mX51f9Igeh2Y", :label "a-node", :type :value, :position {:x 60, :y 60}, :value 15}
-  {:id "FEaXfoT65gke1gH-", :label "b-node", :type :value, :position {:x 60, :y 260}, :value 5}
+ [{:id "StK0mX51f9Igeh2Y",
+   :label "a-node",
+   :type :value,
+   :show? true,
+   :position {:x 36, :y 48},
+   :value {:a "15"},
+   :option-ui [{:path [:a], :type :string, :name "a", :spec ""}]}
+  {:id "FEaXfoT65gke1gH-",
+   :label "b-node",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 264},
+   :value {:b "200"},
+   :option-ui [{:path [:b], :type :string, :name "b", :spec ""}]}
   {:id "Ey8lQZ40PlkopwFI",
    :label "sum",
    :type :formula,
-   :show? false,
-   :position {:x 420, :y 120},
-   :code "(fn [_ a b] (+ a b))"}
+   :show? true,
+   :position {:x 348, :y 60},
+   :code
+   "(fn [_ a b]\n  (let [a (:a a)\n        b (:b b)\n        a-long (parse-long a)\n        b-long (parse-long b)\n        ]\n    {:a a\n     :b b\n     :a-long a-long\n     :b-long b-long\n     :sum (+ a-long b-long)\n     })\n  \n  \n  )\n  \n"}
   {:id "THnJJNqBZMQhkKDX",
    :label "sum-ui",
    :type :formula,
    :show? true,
-   :position {:x 780, :y 120},
-   :code "(fn [_ s] [:h1 (str s)])"}],
+   :position {:x 672, :y 132},
+   :code
+   "(fn [_ s]\n  [:div (pr-str s)\n   [:h1 (:a s) \" + \" (:b s) \" = \" (str (:sum s))]\n   ]\n  \n  )"}
+  {:id "b44_utQPSIbeiwxu",
+   :label "debug",
+   :type :formula,
+   :show? true,
+   :position {:x 348, :y 384},
+   :code "(fn [ctx x]\n  \n  [:div (pr-str x)]\n  )"}
+  {:id "nOcLRY6QoFPD59-H",
+   :label "debug-formula",
+   :type :formula,
+   :show? true,
+   :position {:x 672, :y 24},
+   :code "(fn [ctx x]\n  [:div (pr-str x)])"}],
  :edges
  [{:id "e-1",
    :source-node "StK0mX51f9Igeh2Y",
@@ -29,4 +55,14 @@
    :source-node "Ey8lQZ40PlkopwFI",
    :source-port "out",
    :target-node "THnJJNqBZMQhkKDX",
-   :target-port "s"}]}
+   :target-port "s"}
+  {:id "8fa0a8ab-29cd-4951-84c4-a5e57abf4241",
+   :source-node "FEaXfoT65gke1gH-",
+   :source-port "out",
+   :target-node "b44_utQPSIbeiwxu",
+   :target-port "x"}
+  {:id "59922711-52f0-4489-8823-beb3019ecb5f",
+   :source-node "Ey8lQZ40PlkopwFI",
+   :source-port "out",
+   :target-node "nOcLRY6QoFPD59-H",
+   :target-port "x"}]}
