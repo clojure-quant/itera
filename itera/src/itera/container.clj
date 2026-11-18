@@ -87,7 +87,7 @@
    stable; it does not affect layout."
   [{:keys [mode]}]
   (render
-   [:div {:style "width:100%;height:100%;min-height:0"} [:slot]])
+   [:div {:style {:width "100%" :height "100%" :min-height "0"}} [:slot]])
   (mount [root]
     (let [measure
           (fn []

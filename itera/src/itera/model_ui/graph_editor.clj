@@ -58,11 +58,22 @@
   {:require [["https://esm.sh/@antv/x6@3.1.8?bundle" :as x6]]}
   [{:keys [graph graph-rev]}]
   (render
-   [:div {:style "display:flex;flex-direction:column;height:100%;min-height:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif"}
+   [:div {:style {:display "flex"
+                  :flex-direction "column"
+                  :height "100%"
+                  :min-height "0"
+                  :font-family "system-ui,-apple-system,'Segoe UI',sans-serif"}}
     [:div {:class "itera-model-scroll"
-           :style "flex:1;min-height:0;overflow:auto;position:relative;background:#f8fafc"}
+           :style {:flex "1"
+                   :min-height "0"
+                   :overflow "auto"
+                   :position "relative"
+                   :background "#f8fafc"}}
      [:div {:class "itera-model-canvas"
-            :style "position:relative;width:100%;height:100%;overflow:hidden"}]]
+            :style {:position "relative"
+                    :width "100%"
+                    :height "100%"
+                    :overflow "hidden"}}]]
     [:style ".itera-model-canvas .x6-graph{width:100%;height:100%}.itera-model-canvas foreignObject>body{margin:0;padding:0;overflow:visible}"]])
   (mount [root]
     (let [Shape (.-HTML (.-Shape x6))
@@ -576,19 +587,45 @@
   (let [{:keys [popup-a code-a rows-a]} r
         {:keys [id label type]} @popup-a
         formula? (= "formula" (name (keyword (or type "value"))))]
-    [:div {:style "position:fixed;inset:0;background:rgba(17,24,39,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem"
+    [:div {:style {:position "fixed"
+                   :inset "0"
+                   :background "rgba(17,24,39,0.45)"
+                   :z-index "1000"
+                   :display "flex"
+                   :align-items "center"
+                   :justify-content "center"
+                   :padding "1rem"}
            :data-on:click (h/action (close-popup! r))}
-     [:div {:style "background:white;border-radius:0.5rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);width:min(820px,100%);max-height:92vh;display:flex;flex-direction:column;gap:0.6rem;padding:0.85rem"
+     [:div {:style {:background "white"
+                    :border-radius "0.5rem"
+                    :box-shadow "0 10px 30px rgba(0,0,0,0.2)"
+                    :width "min(820px,100%)"
+                    :max-height "92vh"
+                    :display "flex"
+                    :flex-direction "column"
+                    :gap "0.6rem"
+                    :padding "0.85rem"}
             :data-on:click (h/expr (.stopPropagation evt))}
-      [:div {:style "font-weight:600;font-size:0.85rem;font-family:monospace"}
+      [:div {:style {:font-weight "600"
+                     :font-size "0.85rem"
+                     :font-family "monospace"}}
        (str "Edit " (or label id) (if formula? " (:formula)" " (:value)"))]
       (if formula?
         (input-cm/codemirror-ui code-a {:style {:height "440px"}})
         (input-opt/option-input rows-a))
-      [:div {:style "display:flex;justify-content:flex-end;gap:0.5rem"}
+      [:div {:style {:display "flex"
+                     :justify-content "flex-end"
+                     :gap "0.5rem"}}
        [:button {:type "button"
                  :data-on:click (h/action (close-popup! r))
-                 :style "font-size:0.8rem;padding:0.3rem 0.8rem;border:1px solid #2563eb;background:#2563eb;color:white;border-radius:0.375rem;cursor:pointer;font-weight:600"}
+                 :style {:font-size "0.8rem"
+                         :padding "0.3rem 0.8rem"
+                         :border "1px solid #2563eb"
+                         :background "#2563eb"
+                         :color "white"
+                         :border-radius "0.375rem"
+                         :cursor "pointer"
+                         :font-weight "600"}}
         "Close"]]]]))
 
 (defn graph-editor
@@ -610,33 +647,88 @@
         r       {:this this :popup-a popup-a :code-a code-a
                  :rows-a rows-a}]
     [:div {:class "itera-graph-editor"
-           :style "display:flex;flex-direction:column;height:100%;min-height:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif"}
+           :style {:display "flex"
+                   :flex-direction "column"
+                   :height "100%"
+                   :min-height "0"
+                   :font-family "system-ui,-apple-system,'Segoe UI',sans-serif"}}
      [:div {:class "itera-model-toolbar"
-            :style "display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;padding:0.4rem 0.5rem;border-bottom:1px solid #e2e8f0;background:#fff;flex:0 0 auto"}
+            :style {:display "flex"
+                    :flex-wrap "wrap"
+                    :align-items "center"
+                    :gap "0.35rem"
+                    :padding "0.4rem 0.5rem"
+                    :border-bottom "1px solid #e2e8f0"
+                    :background "#fff"
+                    :flex "0 0 auto"}}
       [:button {:type "button" :title "Add a value node"
                 :data-on:click (h/action (rui/add-node! this :value))
-                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
        "Add :value"]
       [:button {:type "button" :title "Add a formula node"
                 :data-on:click (h/action (rui/add-node! this :formula))
-                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
        "Add :formula"]
       [:button {:type "button" :title "Delete the selected node or edge" :data-cmd "delete"
-                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #fca5a5;background:#fef2f2;border-radius:4px;cursor:pointer;color:#b91c1c"}
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #fca5a5"
+                        :background "#fef2f2"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#b91c1c"}}
        "Delete"]
-      [:span {:style "flex:1"}]
+      [:span {:style {:flex "1"}}]
       [:button {:type "button" :title "Zoom out" :data-cmd "zoom-out"
-                :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+                :style {:font-size "0.85rem"
+                        :line-height "1"
+                        :padding "0.15rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
        "−"]
       [:button {:type "button" :title "Zoom in" :data-cmd "zoom-in"
-                :style "font-size:0.85rem;line-height:1;padding:0.15rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+                :style {:font-size "0.85rem"
+                        :line-height "1"
+                        :padding "0.15rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
        "+"]
       [:button {:type "button" :title "Reset the view" :data-cmd "fit"
-                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer;color:#334155"}
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
        "Fit"]
       [:button {:type "button" :title "Validate and save the model"
                 :data-on:click (h/action (rui/save-model-edn! this))
-                :style "font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #86efac;background:#f0fdf4;border-radius:4px;cursor:pointer;color:#166534"}
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #86efac"
+                        :background "#f0fdf4"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#166534"}}
        "Save"]]
      (itera-model-graph-editor
       {:graph (rui/render-graph this)
@@ -644,6 +736,9 @@
        :data-on:graph-change (h/action (rui/apply-graph! this (get $detail :graph)
                                                          (get $detail :graph-rev)))
        :data-on:edit (h/action (open-popup! r (get $detail :node-id) (get $detail :type)))
-       :style "display:block;flex:1 1 auto;min-height:0;width:100%"})
+       :style {:display "block"
+               :flex "1 1 auto"
+               :min-height "0"
+               :width "100%"}})
      (when @popup-a
        (popup-view r))]))

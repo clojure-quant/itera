@@ -1,6 +1,6 @@
 (ns itera.routes
-  (:require [itera.page.algo :as page-algo]
-            [itera.page.model :as page-model]
+  (:require [itera.model-ui.page-model :as page-model]
+            [itera.page.algo :as page-algo]
             [itera.page.model-overview :as page-model-overview]
             [itera.page.overview :as page-overview]))
 

@@ -1,4 +1,4 @@
-(ns itera.page.model
+(ns itera.model-ui.page-model
   "Model page: a viewport-sized Graph/Interact tab layout over one model.
 
    All model state is owned by itera.runner.ui.  The form-3 view starts the
@@ -53,19 +53,46 @@
         (fn [r _req]
           (let [{:keys [this tab-a]} r
                 tab (or @tab-a "graph")]
-            [:div {:style "position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;background:#fff"}
-             [:div {:style "flex:0 0 auto;display:flex;align-items:center;gap:0.25rem;padding:0.35rem 0.5rem 0;background:#f8fafc;border-bottom:1px solid #e2e8f0;box-sizing:border-box"}
-              [:a (merge {:style "font-size:0.95rem;font-weight:600;line-height:1;padding:0.35rem 0.5rem;color:#334155;text-decoration:none;cursor:pointer"
+            [:div {:style {:position "fixed"
+                           :inset "0"
+                           :display "flex"
+                           :flex-direction "column"
+                           :overflow "hidden"
+                           :box-sizing "border-box"
+                           :background "#fff"}}
+             [:div {:style {:flex "0 0 auto"
+                            :display "flex"
+                            :align-items "center"
+                            :gap "0.25rem"
+                            :padding "0.35rem 0.5rem 0"
+                            :background "#f8fafc"
+                            :border-bottom "1px solid #e2e8f0"
+                            :box-sizing "border-box"}}
+              [:a (merge {:style {:font-size "0.95rem"
+                                  :font-weight "600"
+                                  :line-height "1"
+                                  :padding "0.35rem 0.5rem"
+                                  :color "#334155"
+                                  :text-decoration "none"
+                                  :cursor "pointer"}
                           :title "Back to models"
                           :aria-label "Back to models"}
                          (h/navigate :itera-model-list))
                "↑"]
+              [:span {:style {:margin-left "0.5rem"
+                              :font-weight "600"
+                              :font-size "1rem"
+                              :color "#0f172a"}}
+               model-name]
               (tab-button tab-a tab "graph")
               (tab-button tab-a tab "interact")
-              [:span {:style "margin-left:0.5rem;font-weight:600;font-size:1rem;color:#0f172a"}
-               model-name]]
+              ]
              (if (= "graph" tab)
-               [:div {:style "flex:1;min-height:0;position:relative;display:flex;flex-direction:column"}
+               [:div {:style {:flex "1"
+                              :min-height "0"
+                              :position "relative"
+                              :display "flex"
+                              :flex-direction "column"}}
                 (editor/graph-editor this)]
                (interact/interact-view r))]))
         :unmount (fn [r] (rui/stop-model (:this r)))}))))

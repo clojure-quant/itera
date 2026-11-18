@@ -25,7 +25,7 @@
   [{:keys [code]}]
   (render
    [:div {:class "itera-codemirror"
-          :style "height:100%;width:100%;overflow:auto"}])
+          :style {:height "100%" :width "100%" :overflow "auto"}}])
   (mount [root]
     (let [EditorState (.-EditorState cm-state)
           EditorView  (.-EditorView cm-view)

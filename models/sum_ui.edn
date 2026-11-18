@@ -1,68 +1,71 @@
 {:graph/name "sum-ui",
  :nodes
  [{:id "StK0mX51f9Igeh2Y",
-   :label "a-node",
+   :label "numbers",
    :type :value,
    :show? true,
-   :position {:x 36, :y 48},
-   :value {:a "15"},
-   :option-ui [{:path [:a], :type :string, :name "a", :spec ""}]}
-  {:id "FEaXfoT65gke1gH-",
-   :label "b-node",
-   :type :value,
-   :show? false,
-   :position {:x 24, :y 264},
-   :value {:b "200"},
-   :option-ui [{:path [:b], :type :string, :name "b", :spec ""}]}
-  {:id "Ey8lQZ40PlkopwFI",
-   :label "sum",
-   :type :formula,
-   :show? true,
-   :position {:x 348, :y 60},
-   :code
-   "(fn [_ a b]\n  (let [a (:a a)\n        b (:b b)\n        a-long (parse-long a)\n        b-long (parse-long b)\n        ]\n    {:a a\n     :b b\n     :a-long a-long\n     :b-long b-long\n     :sum (+ a-long b-long)\n     })\n  \n  \n  )\n  \n"}
-  {:id "THnJJNqBZMQhkKDX",
-   :label "sum-ui",
-   :type :formula,
-   :show? true,
-   :position {:x 672, :y 132},
-   :code
-   "(fn [_ s]\n  [:div (pr-str s)\n   [:h1 (:a s) \" + \" (:b s) \" = \" (str (:sum s))]\n   ]\n  \n  )"}
+   :position {:x -24, :y 0},
+   :value {:a "11111111", :b "11", :c "111", :d "1111", :e "11111"},
+   :option-ui
+   [{:path [:a], :type :string, :name "a", :spec ""}
+    {:path [:b], :type :string, :name "b", :spec ""}
+    {:path [:c], :type :string, :name "c", :spec ""}
+    {:path [:d], :type :string, :name "d", :spec ""}
+    {:path [:e], :type :string, :name "e", :spec ""}]}
   {:id "b44_utQPSIbeiwxu",
    :label "debug",
    :type :formula,
-   :show? true,
-   :position {:x 348, :y 384},
-   :code "(fn [ctx x]\n  \n  [:div (pr-str x)]\n  )"}
-  {:id "nOcLRY6QoFPD59-H",
-   :label "debug-formula",
+   :show? false,
+   :position {:x -12, :y 96},
+   :code "(fn [ctx x]\n  \n  [:div \"raw input:\" (pr-str x)]\n  )"}
+  {:id "ncLedJjuYnxlR9W-",
+   :label "int conversion",
+   :type :formula,
+   :show? false,
+   :position {:x 288, :y 0},
+   :code
+   "(fn [ctx x]\n  (->> x\n    (map (fn [[k v]]\n           [k (parse-long v)]\n           ))\n    (into {}))\n  \n  )"}
+  {:id "wNOqUl5hCce_5bdQ",
+   :label "debug neu",
    :type :formula,
    :show? true,
-   :position {:x 672, :y 24},
-   :code "(fn [ctx x]\n  [:div (pr-str x)])"}],
+   :position {:x 288, :y 96},
+   :code "(fn [ctx x]\n  \n  [:div \"raw input:\" (pr-str x)]\n  )"}
+  {:id "GpD5aEdEjdRYZc-h",
+   :label "sum-all",
+   :type :formula,
+   :show? false,
+   :position {:x 600, :y 0},
+   :code "(fn [ctx x]\n  (reduce + (vals x)))"}
+  {:id "nvaOvYFzFgdHLK-8",
+   :label "sum-result",
+   :type :formula,
+   :show? true,
+   :position {:x 984, :y 372},
+   :code "(fn [ctx x]\n  \n  [:div \"total sum result:\" (pr-str x)]\n  )"}],
  :edges
- [{:id "e-1",
+ [{:id "a1b16e98-78f3-40ad-a923-cd0ac63f5882",
    :source-node "StK0mX51f9Igeh2Y",
-   :source-port "out",
-   :target-node "Ey8lQZ40PlkopwFI",
-   :target-port "a"}
-  {:id "e-2",
-   :source-node "FEaXfoT65gke1gH-",
-   :source-port "out",
-   :target-node "Ey8lQZ40PlkopwFI",
-   :target-port "b"}
-  {:id "e-3",
-   :source-node "Ey8lQZ40PlkopwFI",
-   :source-port "out",
-   :target-node "THnJJNqBZMQhkKDX",
-   :target-port "s"}
-  {:id "8fa0a8ab-29cd-4951-84c4-a5e57abf4241",
-   :source-node "FEaXfoT65gke1gH-",
    :source-port "out",
    :target-node "b44_utQPSIbeiwxu",
    :target-port "x"}
-  {:id "59922711-52f0-4489-8823-beb3019ecb5f",
-   :source-node "Ey8lQZ40PlkopwFI",
+  {:id "4cec7561-6a81-4524-b6ee-6c296e5fc2f5",
+   :source-node "StK0mX51f9Igeh2Y",
    :source-port "out",
-   :target-node "nOcLRY6QoFPD59-H",
+   :target-node "ncLedJjuYnxlR9W-",
+   :target-port "x"}
+  {:id "1d8b358a-5d84-46e6-8597-7d974aad471e",
+   :source-node "ncLedJjuYnxlR9W-",
+   :source-port "out",
+   :target-node "wNOqUl5hCce_5bdQ",
+   :target-port "x"}
+  {:id "911da0fd-d8c8-47c7-904d-73138f374543",
+   :source-node "ncLedJjuYnxlR9W-",
+   :source-port "out",
+   :target-node "GpD5aEdEjdRYZc-h",
+   :target-port "x"}
+  {:id "c5f08945-ecaa-408b-a018-998143d4f249",
+   :source-node "GpD5aEdEjdRYZc-h",
+   :source-port "out",
+   :target-node "nvaOvYFzFgdHLK-8",
    :target-port "x"}]}
