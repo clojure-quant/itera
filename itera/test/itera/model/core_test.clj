@@ -5,7 +5,7 @@
    [itera.model.core :as rc]))
 
 (def ^:private graph-names
-  ["core-test-compile-error" "core-test-success"])
+  ["core-test-compile-error" "core-test-success" "core-test-unconnected-input"])
 
 (defn- graph-nss []
   (map #(symbol (str "itera.user." %)) graph-names))
@@ -40,6 +40,20 @@
         (is (rc/is-no-val? v))
         (is (instance? clojure.lang.ExceptionInfo (:ex v)))
         (is (re-find #"missing-symbol" (ex-message (:ex v))))))))
+
+(deftest create-formula-node-unconnected-input-test
+  (let [graph {:graph/name "core-test-unconnected-input"
+               :nodes [{:id "missing" :type :formula
+                        :code "(fn [ctx x] x)"}]
+               :edges []}
+        runner (rc/create-runner {} graph)
+        node (rc/get-node runner "missing")]
+    (is (some? (:out node)))
+    (let [values (m/? (m/reduce conj [] (:out node)))]
+      (is (= 1 (count values)))
+      (let [v (first values)]
+        (is (rc/is-no-val? v))
+        (is (= "unconnected input: x" (:message-text v)))))))
 
 (deftest create-formula-node-success-test
   (let [graph {:graph/name "core-test-success"

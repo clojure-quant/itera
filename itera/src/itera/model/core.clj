@@ -1,5 +1,6 @@
 (ns itera.model.core
   (:require
+   [clojure.string :as string]
    [missionary.core :as m]
    [itera.util.clj :as util]
    [itera.model.formula :as f]
@@ -78,6 +79,9 @@
         compiled (util/compile-formula graph-ns code)
         {:keys [fn args ctx? value flow?] :as formula} (f/create-formula compiled)
         args-vec (f/args-val formula input-flow-dict)
+        missing-args (->> (or args [])
+                          (remove #(contains? input-flow-dict %))
+                          (map str))
         persistent (assoc persistent :args (vec (or args [])) :formula formula)]
     (cond
       ; compilation failed: surface the exception on :out
@@ -91,8 +95,11 @@
       ; a function that does not compile (or is not a function)
       (nil? fn) persistent
 
-      ; not all inputs are connected
-      (nil? args-vec) persistent
+      ; not all inputs are connected: surface the missing arg(s) on :out
+      (nil? args-vec) (assoc persistent
+                             :out (m/seed [(create-no-val
+                                            (str "unconnected input: "
+                                                 (string/join ", " missing-args)))]))
       :else  (assoc persistent
                     :out (clj-calculate ctx formula args-vec)))))
 
