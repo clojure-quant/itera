@@ -102,9 +102,14 @@
                             [demo.flow :as df]])
 
   (compile-formula dag-ns "(fn [ctx assets] (println assets))")
-
+  (compile-formula dag-ns "(fn [ctx assets] (println assets2))")
+  
   (fn-arglist "(fn [ctx assets] (println assets))")
+
+  (fn-arglist "(fn [_ assets] (println assets))")
   ;;=> [ctx assets]
+
+
 
   ;
   )

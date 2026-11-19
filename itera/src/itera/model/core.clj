@@ -75,11 +75,15 @@
                              (map (fn [[arg node-id]]
                                     [arg (:out (get-node r node-id))]))
                              (into {}))
-        {:keys [fn args ctx? value flow?] :as formula} (-> (util/compile-formula graph-ns code)
-                                                           (f/create-formula))
+        compiled (util/compile-formula graph-ns code)
+        {:keys [fn args ctx? value flow?] :as formula} (f/create-formula compiled)
         args-vec (f/args-val formula input-flow-dict)
         persistent (assoc persistent :args (vec (or args [])) :formula formula)]
     (cond
+      ; compilation failed: surface the exception on :out
+      (:ex compiled) (assoc persistent
+                           :out (m/seed [(create-calculation-exception (:ex compiled))]))
+
       ; a value that is a flow
       (and flow? value) (assoc persistent
                                :out value)

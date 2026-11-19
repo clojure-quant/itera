@@ -2,6 +2,13 @@
   (:require
    [itera.util.clj :as util]))
 
+(defn args-without-ctx [args]
+  (->> args
+       (remove #(contains? #{'_ 'ctx} %))
+       (map name)
+       (into []))
+  )
+
 (defn create-formula [{:keys [value code]}]
   (cond
     ; flow "variable"
@@ -12,10 +19,7 @@
     (and value (fn? value))
     (let [args (util/fn-arglist code)]
       {:fn value
-       :args (->> args
-                  (remove #(contains? #{'_ 'ctx} %))
-                  (map name)
-                  (into []))
+       :args (args-without-ctx args)
        :ctx? (->> args
                   (some #(contains? #{'_ 'ctx} %)))})
     

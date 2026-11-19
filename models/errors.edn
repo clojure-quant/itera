@@ -1,1 +1,15 @@
-{:graph/name "errors", :nodes [], :edges []}
+{:graph/name "errors",
+ :nodes
+ [{:id "Vi8WFudIYkizdp-n",
+   :label "bad-code",
+   :type :formula,
+   :show? true,
+   :position {:x 384, :y 48},
+   :code "(fn [ctx x]\n  xtt)"}
+  {:id "ehh8lOxlBJTeyBEt",
+   :label "missing input",
+   :type :formula,
+   :show? true,
+   :position {:x 408, :y 156},
+   :code "(fn [ctx x] x)"}],
+ :edges []}
