@@ -1,0 +1,40 @@
+{:graph/name "image",
+ :nodes
+ [{:id "trigger", :label "trigger", :type :value, :show? false, :position {:x 24, :y 60}, :value true}
+  {:id "read-resource",
+   :label "read-resource",
+   :type :formula,
+   :show? false,
+   :position {:x 384, :y 60},
+   :code
+   "(fn [ctx trigger]\n  (javax.imageio.ImageIO/read\n    ((requiring-resolve 'clojure.java.io/resource) \"demo/sun.png\")))"}
+  {:id "image-cache-plot",
+   :label "image (cache)",
+   :type :formula,
+   :show? true,
+   :position {:x 744, :y 60},
+   :code
+   "(fn [ctx img]\n  ((requiring-resolve 'itera.plot.image/image)\n    {:alt \"sun from cache\" :width 200}\n    img))"}
+  {:id "image-inline-plot",
+   :label "image-inline",
+   :type :formula,
+   :show? true,
+   :position {:x 756, :y 204},
+   :code
+   "(fn [ctx img]\n  ((requiring-resolve 'itera.plot.image/image-inline)\n    img\n    {:alt \"sun inline\" :width 200}))"}],
+ :edges
+ [{:id "e-trigger",
+   :source-node "trigger",
+   :source-port "out",
+   :target-node "read-resource",
+   :target-port "trigger"}
+  {:id "e-1",
+   :source-node "read-resource",
+   :source-port "out",
+   :target-node "image-cache-plot",
+   :target-port "img"}
+  {:id "e-2",
+   :source-node "read-resource",
+   :source-port "out",
+   :target-node "image-inline-plot",
+   :target-port "img"}]}

@@ -22,13 +22,20 @@
                    (:name m))]
     {:path path :name (:name m) :title (:title m)}))
 
+(def requires 
+  '[[clojure.string :as string]
+    [clojure.edn :as edn]
+    [itera.plot.hiccup :refer [hiccup]]
+    [itera.plot.text :refer [text]]
+    [itera.plot.image :refer [image image-inline]]
+    [demo.flow :as df]]
+  )
+
 (defn start
   "Hyper :exec-fn. Receives {:opts {...}} from the :itera alias exec-args."
   [{:keys [opts]}]
   (let [ctx {:itera/model-path "../models"
-             :requires '[[clojure.string :as string]
-                         [clojure.edn :as edn]
-                         [demo.flow :as df]]}
+             :requires requires}
         demo-routes [["/demo/options" {:name :demo-options
                                        :title "Options Playground"
                                        :get (page-option/page-option-playground ctx)}]
