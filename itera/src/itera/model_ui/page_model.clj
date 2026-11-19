@@ -1,7 +1,7 @@
 (ns itera.model-ui.page-model
   "Model page: a viewport-sized Graph/Interact tab layout over one model.
 
-   All model state is owned by itera.runner.ui.  The form-3 view starts the
+   All model state is owned by itera.model.ui.  The form-3 view starts the
    model on mount (and keeps it running across tab switches), streams shown
    node values in the interact tab, and stops the model on unmount.  When the
    model file does not exist, it renders a \"Model not found\" page instead.
@@ -12,7 +12,7 @@
   (:require [hyper.core :as h]
             [itera.model-ui.graph-editor :as editor]
             [itera.model-ui.interact :as interact]
-            [itera.runner.ui :as rui]))
+            [itera.model.ui :as rui]))
 
 ;; ---------------------------------------------------------------------------
 ;; page

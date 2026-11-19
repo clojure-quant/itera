@@ -3,7 +3,7 @@
 
    Wraps Clojure's `load-string`/`in-ns` machinery with nrepl-compatible output
    capture and shaped compiler exceptions, and builds/compiles workbook
-   namespaces.  No `itera.runner.*` dependencies, to keep the namespace graph
+   namespaces.  No `itera.model.*` dependencies, to keep the namespace graph
    acyclic."
   (:require
    [clojure.string :as string]

@@ -1,2 +1,5 @@
-{:head      [itera.page.algo/head]
+{:head      [itera.page.algo/head
+             itera.plot.exception/head
+             itera.plot.hiccup/head
+             itera.plot.text/head]
  :option-ui [itera.option.default-ui itera.option.container]}

@@ -4,17 +4,6 @@
    :label "hello",
    :type :formula,
    :show? true,
-   :position {:x 456, :y 264},
-   :code "(fn [ctx c]\n  [:h1 \"hello, hermann!\"]\n  )"}
-  {:id "tCDJbOusHTdh94hf",
-   :label "value-2",
-   :type :value,
-   :show? false,
-   :position {:x 144, :y 264},
-   :value 0}],
- :edges
- [{:id "50fee4ee-0656-4a64-a523-d70ca4314b24",
-   :source-node "tCDJbOusHTdh94hf",
-   :source-port "out",
-   :target-node "DHcldYPBrqLD7ALc",
-   :target-port "c"}]}
+   :position {:x 420, :y 324},
+   :code "(fn [ctx]\n  [:h1 \"hello, hermann!\"]\n  )"}],
+ :edges []}

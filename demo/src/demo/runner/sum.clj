@@ -1,6 +1,6 @@
 (ns demo.runner.sum
   (:require
-   [itera.runner.core :as rc]))
+   [itera.model.core :as rc]))
 
 (def graph
   {:graph/name "sum"

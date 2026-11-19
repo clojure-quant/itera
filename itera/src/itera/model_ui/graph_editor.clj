@@ -4,17 +4,17 @@
 
    `graph-editor` takes the model runner handle and owns every server action
    the component emits: it derives the rendered graph and its revision from
-   itera.runner.ui, creates the popup tab cursors,
+   itera.model.ui, creates the popup tab cursors,
    and builds the graph-change / edit actions.  It also owns the toolbar's
    Add/Save actions.  The node-edit popup also lives here: CodeMirror for
    :formula nodes and itera.input.option for :value nodes, writing the node
-   through itera.runner.ui when the popup closes.
+   through itera.model.ui when the popup closes.
 
    It renders the toolbar and the component as siblings; the toolbar is not a
    child of the custom element.  Add (:value / :formula) and Save are
-   :data-on:click server actions: Add runs itera.runner.ui/add-node! and the
+   :data-on:click server actions: Add runs itera.model.ui/add-node! and the
    server replies by bumping graph-rev so the component rebuilds; Save runs
-   itera.runner.ui/save-model-edn!.  The remaining
+   itera.model.ui/save-model-edn!.  The remaining
    toolbar buttons carry :data-cmd (delete / zoom-in / zoom-out / fit), and
    the component, on mount, attaches one delegated click listener to its
    closest `.itera-graph-editor` wrapper; those commands run client-local with
@@ -27,7 +27,7 @@
    in/out.  Nodes carry topology/display data only (:id, :label, :type, :show?,
    :position, :inputs, :outputs) — :code, :value and :option-ui stay on the
    server, where the edit popup resolves them by node id through
-   itera.runner.ui/node-by-id.
+   itera.model.ui/node-by-id.
 
    Graph nodes carry :id (the X6 cell id, an immutable server-generated
    nano-id) and :label (displayed/editable, may repeat).  Creating a node is
@@ -51,7 +51,7 @@
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
             [itera.input.option :as input-opt]
-            [itera.runner.ui :as rui]))
+            [itera.model.ui :as rui]))
 
 (h/defc itera-model-graph-editor
   "X6 canvas web component.  The toolbar lives in the graph-editor wrapper."
@@ -633,8 +633,8 @@
 
    Owns every server action the itera-model-graph-editor component emits:
    graph-change and edit.  It also owns the direct toolbar actions: Add
-   (:value / :formula) runs itera.runner.ui/add-node! and Save runs
-   itera.runner.ui/save-model-edn!.  The toolbar is a sibling of the
+   (:value / :formula) runs itera.model.ui/add-node! and Save runs
+   itera.model.ui/save-model-edn!.  The toolbar is a sibling of the
    component, not a child; its other buttons (delete / zoom-in / zoom-out /
    fit) carry :data-cmd and are delegated to the component's client-side
    commands.  `graph` nodes must not include :code, :value or :option-ui —

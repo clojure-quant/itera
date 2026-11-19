@@ -1,8 +1,10 @@
-(ns itera.runner.core
+(ns itera.model.core
   (:require
    [missionary.core :as m]
    [itera.util.clj :as util]
-   [itera.runner.formula :as f]))
+   [itera.model.formula :as f]
+   [itera.value.protocol]
+   [itera.plot.exception :as plot-ex]))
 
 (defn node-dict [{:keys [nodes edges] :as persistent-data}]
   (->> nodes
@@ -30,10 +32,22 @@
 
 ; no value
 
-(defrecord no-val [cell-id])
+(defrecord no-val [message-text ex]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [v]
+    [:div
+     (when-let [t (:message-text v)]
+       [:p t])
+     (when-let [ex (:ex v)]
+       (->  ex
+            (plot-ex/exception->data)
+            (plot-ex/exception->hiccup)))]))
 
-(defn create-no-val [cell-id]
-  (no-val. cell-id))
+(defn create-no-val [message-text]
+  (no-val. message-text nil))
+
+(defn create-calculation-exception [ex]
+  (no-val. "exception when running the formula" ex))
 
 (defn is-no-val? [v]
   (instance? no-val v))
@@ -44,11 +58,11 @@
                           (m/amb (create-no-val "init"))
                           (let [args-vec (seq (m/?> input-f))]
                             (if (some is-no-val? args-vec)
-                              (create-no-val "input init")
+                              (create-no-val "inputs missing values")
                               (try
                                 (m/? (m/via m/cpu (f/run-formula ctx f args-vec)))
                                 (catch Exception ex
-                                  (create-no-val (str "ex: " (ex-message ex))))))))
+                                  (create-calculation-exception ex))))))
         formula-result-f-wrapped (->> formula-result-f
                                       (m/reductions (fn [r v] v) (create-no-val "init2"))
                                       (m/relieve {})

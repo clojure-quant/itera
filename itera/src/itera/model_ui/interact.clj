@@ -2,11 +2,12 @@
   "Interact tab: option-ui sidebar plus a live list of shown node values.
 
    Reads the model runner in `this` and its shown-node index cursor in `index`;
-   option-ui nodes are edited through itera.runner.ui, and shown values render
-   reactively via itera.model-ui.visual-value."
-  (:require [itera.model-ui.visual-value :as visual]
+   option-ui nodes are edited through itera.model.ui, and shown values render
+   reactively via itera.value.converter."
+  (:require [hyper.core :as h]
             [itera.option.core :as options]
-            [itera.runner.ui :as rui]))
+            [itera.value.converter :as converter]
+            [itera.model.ui :as rui]))
 
 (defn interact-view [r]
   (let [{:keys [this]} r
@@ -57,5 +58,8 @@
                             :font-family "monospace"
                             :font-size "0.8rem"}}
               label]
-             [:div {:style {:font-size "0.9rem"}} (visual/render-value a)]]))
+             [:div {:style {:font-size "0.9rem"}}
+              (if a
+                (h/reactive [a] (converter/type->hiccup @a))
+                [:span {:style {:color "#94a3b8"}} "—"])]]))
         [:div {:style {:color "#64748b" :font-size "0.8rem"}} "No shown nodes."])]]))

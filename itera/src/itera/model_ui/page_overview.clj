@@ -2,7 +2,7 @@
   "List the model files under :itera/model-path, linking to the model page,
    and create new empty models."
   (:require [hyper.core :as h]
-            [itera.runner.ui :as rui]))
+            [itera.model.ui :as rui]))
 
 (defn model-overview-page
   "Form-2 view listing the available models and a form to add one."

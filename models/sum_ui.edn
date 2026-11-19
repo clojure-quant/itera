@@ -1,10 +1,10 @@
 {:graph/name "sum-ui",
  :nodes
  [{:id "StK0mX51f9Igeh2Y",
-   :label "numbers",
+   :label "map-of-strings",
    :type :value,
    :show? true,
-   :position {:x -24, :y 0},
+   :position {:x -48, :y 0},
    :value {:a "11111111", :b "11", :c "111", :d "1111", :e "11111"},
    :option-ui
    [{:path [:a], :type :string, :name "a", :spec ""}
@@ -12,60 +12,39 @@
     {:path [:c], :type :string, :name "c", :spec ""}
     {:path [:d], :type :string, :name "d", :spec ""}
     {:path [:e], :type :string, :name "e", :spec ""}]}
-  {:id "b44_utQPSIbeiwxu",
-   :label "debug",
-   :type :formula,
-   :show? false,
-   :position {:x -12, :y 96},
-   :code "(fn [ctx x]\n  \n  [:div \"raw input:\" (pr-str x)]\n  )"}
   {:id "ncLedJjuYnxlR9W-",
-   :label "int conversion",
-   :type :formula,
-   :show? false,
-   :position {:x 288, :y 0},
-   :code
-   "(fn [ctx x]\n  (->> x\n    (map (fn [[k v]]\n           [k (parse-long v)]\n           ))\n    (into {}))\n  \n  )"}
-  {:id "wNOqUl5hCce_5bdQ",
-   :label "debug neu",
+   :label "map-of-ints",
    :type :formula,
    :show? true,
-   :position {:x 288, :y 96},
-   :code "(fn [ctx x]\n  \n  [:div \"raw input:\" (pr-str x)]\n  )"}
+   :position {:x 264, :y 0},
+   :code
+   "(fn [ctx x]\n  (->> x\n    (map (fn [[k v]]\n           [k (parse-long v)]\n           ))\n    (into {}))\n  \n  )"}
   {:id "GpD5aEdEjdRYZc-h",
    :label "sum-all",
    :type :formula,
-   :show? false,
-   :position {:x 600, :y 0},
+   :show? true,
+   :position {:x 576, :y 0},
    :code "(fn [ctx x]\n  (reduce + (vals x)))"}
-  {:id "nvaOvYFzFgdHLK-8",
-   :label "sum-result",
+  {:id "RlFAOOcCN13E1Nac",
+   :label "formula-4",
    :type :formula,
    :show? true,
-   :position {:x 984, :y 372},
-   :code "(fn [ctx x]\n  \n  [:div \"total sum result:\" (pr-str x)]\n  )"}],
+   :position {:x 480, :y 204},
+   :code
+   "(fn [ctx x]\n  (require '[itera.plot.hiccup :refer [hiccup]])\n  (hiccup [:div {:style {:background-color \"blue\"}}\n           (str x)\n           ]))\n"}],
  :edges
- [{:id "a1b16e98-78f3-40ad-a923-cd0ac63f5882",
-   :source-node "StK0mX51f9Igeh2Y",
-   :source-port "out",
-   :target-node "b44_utQPSIbeiwxu",
-   :target-port "x"}
-  {:id "4cec7561-6a81-4524-b6ee-6c296e5fc2f5",
+ [{:id "4cec7561-6a81-4524-b6ee-6c296e5fc2f5",
    :source-node "StK0mX51f9Igeh2Y",
    :source-port "out",
    :target-node "ncLedJjuYnxlR9W-",
-   :target-port "x"}
-  {:id "1d8b358a-5d84-46e6-8597-7d974aad471e",
-   :source-node "ncLedJjuYnxlR9W-",
-   :source-port "out",
-   :target-node "wNOqUl5hCce_5bdQ",
    :target-port "x"}
   {:id "911da0fd-d8c8-47c7-904d-73138f374543",
    :source-node "ncLedJjuYnxlR9W-",
    :source-port "out",
    :target-node "GpD5aEdEjdRYZc-h",
    :target-port "x"}
-  {:id "c5f08945-ecaa-408b-a018-998143d4f249",
+  {:id "8d485113-52fb-4cda-b8b0-7d7adbcbdb74",
    :source-node "GpD5aEdEjdRYZc-h",
    :source-port "out",
-   :target-node "nvaOvYFzFgdHLK-8",
+   :target-node "RlFAOOcCN13E1Nac",
    :target-port "x"}]}

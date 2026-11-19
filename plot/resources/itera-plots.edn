@@ -1,10 +1,12 @@
-{:head      [itera.plot.aggrid/head
-              itera.plot.cheetah/head
-              itera.plot.cytoscape/head
-              itera.plot.echarts/head
-              itera.plot.fipp/head
-              itera.plot.highcharts/head
-              itera.plot.md/head
-              itera.plot.plotly/head
-              itera.plot.rtable/head
-              itera.plot.vega/head]}
+{:head [itera.plot.md/head
+        itera.plot.fipp/head
+             ; table
+        itera.plot.aggrid/head
+        itera.plot.cheetah/head
+        itera.plot.rtable/head
+             ; graph
+        itera.plot.highcharts/head
+        itera.plot.vega/head
+        itera.plot.plotly/head
+        itera.plot.echarts/head
+        itera.plot.cytoscape/head]}

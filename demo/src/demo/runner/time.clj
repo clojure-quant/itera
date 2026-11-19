@@ -1,6 +1,6 @@
 (ns demo.runner.time
   (:require
-   [itera.runner.ui :as ui]))
+   [itera.model.ui :as ui]))
 
 (def ctx {:itera/model-path "../models"
           :requires '[[clojure.string :as string]

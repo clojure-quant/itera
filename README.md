@@ -39,6 +39,12 @@ The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
 
 
+
+https://github.com/pink-gorilla/reval/blob/master/reval-ui/src/reval/dali/viewer/evalerr.cljs
+https://github.com/pink-gorilla/dali/blob/main/src/dali/plot/image.clj
+https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
+
+ reval.helper.ui-helper
       
 
 

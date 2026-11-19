@@ -1,4 +1,4 @@
-(ns itera.runner.formula
+(ns itera.model.formula
   (:require
    [itera.util.clj :as util]))
 

@@ -1,4 +1,4 @@
-(ns itera.runner.ui
+(ns itera.model.ui
   "Model state ownership for the model page.
 
    `start-model` loads a model file, builds the runner, and keeps the loaded
@@ -26,8 +26,8 @@
    [missionary.core :as m]
    [nano-id.core :as nano-id]
    [itera.input.option :as input-option]
-   [itera.runner.core :as rc]
-   [itera.runner.formula :as f]
+   [itera.model.core :as rc]
+   [itera.model.formula :as f]
    [itera.util.clj :as util])
   (:import
    [java.io File]))
