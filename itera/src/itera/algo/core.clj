@@ -1,4 +1,5 @@
-(ns itera.algo.core)
+(ns itera.algo.core
+  (:require [itera.value.converter :as converter]))
 
 (def ^:private calculate-watch-key ::calculate)
 
@@ -35,4 +36,4 @@
           result (if select
                    (select plot-options-a @result-a)
                    @result-a)]
-      (plot @plot-options-a result))))
+      (converter/render-tree (plot @plot-options-a result)))))

@@ -12,9 +12,14 @@
 
    cheetah-grid ships no stylesheet: its CSS is injected by the JS bundle, so
    `head` is empty."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord Cheetah [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-cheetah
   "cheetah-grid ListGrid in a custom element."
@@ -38,8 +43,9 @@
 
 (defn cheetah
   [{:keys [columns data style class] :as _opts}]
-  (itera-cheetah (cond-> {:options (cond-> {}
-                                    columns (assoc :header columns)
-                                    data    (assoc :records data))}
-                   style (assoc :style style)
-                   class (assoc :class class))))
+  (Cheetah.
+   (itera-cheetah (cond-> {:options (cond-> {}
+                                     columns (assoc :header columns)
+                                     data    (assoc :records data))}
+                    style (assoc :style style)
+                    class (assoc :class class)))))

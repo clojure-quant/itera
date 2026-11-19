@@ -44,9 +44,14 @@
    `pixi-timeseries`.  Column maps whose columns have different lengths are
    truncated to the shortest column."
   (:require [hyper.core :as h]
-            [itera.util.color :as colors]))
+            [itera.util.color :as colors]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord PixiTimeseries [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (defn- column-map->rows [m]
   (let [ks   (vec (keys m))
@@ -952,7 +957,8 @@
    itera.page.algo/algo-page) must withhold this viewer until that loop has
    measured a complete window.  Invalid dimensions render
    \"invalid :width and :height\" and draw nothing.  A caller-supplied :style
-   wins over the :window-derived host size."
+   wins over the :window-derived host size.  Returns an `itera-convertable`
+   record."
   [{:keys [style class rows data window] :as opts}]
   (let [rows    (or rows data)
         options (-> (dissoc opts :style :class :rows :data
@@ -964,9 +970,10 @@
                            :height "100%"}
                           (window-size-style window)
                           style)]
-    (itera-pixi-timeseries
-     (cond-> {:options options :style host-style}
-       class (assoc :class class)))))
+    (PixiTimeseries.
+     (itera-pixi-timeseries
+      (cond-> {:options options :style host-style}
+        class (assoc :class class))))))
 
 (defn pixi-timeseries-ds
   [opts ds]

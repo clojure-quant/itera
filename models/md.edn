@@ -1,0 +1,40 @@
+{:graph/name "md",
+ :nodes
+ [{:id "01-markdown",
+   :label "markdown",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 60},
+   :value
+   "# Markdown from a model\n\nThis is rendered by `itera.plot.md/md`.\n\n- one\n- two\n- three"}
+  {:id "02-resource",
+   :label "resource",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 204},
+   :value "demo/sample.md"}
+  {:id "03-md",
+   :label "md",
+   :type :formula,
+   :show? true,
+   :position {:x 384, :y 60},
+   :code
+   "(fn [ctx markdown]\n  ((requiring-resolve 'itera.plot.md/md) markdown))"}
+  {:id "04-md-resource",
+   :label "md-resource",
+   :type :formula,
+   :show? true,
+   :position {:x 384, :y 204},
+   :code
+   "(fn [ctx resource]\n  ((requiring-resolve 'itera.plot.md/md-resource) resource))"}],
+ :edges
+ [{:id "e1",
+   :source-node "01-markdown",
+   :source-port "out",
+   :target-node "03-md",
+   :target-port "markdown"}
+  {:id "e2",
+   :source-node "02-resource",
+   :source-port "out",
+   :target-node "04-md-resource",
+   :target-port "resource"}]}

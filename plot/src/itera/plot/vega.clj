@@ -12,9 +12,14 @@
 
    `vegalite` renders a Vega-Lite spec; `vega` forces vega-embed's \"vega\" mode
    for a raw Vega spec."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord Vega [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-vega-embed
   {:require [["https://esm.sh/vega-embed@6.26.0" :as vega-embed]]}
@@ -55,14 +60,16 @@
 
 (defn vegalite
   [{:keys [style class] :as opts}]
-  (itera-vega-embed (cond-> {:options (payload opts)}
-                      style (assoc :style style)
-                      class (assoc :class class))))
+  (Vega.
+   (itera-vega-embed (cond-> {:options (payload opts)}
+                       style (assoc :style style)
+                       class (assoc :class class)))))
 
 (defn vega
   [{:keys [style class] :as opts}]
   (let [p (payload opts)
         p (assoc p :embedOpts (assoc (:embedOpts p) :mode "vega"))]
-    (itera-vega-embed (cond-> {:options p}
-                        style (assoc :style style)
-                        class (assoc :class class)))))
+    (Vega.
+     (itera-vega-embed (cond-> {:options p}
+                         style (assoc :style style)
+                         class (assoc :class class))))))

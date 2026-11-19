@@ -9,9 +9,14 @@
 
    `data` / `layout` / `config` map to Plotly.newPlot's positional args.
    Plotly injects its own styles, so `head` is empty."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord Plotly [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-plotly
   {:require [["https://esm.sh/plotly.js-dist-min@2.35.2" :as plotly]]}
@@ -35,6 +40,7 @@
 
 (defn plotly
   [{:keys [style class] :as opts}]
-  (itera-plotly (cond-> {:options (dissoc opts :style :class)}
-                  style (assoc :style style)
-                  class (assoc :class class))))
+  (Plotly.
+   (itera-plotly (cond-> {:options (dissoc opts :style :class)}
+                   style (assoc :style style)
+                   class (assoc :class class)))))

@@ -10,13 +10,18 @@
       :style      {:width \"100%\" :height \"400px\"}
       :class      nil
       :theme      \"quartz\" (ag-grid legacy theme name; default quartz)}"
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head
   [[:link {:rel  "stylesheet"
            :href "/itera/plot/aggrid/styles/ag-grid.css"}]
    [:link {:rel  "stylesheet"
            :href "/itera/plot/aggrid/styles/ag-theme-quartz.css"}]])
+
+(defrecord Aggrid [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-aggrid
   "Vanilla ag-grid in a custom element. `options` is the JSON-parsed gridOptions."
@@ -38,7 +43,8 @@
 
 (defn aggrid
   [{:keys [style class theme] :as opts}]
-  (itera-aggrid (cond-> {:options (dissoc opts :style :class :theme)}
-                  style (assoc :style style)
-                  class (assoc :class class)
-                  theme (assoc :theme theme))))
+  (Aggrid.
+   (itera-aggrid (cond-> {:options (dissoc opts :style :class :theme)}
+                   style (assoc :style style)
+                   class (assoc :class class)
+                   theme (assoc :theme theme)))))

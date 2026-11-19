@@ -1,0 +1,24 @@
+{:graph/name "echarts",
+ :nodes
+ [{:id "01-options",
+   :label "options",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 60},
+   :value
+   {:xAxis {:type "category", :data ["Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"]}
+    :yAxis {:type "value"}
+    :series [{:data [150 230 224 218 135 147 260], :type "line"}]}}
+  {:id "02-plot",
+   :label "echarts",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx options]\n  ((requiring-resolve 'itera.plot.echarts/echarts)\n   (assoc options :style {:width \"100%\" :height \"400px\"})))"}],
+ :edges
+ [{:id "e1",
+   :source-node "01-options",
+   :source-port "out",
+   :target-node "02-plot",
+   :target-port "options"}]}

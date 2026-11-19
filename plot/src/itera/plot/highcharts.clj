@@ -17,12 +17,21 @@
 
    The stylesheet is served locally from the plot sub-project's resources."
   (:require [hyper.core :as h]
-            [itera.util.color :as color])
+            [itera.util.color :as color]
+            [itera.value.protocol])
   (:import (java.time Instant LocalDate LocalDateTime ZonedDateTime)))
 
 (def head
   [[:link {:rel  "stylesheet"
            :href "/itera/plot/highcharts/css/highcharts.css"}]])
+
+(defrecord Highchart [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
+
+(defrecord Highstock [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-highchart
   {:require [["https://esm.sh/highcharts@11.4.8" :as hc]
@@ -69,15 +78,17 @@
 
 (defn highchart
   [{:keys [style class] :as opts}]
-  (itera-highchart (cond-> {:options (dissoc opts :style :class)}
-                     style (assoc :style style)
-                     class (assoc :class class))))
+  (Highchart.
+   (itera-highchart (cond-> {:options (dissoc opts :style :class)}
+                      style (assoc :style style)
+                      class (assoc :class class)))))
 
 (defn highstock
   [{:keys [style class] :as opts}]
-  (itera-highstock (cond-> {:options (dissoc opts :style :class)}
-                     style (assoc :style style)
-                     class (assoc :class class))))
+  (Highstock.
+   (itera-highstock (cond-> {:options (dissoc opts :style :class)}
+                      style (assoc :style style)
+                      class (assoc :class class)))))
 
 ;; --- highstock-ds -----------------------------------------------------------
 

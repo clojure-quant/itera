@@ -11,9 +11,14 @@
       :style  {:width \"100%\" :height \"400px\"}}
 
    ECharts injects its own styles, so `head` is empty."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord Echarts [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-echarts
   "ECharts instance in a custom element. `options` is the JSON-parsed option map."
@@ -34,6 +39,7 @@
 
 (defn echarts
   [{:keys [style class] :as opts}]
-  (itera-echarts (cond-> {:options (dissoc opts :style :class)}
-                   style (assoc :style style)
-                   class (assoc :class class))))
+  (Echarts.
+   (itera-echarts (cond-> {:options (dissoc opts :style :class)}
+                    style (assoc :style style)
+                    class (assoc :class class)))))

@@ -17,7 +17,8 @@
    resource path."
   (:require [clojure.java.io :as io]
             [commonmark-hiccup.core :as commonmark]
-            [dev.onionpancakes.chassis.core :as chassis]))
+            [dev.onionpancakes.chassis.core :as chassis]
+            [itera.value.protocol]))
 
 (def head
   [[:style
@@ -30,28 +31,38 @@
      .itera-md table { border-collapse: collapse; }
      .itera-md th, .itera-md td { border: 1px solid #ccc; padding: 0.25rem 0.6rem; }"]])
 
+(defrecord Md [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
+
 (defn- container-attrs [class style]
   (cond-> {:class "itera-md"}
     class (update :class #(str % " " class))
     style (assoc :style style)))
 
+(defn- markdown->hiccup [markdown {:keys [class style]}]
+  [:div (container-attrs class style)
+   (chassis/raw (commonmark/markdown->html (str (or markdown ""))))])
+
 (defn md
-  "Render markdown given as a string to hiccup.
+  "Render markdown given as a string to a hiccup tree wrapped in an
+   `itera-convertable` record.
 
    Optional opts map: `{:class <string> :style <map>}` container passthrough."
   ([markdown] (md markdown nil))
-  ([markdown {:keys [class style]}]
-   [:div (container-attrs class style)
-    (chassis/raw (commonmark/markdown->html (str (or markdown ""))))]))
+  ([markdown opts]
+   (Md. (markdown->hiccup markdown opts))))
 
 (defn md-resource
-  "Render markdown read from a classpath resource to hiccup.
+  "Render markdown read from a classpath resource to a hiccup tree wrapped in
+   an `itera-convertable` record.
 
    Optional opts map: `{:class <string> :style <map>}` container passthrough.
    A missing resource renders an inline notice instead of throwing."
   ([resource] (md-resource resource nil))
   ([resource {:keys [class style] :as opts}]
-   (if-let [r (io/resource resource)]
-     (md (slurp r :encoding "UTF-8") opts)
-     [:div (container-attrs class style)
-      [:p "Markdown resource not found: " (str resource)]])))
+   (Md.
+    (if-let [r (io/resource resource)]
+      (markdown->hiccup (slurp r :encoding "UTF-8") opts)
+      [:div (container-attrs class style)
+       [:p "Markdown resource not found: " (str resource)]]))))

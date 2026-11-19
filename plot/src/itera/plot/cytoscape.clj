@@ -18,9 +18,14 @@
 
    The `dagre` and `cose-bilkent` layout extensions are registered on mount,
    so `:layout {:name \"dagre\"}` and `:layout {:name \"cose-bilkent\"}` work."
-  (:require [hyper.core :as h]))
+  (:require [hyper.core :as h]
+            [itera.value.protocol]))
 
 (def head [])
+
+(defrecord Cytoscape [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (h/defc itera-cytoscape
   "Vanilla Cytoscape graph in a custom element. `options` is the JSON-parsed
@@ -52,8 +57,9 @@
 
 (defn cytoscape
   [{:keys [style class stylesheet] :as opts}]
-  (itera-cytoscape
-   (cond-> {:options (cond-> (dissoc opts :style :class :stylesheet)
-                       stylesheet (assoc :style stylesheet))}
-     style (assoc :style style)
-     class (assoc :class class))))
+  (Cytoscape.
+   (itera-cytoscape
+    (cond-> {:options (cond-> (dissoc opts :style :class :stylesheet)
+                        stylesheet (assoc :style stylesheet))}
+      style (assoc :style style)
+      class (assoc :class class)))))

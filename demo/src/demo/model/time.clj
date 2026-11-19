@@ -1,4 +1,4 @@
-(ns demo.runner.time
+(ns demo.model.time
   (:require
    [itera.model.ui :as ui]))
 

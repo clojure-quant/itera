@@ -10,11 +10,16 @@
      :columns  [{:path :close :header \"Close\" :format (fn [v] ...)} ...]
      :rows     [{:close 10.4} ...]
      :render-cell  table-level cell fn (fn [col row]) -> content (hiccup/value)
-     :class :style  table passthrough")
+     :class :style  table passthrough"
+  (:require [itera.value.protocol]))
 
 (def head
   [[:link {:rel  "stylesheet"
            :href "/itera/plot/rtable/rtable.css"}]])
+
+(defrecord Rtable [hiccup]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] hiccup))
 
 (defn- col-value
   "Resolve a row's value for a column via its :path (keyword/vector) or :expr."
@@ -62,13 +67,14 @@
 
 (defn rtable
   [{:keys [columns rows class style render-cell] :as _opts}]
-  (if (empty? rows)
-    [:div {:style {:padding "1rem" :color "#888"}} "No rows in this table."]
-    (let [rc (or render-cell default-render-cell)]
-      (into [:table {:class class :style style}]
-            (concat
-             [(into [:thead]
-                    [(into [:tr] (map (fn [c] [:th (cell-attrs c) (header-label c)]) columns))])]
-             [(into [:tbody]
-                    (for [row rows]
-                      (into [:tr] (map (fn [c] (cell-td rc c row)) columns))))])))))
+  (Rtable.
+   (if (empty? rows)
+     [:div {:style {:padding "1rem" :color "#888"}} "No rows in this table."]
+     (let [rc (or render-cell default-render-cell)]
+       (into [:table {:class class :style style}]
+             (concat
+              [(into [:thead]
+                     [(into [:tr] (map (fn [c] [:th (cell-attrs c) (header-label c)]) columns))])]
+              [(into [:tbody]
+                     (for [row rows]
+                       (into [:tr] (map (fn [c] (cell-td rc c row)) columns))))]))))))

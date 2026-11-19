@@ -1,0 +1,38 @@
+{:graph/name "cheetah",
+ :nodes
+ [{:id "01-columns",
+   :label "columns",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 60},
+   :value
+   [{:field "make", :caption "Make"}
+    {:field "model", :caption "Model"}
+    {:field "price", :caption "Price"}]}
+  {:id "02-rows",
+   :label "cars",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 204},
+   :value
+   [{"make" "Toyota", "model" "Celica", "price" 35000}
+    {"make" "Ford", "model" "Mondeo", "price" 32000}
+    {"make" "Porsche", "model" "Boxter", "price" 72000}]}
+  {:id "03-plot",
+   :label "cheetah",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 120},
+   :code
+   "(fn [ctx columns rows]\n  ((requiring-resolve 'itera.plot.cheetah/cheetah)\n   {:columns columns\n    :data rows\n    :style {:width \"100%\" :height \"400px\"}}))"}],
+ :edges
+ [{:id "e1",
+   :source-node "01-columns",
+   :source-port "out",
+   :target-node "03-plot",
+   :target-port "columns"}
+  {:id "e2",
+   :source-node "02-rows",
+   :source-port "out",
+   :target-node "03-plot",
+   :target-port "rows"}]}

@@ -1,4 +1,4 @@
-(ns demo.runner.sum
+(ns demo.model.sum
   (:require
    [itera.model.core :as rc]))
 
