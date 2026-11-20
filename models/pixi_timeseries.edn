@@ -3,6 +3,7 @@
  [{:id "01-rows",
    :label "OHLC rows",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
    :value
@@ -21,6 +22,7 @@
   {:id "02-charts",
    :label "charts",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 360},
    :value

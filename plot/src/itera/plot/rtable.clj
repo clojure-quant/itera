@@ -96,7 +96,7 @@
   (to-hiccup [_]
     (render {:rows data :columns (default-columns data)}))
   spec-plot/itera-spec-plot
-  (to-hiccup [_ spec window]
+  (to-formatted-hiccup [_ spec window]
     (render (cond-> {:rows data
                      :columns (or spec (default-columns data))}
               window (assoc :style (spec-plot/window->style window)))))

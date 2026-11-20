@@ -1,15 +1,13 @@
 {:graph/name "rtable"
  :nodes
- [{:id "trigger" :label "trigger" :type :value :show? false
-   :position {:x 24 :y 24} :value true}
-  {:id "bars-data" :label "bars" :type :formula :show? false
+ [{:id "bars-data" :label "bars" :type :formula :show? false
    :position {:x 240 :y 60}
    :code
-   "(fn [trigger]\n  ((requiring-resolve 'demo.plot.table.rtable.itera/bars-rows)))"}
+   "(fn []\n  ((requiring-resolve 'demo.plot.table.rtable.itera/bars-rows)))"}
   {:id "simple-data" :label "simple rows" :type :formula :show? false
    :position {:x 240 :y 300}
    :code
-   "(fn [trigger]\n  (deref (requiring-resolve 'demo.plot.table.rtable.itera/simple-rows)))"}
+   "(fn []\n  (deref (requiring-resolve 'demo.plot.table.rtable.itera/simple-rows)))"}
   {:id "bars-plot" :label "rtable (bars)" :type :formula :show? true
    :position {:x 560 :y 60}
    :spec [{:path :date :header "Date"}
@@ -24,11 +22,7 @@
    :code
    "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}]
  :edges
- [{:id "e-trigger-bars" :source-node "trigger" :source-port "out"
-   :target-node "bars-data" :target-port "trigger"}
-  {:id "e-trigger-simple" :source-node "trigger" :source-port "out"
-   :target-node "simple-data" :target-port "trigger"}
-  {:id "e-bars" :source-node "bars-data" :source-port "out"
+ [{:id "e-bars" :source-node "bars-data" :source-port "out"
    :target-node "bars-plot" :target-port "data"}
   {:id "e-simple" :source-node "simple-data" :source-port "out"
    :target-node "simple-plot" :target-port "data"}]}

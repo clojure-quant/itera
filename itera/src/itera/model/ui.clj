@@ -10,10 +10,11 @@
      {:id \"V1StGXR8_Z5jdHi6\"  ; immutable, server-generated nano-id
       :label \"a-node\"          ; editable display name (need not be unique)
       :type :value|:formula
+      :value/editor :option-ui|:edn ; required for :value nodes
       :show? bool :position {:x 0 :y 0}
       :value <any>            ; :value nodes
       :code \"(fn [..] ..)\"    ; :formula nodes
-      :option-ui [<rows>]     ; optional, :value nodes
+      :option-ui [<rows>]     ; :option-ui value nodes
       :spec <any>}            ; optional, plot nodes (persisted itera-spec-plot spec)
 
    `:id` is the node's permanent identity (also the X6 cell id and the value
@@ -70,13 +71,30 @@
   (when (and (map? p) (some? (:x p)) (some? (:y p)))
     {:x (:x p) :y (:y p)}))
 
+(def ^:private value-editors
+  "The editors a :value node may declare in :value/editor."
+  #{:option-ui :edn})
+
 (defn- normalize-node [node]
-  (let [id (str (:id node))]
+  (let [id (str (:id node))
+        type (keyword (:type node))
+        value-editor (some-> (:value/editor node) keyword)]
+    (when (and (= :value type)
+               (not (contains? value-editors value-editor)))
+      (throw (ex-info (str "Invalid :value/editor for node \"" id "\""
+                           (when-let [label (:label node)]
+                             (str " (" label ")"))
+                           ": expected one of " (pr-str (sort value-editors))
+                           ", got " (pr-str (:value/editor node)))
+                      {:node-id id
+                       :value/editor (:value/editor node)})))
     (cond-> (assoc (dissoc node :uid)
                    :id id
                    :label (str (or (:label node) id))
-                   :type (keyword (:type node))
+                   :type type
                    :show? (boolean (:show? node)))
+      (= :value type)
+      (assoc :value/editor value-editor)
       (some? (:position node))
       (assoc :position (normalize-position (:position node))))))
 
@@ -199,9 +217,9 @@
   "JSON-friendly graph for the editor.  Each node's :id is the X6 cell id and
    the node :label is the displayed/editable name; edges reference node ids.
 
-   Nodes carry topology/display data only — :code, :value and :option-ui stay
-   on the server and are read from :model-a by `node-by-id` when the edit popup
-   opens."
+   Nodes carry topology/display data only — :code, :value, :value/editor and
+   :option-ui stay on the server and are read from :model-a by `node-by-id`
+   when the edit popup opens."
   [this]
   (let [m @(:model-a this)]
     {:nodes (mapv (fn [n]
@@ -235,10 +253,10 @@
    creator).  Edges with unknown endpoints or undeclared target ports are
    dropped, and at most one edge may target an input port.
 
-   Existing nodes keep their :id and :code/:value/:option-ui — those are
-   mutated only through set-node-code / set-node-value / set-node-option-ui.
-   :label, :show? and :position come from the editor; a blank :label falls
-   back to the previous label."
+   Existing nodes keep their :id and :code/:value/:option-ui/:value/editor —
+   those are mutated only through set-node-code / set-node-value /
+   set-node-option-ui.  :label, :show? and :position come from the editor; a
+   blank :label falls back to the previous label."
   [this graph client-rev]
   (when (= (graph-rev this) client-rev)
     (let [old @(:model-a this)
@@ -353,22 +371,31 @@
 (defn add-node!
   "Create a :value or :formula node server-side with a fresh nano-id, rebuild
    the runner, and bump `graph-rev` so the editor rebuilds from the server
-   graph.  Returns `this`."
-  [this type]
+   graph.  A :value node requires its editor as the third argument
+   (`:option-ui` or `:edn`); formula nodes pass `nil`.  Returns `this`."
+  [this type editor]
   (let [type (keyword (or type :value))]
     (when (contains? #{:value :formula} type)
-      (let [old @(:model-a this)
-            node (cond-> {:id (fresh-node-id this)
-                          :label (str (name type) "-" (inc (count (:nodes old))))
-                          :type type
-                          :show? false
-                          :position (next-node-position this)}
-                   (= :formula type) (assoc :code "(fn [ctx x] x)")
-                   (= :value type) (assoc :value 0))
-            new (update old :nodes conj node)]
-        (bump-rev! this)
-        (reset! (:model-a this) new)
-        (reconcile! this old new)))
+      (let [editor (when (= :value type) (keyword editor))]
+        (when (and (= :value type)
+                   (not (contains? value-editors editor)))
+          (throw (ex-info (str "A :value node needs :value/editor :option-ui "
+                               "or :edn, got " (pr-str editor))
+                          {:type type :value/editor editor})))
+        (let [old @(:model-a this)
+              node (cond-> {:id (fresh-node-id this)
+                            :label (str (name type) "-" (inc (count (:nodes old))))
+                            :type type
+                            :show? false
+                            :position (next-node-position this)}
+                     (= :formula type) (assoc :code "(fn [ctx x] x)")
+                     (= :value type) (assoc :value/editor editor
+                                            :value (if (= :edn editor) nil {}))
+                     (= :option-ui editor) (assoc :option-ui []))
+              new (update old :nodes conj node)]
+          (bump-rev! this)
+          (reset! (:model-a this) new)
+          (reconcile! this old new))))
     this))
 
 ;; ---------------------------------------------------------------------------
@@ -453,7 +480,8 @@
     this))
 
 (defn set-node-option-ui
-  "Update a :value node's :option-ui rows and re-initialize its :value."
+  "Update a :value node's :option-ui rows, mark it :value/editor :option-ui,
+   and re-initialize its :value."
   [this node-id rows]
   (let [rows (vec (or rows []))]
     (bump-rev! this)
@@ -463,7 +491,8 @@
                      (fn [ns]
                        (mapv (fn [n]
                                (if (= node-id (:id n))
-                                 (assoc n :option-ui rows :value {})
+                                 (assoc n :value/editor :option-ui
+                                        :option-ui rows :value {})
                                  n))
                              ns)))))
     (when-let [node (rc/get-node (:runner this) node-id)]
@@ -507,12 +536,14 @@
 ;; ---------------------------------------------------------------------------
 
 (defn option-ui-nodes
-  "Every :value node whose :option-ui rows compile to a non-empty spec, as
+  "Every :value node whose :value/editor is :option-ui and whose :option-ui
+   rows compile to a non-empty spec, as
    {:node-id <id> :label <label> :spec <compiled spec> :value <value>}."
   [this]
   (let [m @(:model-a this)]
     (->> (:nodes m)
-         (filter #(= :value (:type %)))
+         (filter #(and (= :value (:type %))
+                       (= :option-ui (:value/editor %))))
          (keep (fn [n]
                  (let [spec (input-option/create-option-spec (:graph-ns this) (:option-ui n))]
                    (when (seq spec)
@@ -543,10 +574,11 @@
                            ns))))))
   this)
 
-(defn- persist-node [{:keys [id label type show? position value code option-ui spec]}]
+(defn- persist-node [{:keys [id label type show? position value code option-ui spec]
+                      value-editor :value/editor}]
   (cond-> (array-map :id id :label label :type type :show? (boolean show?))
     position (assoc :position {:x (:x position) :y (:y position)})
-    (= :value type) (assoc :value value)
+    (= :value type) (assoc :value/editor value-editor :value value)
     (= :formula type) (assoc :code code)
     (seq option-ui) (assoc :option-ui option-ui)
     (some? spec) (assoc :spec spec)))

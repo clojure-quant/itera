@@ -3,6 +3,7 @@
  [{:id "01-markdown",
    :label "markdown",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
    :value
@@ -10,6 +11,7 @@
   {:id "02-resource",
    :label "resource",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 204},
    :value "demo/sample.md"}

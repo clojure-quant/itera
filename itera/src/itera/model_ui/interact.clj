@@ -2,7 +2,8 @@
   "Interact tab: option-ui sidebar plus a live list of shown node values.
 
    Reads the model runner in `this` and its shown-node index cursor in `index`;
-   option-ui nodes are edited through itera.model.ui, and shown values render
+   option-ui nodes (value nodes with :value/editor :option-ui) are edited
+   through itera.model.ui, and shown values render
    reactively via itera.value.converter.  Values implementing
    itera.plot-ui.protocol/itera-spec-plot render through that protocol at a
    fixed container size and expose an \"Edit spec\" CodeMirror popup; the edited
@@ -137,7 +138,7 @@
                       label]]
                     (if spec?
                       [:div {:style {:width (str (:width container-dimension) "px")}}
-                       (spec-plot/to-hiccup v spec container-dimension)]
+                       (spec-plot/to-formatted-hiccup v spec container-dimension)]
                       [:div {:style {:font-size "0.9rem" :min-width "0"}}
                        (converter/type->hiccup v)])]))
                [:div {:style {:display "flex" :flex-direction "column" :gap "0.35rem"}}

@@ -5,7 +5,8 @@
    [itera.model.core :as rc]))
 
 (def ^:private graph-names
-  ["core-test-compile-error" "core-test-success" "core-test-unconnected-input"])
+  ["core-test-compile-error" "core-test-success" "core-test-unconnected-input"
+   "core-test-zero-arg"])
 
 (defn- graph-nss []
   (map #(symbol (str "itera.user." %)) graph-names))
@@ -63,3 +64,32 @@
                         :target-node "s" :target-port "a"}]}
         runner (rc/create-runner {} graph)]
     (is (= 16 (rc/get-snapshot runner "s")))))
+
+(deftest create-formula-node-zero-arg-test
+  (testing "truly zero-argument formula computes once"
+    (let [graph {:graph/name "core-test-zero-arg"
+                 :nodes [{:id "n" :type :formula :code "(fn [] 42)"}]
+                 :edges []}
+          runner (rc/create-runner {} graph)]
+      (is (= 42 (rc/get-snapshot runner "n")))))
+
+  (testing "ctx-only formula receives ctx"
+    (let [graph {:graph/name "core-test-zero-arg"
+                 :nodes [{:id "n" :type :formula
+                          :code "(fn [ctx] (:itera/model-path ctx))"}]
+                 :edges []}
+          runner (rc/create-runner {:itera/model-path "../models"} graph)]
+      (is (= "../models" (rc/get-snapshot runner "n")))))
+
+  (testing "exception in a zero-argument formula becomes no-val"
+    (let [graph {:graph/name "core-test-zero-arg"
+                 :nodes [{:id "n" :type :formula
+                          :code "(fn [] (throw (ex-info \"boom\" {})))"}]
+                 :edges []}
+          runner (rc/create-runner {} graph)
+          node (rc/get-node runner "n")
+          values (m/? (m/reduce conj [] (:out node)))]
+      (is (= 1 (count values)))
+      (let [v (first values)]
+        (is (rc/is-no-val? v))
+        (is (= "boom" (ex-message (:ex v))))))))

@@ -3,6 +3,7 @@
  [{:id "01-vega-spec",
    :label "vega symbol spec",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
    :value
@@ -33,6 +34,7 @@
   {:id "02-vegalite-spec",
    :label "vegalite nav spec",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 360},
    :value
@@ -45,6 +47,7 @@
   {:id "03-nav-rows",
    :label "nav rows",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 540},
    :value

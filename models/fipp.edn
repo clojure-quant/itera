@@ -3,6 +3,7 @@
  [{:id "01-data",
    :label "portfolio",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
    :value

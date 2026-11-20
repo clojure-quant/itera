@@ -5,6 +5,7 @@
    :type :value,
    :show? false,
    :position {:x 24, :y 204},
+   :value/editor :edn,
    :value
    [{"make" "Toyota", "model" "Celica", "price" 35000}
     {"make" "Ford", "model" "Mondeo", "price" 32000}
@@ -14,14 +15,9 @@
    :type :formula,
    :show? true,
    :position {:x 420, :y 120},
-   :spec [{:field "make", :caption "Make"}
-          {:field "model", :caption "Model"}
-          {:field "price", :caption "Price"}]
-   :code
-   "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.cheetah/cheetah) rows))"}],
- :edges
- [{:id "e2",
-   :source-node "02-rows",
-   :source-port "out",
-   :target-node "03-plot",
-   :target-port "rows"}]}
+   :code "(fn [ctx rows]\n  (cheetah rows))",
+   :spec
+   [{:field "make", :caption "Make"}
+    {:field "model", :caption "Model"}
+    {:field "price", :caption "Price"}]}],
+ :edges [{:id "e2", :source-node "02-rows", :source-port "out", :target-node "03-plot", :target-port "rows"}]}

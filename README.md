@@ -47,9 +47,6 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
  reval.helper.ui-helper
 
 
-Zero-arg formula cells don't work on missionary b.44. The plan's premise is false for the resolved version: (m/latest vector) with zero flows throws Index 1 out of bounds for length 1 (missionary.impl.Heap/dequeue), and a (fn [] ...) node's :out errors identically. Verified directly in demo/. So I added one hidden :value true trigger node feeding both data cells ((fn [trigger] ...)), mirroring models/image.edn. The plan's 4-node shape becomes 5 nodes / 4 edges.
-
-
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
 
 

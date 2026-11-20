@@ -3,6 +3,7 @@
  [{:id "01-highchart-options",
    :label "highchart options",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
    :value
@@ -23,6 +24,7 @@
   {:id "02-highstock-options",
    :label "highstock options",
    :type :value,
+   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 360},
    :value

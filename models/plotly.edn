@@ -5,13 +5,14 @@
    :type :value,
    :show? false,
    :position {:x 24, :y 24},
-   :value
-   [{:z [[1 2 3] [3 2 1]], :type "surface"}]}
+   :value/editor :edn,
+   :value [{:z [[1 2 3] [3 2 1]], :type "surface"}]}
   {:id "01-scatter-data",
    :label "scatter traces",
    :type :value,
    :show? false,
    :position {:x 24, :y 220},
+   :value/editor :edn,
    :value
    [{:x [1 2 3 4], :y [10 15 13 17], :mode "markers", :type "scatter"}
     {:x [2 3 4 5], :y [16 5 11 9], :mode "lines", :type "scatter"}
@@ -21,33 +22,30 @@
    :type :value,
    :show? false,
    :position {:x 24, :y 440},
-   :value
-   [{:x ["giraffes" "orangutans" "monkeys"], :y [20 14 23], :type "bar"}]}
+   :value/editor :edn,
+   :value [{:x ["giraffes" "orangutans" "monkeys"], :y [20 14 23], :type "bar"}]}
   {:id "02-surface",
    :label "plotly (surface)",
    :type :formula,
    :show? true,
    :position {:x 460, :y 24},
-   :spec {:layout {:title "A surface plot"}},
-   :code
-   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.plotly/plotly) data))"}
+   :code "(fn [ctx data]\n  (plotly data))",
+   :spec {:layout {:title "A surface plot"}}}
   {:id "03-scatter",
    :label "plotly (scatter)",
    :type :formula,
    :show? true,
    :position {:x 460, :y 220},
-   :spec {:layout {:title "A simple scatter plot with lines and markers"}},
-   :code
-   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.plotly/plotly) data))"}
+   :code "(fn [ctx data]\n  (plotly data))",
+   :spec {:layout {:title "A simple scatter plot with lines and markers"}}}
   {:id "04-bar",
    :label "plotly (bar)",
    :type :formula,
    :show? true,
    :position {:x 460, :y 440},
-   :spec {:layout {:margin {:l 20, :r 0, :b 20, :t 0}},
-          :config {:displayModeBar false, :displayLogo false}},
-   :code
-   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.plotly/plotly) data))"}],
+   :code "(fn [ctx data]\n  (plotly data))",
+   :spec
+   {:layout {:margin {:l 20, :r 0, :b 20, :t 0}}, :config {:displayModeBar false, :displayLogo false}}}],
  :edges
  [{:id "e-surface",
    :source-node "01-surface-data",
@@ -59,8 +57,4 @@
    :source-port "out",
    :target-node "03-scatter",
    :target-port "data"}
-  {:id "e-bar",
-   :source-node "01-bar-data",
-   :source-port "out",
-   :target-node "04-bar",
-   :target-port "data"}]}
+  {:id "e-bar", :source-node "01-bar-data", :source-port "out", :target-node "04-bar", :target-port "data"}]}

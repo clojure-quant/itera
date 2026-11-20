@@ -2,7 +2,7 @@
 
 
 (defprotocol itera-spec-plot
-  (to-hiccup [v spec window])
+  (to-formatted-hiccup [v spec window])
   (default-spec [v])
   (spec-editor [v spec code-a]))
 
@@ -18,14 +18,14 @@
 (comment 
   (defrecord Hiccup [data]
     itera-spec-plot
-    (to-hiccup [v spec container-dimension]
+    (to-formatted-hiccup [v spec container-dimension]
                {:data (:data v) :spec spec :container-dimension container-dimension})
     (default-spec [v] :default-spec)
     (spec-editor [v spec code-a]
       :hiccup-editor))
   
   (def x (Hiccup. :data))
-  (to-hiccup x :rows :big)
+  (to-formatted-hiccup x :rows :big)
   
  ; 
   )

@@ -80,7 +80,7 @@
   itera.value.protocol/itera-convertable
   (to-hiccup [_] hiccup)
   spec-plot/itera-spec-plot
-  (to-hiccup [_ spec window]
+  (to-formatted-hiccup [_ spec window]
     (render (assoc opts
                    :spec (merge spec (select-keys window [:width :height]))
                    :style (merge (:style opts) (spec-plot/window->style window)))))

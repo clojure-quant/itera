@@ -55,7 +55,7 @@
   itera.value.protocol/itera-convertable
   (to-hiccup [_] (render {:data data}))
   spec-plot/itera-spec-plot
-  (to-hiccup [_ spec window]
+  (to-formatted-hiccup [_ spec window]
     (let [layout (cond-> (or (:layout spec) {})
                    (and (:width window) (:height window))
                    (assoc :width (:width window) :height (:height window)

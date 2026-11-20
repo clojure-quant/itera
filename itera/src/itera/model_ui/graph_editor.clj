@@ -7,14 +7,15 @@
    itera.model.ui, creates the popup tab cursors,
    and builds the graph-change / edit actions.  It also owns the toolbar's
    Add/Save actions.  The node-edit popup also lives here: CodeMirror for
-   :formula nodes and itera.input.option for :value nodes, writing the node
-   through itera.model.ui when the popup closes.
+   :formula nodes and :value nodes with :value/editor :edn, and
+   itera.input.option for :value nodes with :value/editor :option-ui, writing
+   the node through itera.model.ui when the popup closes.
 
    It renders the toolbar and the component as siblings; the toolbar is not a
-   child of the custom element.  Add (:value / :formula) and Save are
-   :data-on:click server actions: Add runs itera.model.ui/add-node! and the
-   server replies by bumping graph-rev so the component rebuilds; Save runs
-   itera.model.ui/save-model-edn!.  The remaining
+   child of the custom element.  Add Option-UI / Add EDN-UI / Add :formula and
+   Save are :data-on:click server actions: the Add buttons run
+   itera.model.ui/add-node! and the server replies by bumping graph-rev so the
+   component rebuilds; Save runs itera.model.ui/save-model-edn!.  The remaining
    toolbar buttons carry :data-cmd (delete / zoom-in / zoom-out / fit), and
    the component, on mount, attaches one delegated click listener to its
    closest `.itera-graph-editor` wrapper; those commands run client-local with
@@ -25,9 +26,9 @@
    expose an editable label, an edit box and a show/hide eye, and the graph
    area scrolls (outer overflow:auto over a content-sized X6 host) with zoom
    in/out.  Nodes carry topology/display data only (:id, :label, :type, :show?,
-   :position, :inputs, :outputs) — :code, :value and :option-ui stay on the
-   server, where the edit popup resolves them by node id through
-   itera.model.ui/node-by-id.
+   :position, :inputs, :outputs) — :code, :value, :value/editor and
+   :option-ui stay on the server, where the edit popup resolves them by node
+   id through itera.model.ui/node-by-id.
 
    Graph nodes carry :id (the X6 cell id, an immutable server-generated
    nano-id) and :label (displayed/editable, may repeat).  Creating a node is
@@ -48,7 +49,9 @@
    The client edits the graph locally and emits the full serialized graph on
    every structural change (delete/connect/disconnect/drag/show?/label), so the
    server can reconcile without the client rebuilding on its own echo."
-  (:require [hyper.core :as h]
+  (:require [clojure.edn :as edn]
+            [clojure.pprint :as pprint]
+            [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
             [itera.input.option :as input-opt]
             [itera.model.ui :as rui]))
@@ -564,29 +567,56 @@
     (set! (.-container ctx) nil)))
 
 ;; ---------------------------------------------------------------------------
-;; popup (edit a node's code or option-ui)
+;; popup (edit a node's code, option-ui or EDN value)
 ;; ---------------------------------------------------------------------------
 
 (defn- open-popup! [r node-id type]
-  (let [{:keys [this popup-a code-a rows-a]} r
-        node (rui/node-by-id this node-id)]
-    (reset! code-a (or (:code node) ""))
-    (reset! rows-a (vec (or (:option-ui node) [])))
-    (reset! popup-a {:id node-id :label (:label node) :type type})))
+  (let [{:keys [this popup-a code-a rows-a popup-error-a]} r
+        node (rui/node-by-id this node-id)
+        kind (keyword (or type "value"))
+        editor (:value/editor node)]
+    (reset! popup-error-a nil)
+    (cond
+      (= :formula kind) (reset! code-a (or (:code node) ""))
+      (= :edn editor) (reset! code-a (with-out-str (pprint/write (:value node))))
+      :else (reset! rows-a (vec (or (:option-ui node) []))))
+    (reset! popup-a {:id node-id :label (:label node)
+                     :type type :editor editor})))
 
-(defn- close-popup! [r]
-  (let [{:keys [this popup-a code-a rows-a]} r
-        {:keys [id type]} @popup-a]
+(defn- close-popup!
+  "Write the popup editor back to the node and close.  Invalid EDN (for
+   :value/editor :edn) sets the popup error and leaves the popup open."
+  [r]
+  (let [{:keys [this popup-a code-a rows-a popup-error-a]} r
+        {:keys [id type editor]} @popup-a]
     (when id
-      (if (= "formula" (name (keyword (or type "value"))))
-        (rui/set-node-code this id @code-a)
-        (rui/set-node-option-ui this id @rows-a)))
-    (reset! popup-a nil)))
+      (let [kind (keyword (or type "value"))]
+        (cond
+          (= :formula kind)
+          (do (rui/set-node-code this id @code-a)
+              (reset! popup-a nil))
+
+          (= :edn editor)
+          (try
+            (rui/set-node-value this id (edn/read-string @code-a))
+            (reset! popup-error-a nil)
+            (reset! popup-a nil)
+            (catch Exception e
+              (reset! popup-error-a (str "Invalid EDN: " (ex-message e)))))
+
+          :else
+          (do (rui/set-node-option-ui this id @rows-a)
+              (reset! popup-a nil)))))))
 
 (defn- popup-view [r]
-  (let [{:keys [popup-a code-a rows-a]} r
-        {:keys [id label type]} @popup-a
-        formula? (= "formula" (name (keyword (or type "value"))))]
+  (let [{:keys [popup-a code-a rows-a popup-error-a]} r
+        {:keys [id label type editor]} @popup-a
+        kind (keyword (or type "value"))
+        formula? (= :formula kind)
+        edn? (and (= :value kind) (= :edn editor))
+        kind-label (cond formula? "(:formula)"
+                         edn? "(:value, EDN)"
+                         :else "(:value, Option-UI)")]
     [:div {:style {:position "fixed"
                    :inset "0"
                    :background "rgba(17,24,39,0.45)"
@@ -609,8 +639,17 @@
       [:div {:style {:font-weight "600"
                      :font-size "0.85rem"
                      :font-family "monospace"}}
-       (str "Edit " (or label id) (if formula? " (:formula)" " (:value)"))]
-      (if formula?
+       (str "Edit " (or label id) " " kind-label)]
+      (when-let [error @popup-error-a]
+        [:div {:style {:color "#b91c1c"
+                       :background "#fef2f2"
+                       :border "1px solid #fca5a5"
+                       :border-radius "0.375rem"
+                       :padding "0.4rem 0.6rem"
+                       :font-size "0.8rem"
+                       :font-family "monospace"}}
+         error])
+      (if (or formula? edn?)
         (input-cm/codemirror-ui code-a {:style {:height "440px"}})
         (input-opt/option-input rows-a))
       [:div {:style {:display "flex"
@@ -632,20 +671,21 @@
   "Toolbar, canvas and node-edit popup for one model runner handle.
 
    Owns every server action the itera-model-graph-editor component emits:
-   graph-change and edit.  It also owns the direct toolbar actions: Add
-   (:value / :formula) runs itera.model.ui/add-node! and Save runs
-   itera.model.ui/save-model-edn!.  The toolbar is a sibling of the
+   graph-change and edit.  It also owns the direct toolbar actions:
+   Add Option-UI / Add EDN-UI / Add :formula run itera.model.ui/add-node! and
+   Save runs itera.model.ui/save-model-edn!.  The toolbar is a sibling of the
    component, not a child; its other buttons (delete / zoom-in / zoom-out /
    fit) carry :data-cmd and are delegated to the component's client-side
-   commands.  `graph` nodes must not include :code, :value or :option-ui —
-   the edit popup resolves those server-side by node id."
+   commands.  `graph` nodes must not include :code, :value, :value/editor or
+   :option-ui — the edit popup resolves those server-side by node id."
   [this]
-  (let [base    [:itera-model (:model-name this) :graph-editor]
-        popup-a (h/tab-cursor (conj base :popup) nil)
-        code-a  (h/tab-cursor (conj base :code) "")
-        rows-a  (h/tab-cursor (conj base :rows) [])
-        r       {:this this :popup-a popup-a :code-a code-a
-                 :rows-a rows-a}]
+  (let [base     [:itera-model (:model-name this) :graph-editor]
+        popup-a  (h/tab-cursor (conj base :popup) nil)
+        code-a   (h/tab-cursor (conj base :code) "")
+        rows-a   (h/tab-cursor (conj base :rows) [])
+        error-a  (h/tab-cursor (conj base :popup-error) nil)
+        r        {:this this :popup-a popup-a :code-a code-a
+                  :rows-a rows-a :popup-error-a error-a}]
     [:div {:class "itera-graph-editor"
            :style {:display "flex"
                    :flex-direction "column"
@@ -661,8 +701,8 @@
                     :border-bottom "1px solid #e2e8f0"
                     :background "#fff"
                     :flex "0 0 auto"}}
-      [:button {:type "button" :title "Add a value node"
-                :data-on:click (h/action (rui/add-node! this :value))
+      [:button {:type "button" :title "Add an option-ui value node"
+                :data-on:click (h/action (rui/add-node! this :value :option-ui))
                 :style {:font-size "0.7rem"
                         :padding "0.2rem 0.5rem"
                         :border "1px solid #cbd5e1"
@@ -670,9 +710,19 @@
                         :border-radius "4px"
                         :cursor "pointer"
                         :color "#334155"}}
-       "Add :value"]
+       "Add Option-UI"]
+      [:button {:type "button" :title "Add an EDN value node"
+                :data-on:click (h/action (rui/add-node! this :value :edn))
+                :style {:font-size "0.7rem"
+                        :padding "0.2rem 0.5rem"
+                        :border "1px solid #cbd5e1"
+                        :background "#f8fafc"
+                        :border-radius "4px"
+                        :cursor "pointer"
+                        :color "#334155"}}
+       "Add EDN-UI"]
       [:button {:type "button" :title "Add a formula node"
-                :data-on:click (h/action (rui/add-node! this :formula))
+                :data-on:click (h/action (rui/add-node! this :formula nil))
                 :style {:font-size "0.7rem"
                         :padding "0.2rem 0.5rem"
                         :border "1px solid #cbd5e1"

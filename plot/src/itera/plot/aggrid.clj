@@ -53,7 +53,7 @@
   itera.value.protocol/itera-convertable
   (to-hiccup [_] (render {:rowData data}))
   spec-plot/itera-spec-plot
-  (to-hiccup [_ spec window]
+  (to-formatted-hiccup [_ spec window]
     (let [style (spec-plot/window->style window)]
       (render (cond-> {:rowData data}
                 spec  (assoc :columnDefs spec)

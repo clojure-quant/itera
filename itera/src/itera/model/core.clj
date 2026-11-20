@@ -95,6 +95,13 @@
       ; a function that does not compile (or is not a function)
       (nil? fn) persistent
 
+      ; no named arguments (zero-arg or ctx-only): run once, no input flows
+      (empty? args) (assoc persistent
+                           :out (m/seed [(try
+                                           (f/run-formula ctx formula [])
+                                           (catch Exception ex
+                                             (create-calculation-exception ex)))]))
+
       ; not all inputs are connected: surface the missing arg(s) on :out
       (nil? args-vec) (assoc persistent
                              :out (m/seed [(create-no-val

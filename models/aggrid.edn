@@ -1,23 +1,17 @@
 {:graph/name "aggrid"
  :nodes
- [{:id "trigger"
-   :label "trigger"
-   :type :value
-   :show? false
-   :position {:x 24 :y 24}
-   :value true}
-  {:id "cars-data"
+ [{:id "cars-data"
    :label "cars"
    :type :formula
    :show? false
    :position {:x 240 :y 60}
-   :code "(fn [trigger]\n  (deref (requiring-resolve 'demo.plot.table.aggrid.itera/cars)))"}
+   :code "(fn []\n  (deref (requiring-resolve 'demo.plot.table.aggrid.itera/cars)))"}
   {:id "unicode-data"
    :label "unicode rows"
    :type :formula
    :show? false
    :position {:x 240 :y 300}
-   :code "(fn [trigger]\n  ((requiring-resolve 'demo.plot.table.aggrid.itera/unicode-rows)))"}
+   :code "(fn []\n  ((requiring-resolve 'demo.plot.table.aggrid.itera/unicode-rows)))"}
   {:id "cars-plot"
    :label "aggrid (cars)"
    :type :formula
@@ -37,13 +31,7 @@
           {:field "action" :headerName "Action"}]
    :code "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.aggrid/aggrid) data))"}]
  :edges
- [{:id "e-trigger-cars"
-   :source-node "trigger" :source-port "out"
-   :target-node "cars-data" :target-port "trigger"}
-  {:id "e-trigger-unicode"
-   :source-node "trigger" :source-port "out"
-   :target-node "unicode-data" :target-port "trigger"}
-  {:id "e-cars"
+ [{:id "e-cars"
    :source-node "cars-data" :source-port "out"
    :target-node "cars-plot" :target-port "data"}
   {:id "e-unicode"

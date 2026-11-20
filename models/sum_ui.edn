@@ -3,6 +3,7 @@
  [{:id "StK0mX51f9Igeh2Y",
    :label "map-of-strings",
    :type :value,
+   :value/editor :option-ui,
    :show? true,
    :position {:x -48, :y 0},
    :value {:a "11111111", :b "11", :c "111", :d "1111", :e "11111"},
