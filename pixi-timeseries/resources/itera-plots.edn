@@ -1,3 +1,4 @@
 {:head      [itera.plot.pixi-timeseries.plot/head]
  :option-ui [itera.plot.pixi-timeseries.options.chartspec
-             itera.plot.pixi-timeseries.options.row-select]}
+             itera.plot.pixi-timeseries.options.row-select]
+ :requires  [[itera.plot.pixi-timeseries.plot :refer [pixi-timeseries pixi-timeseries-ds]]]}

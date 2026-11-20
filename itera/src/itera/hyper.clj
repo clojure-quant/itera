@@ -7,14 +7,17 @@
 (defn start
   "Start a Hyper server for the itera routes.
    Takes a map {:keys [ctx opts]}:
-     ctx  - application context map (passed to itera.routes/routes)
+     ctx  - application context map (passed to itera.routes/routes); its
+            :requires are merged with the :requires declared by all
+            `itera-plots.edn` extensions, so workbooks can call their plot
+            functions without the host repeating them
      opts - Hyper opts map, e.g. {:port 3000 :head [...] :static-resources \"public\"};
           when :head is absent it defaults to the heads declared under :head in
           all `itera-plots.edn` resources on the classpath (see
           itera.plot-discover).  Each of those resources is a map
-          {:head [<qualified symbols>] :option-ui [<namespace symbols>]}; the
-          :option-ui namespaces are always required, registering their option
-          editors.
+          {:head [<qualified symbols>] :option-ui [<namespace symbols>]
+           :requires [<libspecs>]}; the :option-ui namespaces are always
+          required, registering their option editors.
    Extra optional key:
      :routes - extra reitit route entries appended after the discovered itera
                routes (see itera.routes/routes).
@@ -22,8 +25,9 @@
    Starts the discovery watcher, then builds the routes from its state.
    Returns a state map to pass to stop."
   [{:keys [ctx opts] :as m}]
-  (let [{:keys [head option-ui]} (plot-discover/discover)
+  (let [{:keys [head option-ui requires]} (plot-discover/discover)
         _ (plot-discover/require-option-uis! option-ui)
+        ctx (update ctx :requires #(vec (distinct (concat requires %))))
         opts (update opts :head #(or % (plot-discover/resolve-heads head)))
         discovery (discover/discover-start)
         itera-routes (routes/routes ctx discovery)

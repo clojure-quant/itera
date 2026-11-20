@@ -11,19 +11,19 @@
    :type :formula,
    :show? true,
    :position {:x 372, :y 120},
-   :code "(fn [_ s] [:h1 (str s)])"}
+   :code "(fn [_ s] (hiccup [:h1 (str s)]))"}
   {:id "GZJoZ0bizloz46-b",
    :label "est-ui",
    :type :formula,
    :show? true,
    :position {:x 324, :y 252},
-   :code "(fn [_ s] [:h1 (str (df/EST-time s))])"}
+   :code "(fn [_ s] (hiccup [:h1 (str (df/EST-time s))]))"}
   {:id "TKrK2syZ0a0zVc1g",
    :label "local-ui",
    :type :formula,
    :show? true,
    :position {:x 288, :y 36},
-   :code "(fn [_ s] [:h1 (str (df/local-time s))])"}
+   :code "(fn [_ s] (hiccup [:h1 (str (df/local-time s))]))"}
   {:id "9WvbnF-oyj14-bHY",
    :label "time-table",
    :type :formula,
@@ -37,7 +37,7 @@
    :show? true,
    :position {:x 444, :y 480},
    :code
-   "(fn [ctx rows]\n  (->> rows\n    (map (fn [{:keys [zone time]}]\n           [:tr [:td zone] [:td time]]\n           ))\n    (into\n      [:table {:style {:background-color \"yellow\"}}\n     [:tr [:td \"zone\"] [:td \"time\"]]]\n    \n    )\n    ))"}],
+   "(fn [ctx rows]\n  (->> rows\n    (map (fn [{:keys [zone time]}]\n           [:tr [:td zone] [:td time]]\n           ))\n    (into\n      [:table {:style {:background-color \"yellow\"}}\n       [:tr [:td \"zone\"] [:td \"time\"]]])\n    (hiccup)))"}],
  :edges
  [{:id "e-1",
    :source-node "-qG0eHrg2WoJVB-q",

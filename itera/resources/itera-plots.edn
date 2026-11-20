@@ -2,4 +2,7 @@
              itera.plot.exception/head
              itera.plot.hiccup/head
              itera.plot.text/head]
- :option-ui [itera.option.default-ui itera.option.container]}
+ :option-ui [itera.option.default-ui itera.option.container]
+ :requires  [[itera.plot.hiccup :refer [hiccup]]
+             [itera.plot.text :refer [text]]
+             [itera.plot.image :refer [image image-inline]]]}

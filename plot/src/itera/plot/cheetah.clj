@@ -1,25 +1,26 @@
 (ns itera.plot.cheetah
   "cheetah-grid (canvas) viewer as a Hyper client component.
 
-   The public `cheetah` fn accepts the reference viewer API (`:columns` for the
-   grid header defs, `:data` for the records) and maps them onto cheetah-grid's
-   ListGrid options (`header` / `records`).
+   The public `cheetah` fn takes only the row `data`:
+     (cheetah [{...} ...])
 
-   opts:
-     :columns  [{:field \"make\" :caption \"Make\"} ...]
-     :data     [{:make \"Toyota\" ...} ...]
-     :style :class  host passthrough
+   Column definitions (the editable spec) come from the host through
+   itera.plot-ui.protocol and map onto cheetah-grid's ListGrid `header`.
+   cheetah-grid does not auto-generate columns, so with no spec given the grid
+   renders empty; `default-spec` is `nil`.
+
+   The returned `Cheetah` record implements both itera.value.protocol (renders
+   `{:records data}`) and itera.plot-ui.protocol (`:columns` as the editable
+   spec).
 
    cheetah-grid ships no stylesheet: its CSS is injected by the JS bundle, so
    `head` is empty."
   (:require [hyper.core :as h]
+            [itera.input.codemirror :as input-cm]
+            [itera.plot-ui.protocol :as spec-plot]
             [itera.value.protocol]))
 
 (def head [])
-
-(defrecord Cheetah [hiccup]
-  itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup))
 
 (h/defc itera-cheetah
   "cheetah-grid ListGrid in a custom element."
@@ -41,11 +42,29 @@
   (unmount [_]
     (when-let [g (.-grid ctx)] (.dispose g))))
 
-(defn cheetah
+(defn- render
+  "Build the itera-cheetah element from an opts map (reference viewer opts plus
+   :style/:class host passthrough)."
   [{:keys [columns data style class] :as _opts}]
-  (Cheetah.
-   (itera-cheetah (cond-> {:options (cond-> {}
+  (itera-cheetah (cond-> {:options (cond-> {}
                                      columns (assoc :header columns)
                                      data    (assoc :records data))}
-                    style (assoc :style style)
-                    class (assoc :class class)))))
+                   style (assoc :style style)
+                   class (assoc :class class))))
+
+(defrecord Cheetah [data]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] (render {:data data}))
+  spec-plot/itera-spec-plot
+  (to-hiccup [_ spec window]
+    (let [style (spec-plot/window->style window)]
+      (render (cond-> {:data data}
+                spec  (assoc :columns spec)
+                style (assoc :style style)))))
+  (default-spec [_] nil)
+  (spec-editor [_ _spec code-a]
+    (input-cm/codemirror-ui code-a {:style {:height "440px"}})))
+
+(defn cheetah
+  [data]
+  (->Cheetah data))

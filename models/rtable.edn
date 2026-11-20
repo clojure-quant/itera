@@ -1,40 +1,34 @@
-{:graph/name "rtable",
+{:graph/name "rtable"
  :nodes
- [{:id "01-columns",
-   :label "columns",
-   :type :value,
-   :show? false,
-   :position {:x 24, :y 60},
-   :value
-   [{:path :close, :header "Close"}
-    {:path :sma, :header "SMA"}]}
-  {:id "02-rows",
-   :label "rows",
-   :type :value,
-   :show? false,
-   :position {:x 24, :y 204},
-   :value
-   [{:close 10.444, :sma 10}
-    {:close 14, :sma 12}
-    {:close 9, :sma 11}
-    {:close 16, :sma 13}
-    {:close 11, :sma 12}
-    {:close 10, :sma 11}]}
-  {:id "03-plot",
-   :label "rtable",
-   :type :formula,
-   :show? true,
-   :position {:x 420, :y 120},
+ [{:id "trigger" :label "trigger" :type :value :show? false
+   :position {:x 24 :y 24} :value true}
+  {:id "bars-data" :label "bars" :type :formula :show? false
+   :position {:x 240 :y 60}
    :code
-   "(fn [ctx columns rows]\n  ((requiring-resolve 'itera.plot.rtable/rtable)\n   {:columns columns\n    :rows rows\n    :style {:border-collapse \"collapse\"}}))"}],
+   "(fn [trigger]\n  ((requiring-resolve 'demo.plot.table.rtable.itera/bars-rows)))"}
+  {:id "simple-data" :label "simple rows" :type :formula :show? false
+   :position {:x 240 :y 300}
+   :code
+   "(fn [trigger]\n  (deref (requiring-resolve 'demo.plot.table.rtable.itera/simple-rows)))"}
+  {:id "bars-plot" :label "rtable (bars)" :type :formula :show? true
+   :position {:x 560 :y 60}
+   :spec [{:path :date :header "Date"}
+          {:path :close :header "Close"}
+          {:path :volume :header "Volume"}]
+   :code
+   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}
+  {:id "simple-plot" :label "rtable (simple)" :type :formula :show? true
+   :position {:x 560 :y 300}
+   :spec [{:path :close :header "Close"}
+          {:path :sma :header "SMA"}]
+   :code
+   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}]
  :edges
- [{:id "e1",
-   :source-node "01-columns",
-   :source-port "out",
-   :target-node "03-plot",
-   :target-port "columns"}
-  {:id "e2",
-   :source-node "02-rows",
-   :source-port "out",
-   :target-node "03-plot",
-   :target-port "rows"}]}
+ [{:id "e-trigger-bars" :source-node "trigger" :source-port "out"
+   :target-node "bars-data" :target-port "trigger"}
+  {:id "e-trigger-simple" :source-node "trigger" :source-port "out"
+   :target-node "simple-data" :target-port "trigger"}
+  {:id "e-bars" :source-node "bars-data" :source-port "out"
+   :target-node "bars-plot" :target-port "data"}
+  {:id "e-simple" :source-node "simple-data" :source-port "out"
+   :target-node "simple-plot" :target-port "data"}]}

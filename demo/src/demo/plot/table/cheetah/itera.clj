@@ -63,46 +63,8 @@
   (let [{:keys [data]} (get examples example)]
     {:example example :data (data)}))
 
-(defn plot [_opts {:keys [example data]}]
-  (case example
-    :cheetah/cars
-    (cheetah/cheetah {:columns [{:field "make"  :caption "Make"}
-                                {:field "model" :caption "Model"}
-                                {:field "price" :caption "Price"}]
-                      :data    data
-                      :style   {:width "100%" :height "400px"}})
-
-    :cheetah/stocks
-    (cheetah/cheetah {:columns [{:field "symbol" :caption "symbol" :width 90}
-                                {:field "date"   :caption "date"   :width 220}
-                                {:field "price"  :caption "price"  :width 90}]
-                      :data    data
-                      :style   {:width "100%" :height "400px"}})
-
-    :cheetah/roundtrips
-    (cheetah/cheetah
-     {:style   {:width "100%" :height "400px"}
-      :columns [{:field "asset"          :caption "a"            :width 90}
-                {:field "id"             :caption "id"           :width 50}
-                {:field "side"           :caption "side"         :width 50}
-                {:field "qty"            :caption "qty"          :width 50}
-                {:field "entry-date"     :caption "entry-dt"     :width 160}
-                {:field "entry-idx"      :caption "entry-idx"    :width 50}
-                {:field "entry-price"    :caption "entry-p"      :width 90}
-                {:field "exit-date"      :caption "exit-dt"      :width 160}
-                {:field "exit-idx"       :caption "exit-idx"     :width 50}
-                {:field "exit-price"     :caption "exit-p"       :width 50}
-                {:field "exit-reason"    :caption "exit-reason"  :width 90}
-                {:field "bars"           :caption "bars"         :width 50}
-                {:field "win?"           :caption "win?"         :width 50}
-                {:field "ret-abs"        :caption "ret-abs"      :width 50}
-                {:field "ret-prct"       :caption "ret-prct"     :width 50}
-                {:field "ret-log"        :caption "ret-log"      :width 50}
-                {:field "cum-ret-volume" :caption "cum-ret-volume" :width 50}
-                {:field "cum-ret-abs"    :caption "cum-ret-abs"  :width 50}
-                {:field "cum-ret-log"    :caption "cum-ret-log"  :width 50}
-                {:field "nav"            :caption "nav"          :width 50}]
-      :data    data})))
+(defn plot [_opts {:keys [data]}]
+  (cheetah/cheetah data))
 
 (def algo-cheetah
   {:calculate/options options

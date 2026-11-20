@@ -62,14 +62,14 @@
    :show? true,
    :position {:x 420, :y 60},
    :code
-   "(fn [ctx spec]\n  ((requiring-resolve 'itera.plot.vega/vega)\n   {:spec spec\n    :embed-opts {:theme \"quartz\"}\n    :style {:width \"100%\" :height \"400px\"}}))"}
+   "(fn [ctx spec]\n  ((requiring-resolve 'itera.plot.vega/vega)\n   {:spec spec\n    :embed-opts {:theme \"quartz\"}}))"}
   {:id "05-vegalite",
    :label "vegalite",
    :type :formula,
    :show? true,
    :position {:x 420, :y 420},
    :code
-   "(fn [ctx spec data]\n  ((requiring-resolve 'itera.plot.vega/vegalite)\n   {:spec spec\n    :data data\n    :embed-opts {:theme \"quartz\"}\n    :style {:width \"100%\" :height \"400px\"}}))"}],
+   "(fn [ctx spec data]\n  ((requiring-resolve 'itera.plot.vega/vegalite)\n   {:spec spec\n    :data data\n    :embed-opts {:theme \"quartz\"}}))"}],
  :edges
  [{:id "e1",
    :source-node "01-vega-spec",

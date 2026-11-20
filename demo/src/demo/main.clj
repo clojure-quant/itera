@@ -3,9 +3,10 @@
 
    Plot assets are discovered from the `itera-plots.edn` resources shipped by
    the itera, plot and pixi-timeseries projects (see itera.plot-discover):
-   their head namespaces load the plot client components, and their option-UI
-   namespaces register the option editors, before the handler assembles the
-   JS bundle."
+   their head namespaces load the plot client components, their option-UI
+   namespaces register the option editors, and their :requires are merged into
+   the context by itera.hyper/start so workbooks can call the plot functions.
+   Only host-specific, non-extension requires belong in `requires` below."
   (:require [clojure.string :as str]
             [demo.page.codemirror :as page-codemirror]
             [demo.page.option :as page-option]
@@ -22,14 +23,10 @@
                    (:name m))]
     {:path path :name (:name m) :title (:title m)}))
 
-(def requires 
+(def requires
   '[[clojure.string :as string]
     [clojure.edn :as edn]
-    [itera.plot.hiccup :refer [hiccup]]
-    [itera.plot.text :refer [text]]
-    [itera.plot.image :refer [image image-inline]]
-    [demo.flow :as df]]
-  )
+    [demo.flow :as df]])
 
 (defn start
   "Hyper :exec-fn. Receives {:opts {...}} from the :itera alias exec-args."

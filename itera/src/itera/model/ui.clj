@@ -13,7 +13,8 @@
       :show? bool :position {:x 0 :y 0}
       :value <any>            ; :value nodes
       :code \"(fn [..] ..)\"    ; :formula nodes
-      :option-ui [<rows>]}    ; optional, :value nodes
+      :option-ui [<rows>]     ; optional, :value nodes
+      :spec <any>}            ; optional, plot nodes (persisted itera-spec-plot spec)
 
    `:id` is the node's permanent identity (also the X6 cell id and the value
    edges reference); `:label` is only what the editor and the interact tab
@@ -28,6 +29,7 @@
    [itera.input.option :as input-option]
    [itera.model.core :as rc]
    [itera.model.formula :as f]
+   [itera.plot-ui.protocol :as plot-ui]
    [itera.util.clj :as util])
   (:import
    [java.io File]))
@@ -480,6 +482,26 @@
     (when (:value-a node) (reset! (:value-a node) value)))
   this)
 
+(defn node-spec
+  "Effective plot spec for node-id: the stored :spec if present, else the
+   default-spec of the node's current value when it implements itera-spec-plot."
+  [this node-id]
+  (or (:spec (node-by-id this node-id))
+      (when-let [a (get-atom this node-id)]
+        (let [v @a]
+          (when (satisfies? plot-ui/itera-spec-plot v)
+            (plot-ui/default-spec v))))))
+
+(defn set-node-spec
+  "Persist a plot node's edited :spec into :model-a."
+  [this node-id spec]
+  (swap! (:model-a this)
+         (fn [m]
+           (update m :nodes
+                   (fn [ns]
+                     (mapv (fn [n] (if (= node-id (:id n)) (assoc n :spec spec) n)) ns)))))
+  this)
+
 ;; ---------------------------------------------------------------------------
 ;; sidebar option-uis
 ;; ---------------------------------------------------------------------------
@@ -521,12 +543,13 @@
                            ns))))))
   this)
 
-(defn- persist-node [{:keys [id label type show? position value code option-ui]}]
+(defn- persist-node [{:keys [id label type show? position value code option-ui spec]}]
   (cond-> (array-map :id id :label label :type type :show? (boolean show?))
     position (assoc :position {:x (:x position) :y (:y position)})
     (= :value type) (assoc :value value)
     (= :formula type) (assoc :code code)
-    (seq option-ui) (assoc :option-ui option-ui)))
+    (seq option-ui) (assoc :option-ui option-ui)
+    (some? spec) (assoc :spec spec)))
 
 (defn create-model!
   "Create an empty model file `<model-path>/<name>.edn` (plus its parent

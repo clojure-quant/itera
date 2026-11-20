@@ -36,21 +36,8 @@
   (let [{:keys [data]} (get examples example)]
     {:example example :data (data)}))
 
-(defn plot [_opts {:keys [example data]}]
-  (case example
-    :aggrid/cars
-    (aggrid/aggrid {:columnDefs [{:field "make"  :headerName "Make"}
-                                 {:field "model" :headerName "Model"}
-                                 {:field "price" :headerName "Price"}]
-                    :rowData    data
-                    :style      {:width "100%" :height "400px"}})
-
-    :aggrid/unicode
-    (aggrid/aggrid {:columnDefs [{:field "date"}
-                                 {:field "open"}
-                                 {:field "action"}]
-                    :rowData    data
-                    :style      {:width "800px" :height "600px"}})))
+(defn plot [_opts {:keys [data]}]
+  (aggrid/aggrid data))
 
 (def algo-aggrid
   {:calculate/options options

@@ -1,9 +1,0 @@
-{:graph/name "hermann",
- :nodes
- [{:id "DHcldYPBrqLD7ALc",
-   :label "hello",
-   :type :formula,
-   :show? true,
-   :position {:x 420, :y 324},
-   :code "(fn [ctx]\n  [:h1 \"hello, hermann!\"]\n  )"}],
- :edges []}

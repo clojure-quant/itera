@@ -9,4 +9,14 @@
         itera.plot.vega/head
         itera.plot.plotly/head
         itera.plot.echarts/head
-        itera.plot.cytoscape/head]}
+        itera.plot.cytoscape/head]
+ :requires [[itera.plot.aggrid :refer [aggrid]]
+            [itera.plot.cheetah :refer [cheetah]]
+            [itera.plot.rtable :refer [rtable]]
+            [itera.plot.highcharts :refer [highchart highstock]]
+            [itera.plot.vega :refer [vega vegalite]]
+            [itera.plot.plotly :refer [plotly]]
+            [itera.plot.echarts :refer [echarts]]
+            [itera.plot.cytoscape :refer [cytoscape]]
+            [itera.plot.fipp :refer [fipp]]
+            [itera.plot.md :refer [md md-resource]]]}

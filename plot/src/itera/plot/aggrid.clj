@@ -1,16 +1,19 @@
 (ns itera.plot.aggrid
   "ag-grid (vanilla JS `createGrid`) viewer as a Hyper client component.
 
-   The public `aggrid` fn splits host-element passthrough (`:style`, `:class`,
-   `:theme`) from the ag-grid gridOptions payload and renders the component.
+   The public `aggrid` fn takes only the row `data`:
+     (aggrid [{...} ...])
 
-   opts: ag-grid gridOptions, e.g.
-     {:columnDefs [{:field \"make\"} ...]
-      :rowData    [{...} ...]
-      :style      {:width \"100%\" :height \"400px\"}
-      :class      nil
-      :theme      \"quartz\" (ag-grid legacy theme name; default quartz)}"
+   Column definitions (the editable spec) come from the host through
+   itera.plot-ui.protocol; when no spec is given ag-grid auto-generates columns
+   from the row data.
+
+   The returned `Aggrid` record implements both itera.value.protocol (renders
+   `{:rowData data}`) and itera.plot-ui.protocol (`:columnDefs` as the editable
+   spec)."
   (:require [hyper.core :as h]
+            [itera.input.codemirror :as input-cm]
+            [itera.plot-ui.protocol :as spec-plot]
             [itera.value.protocol]))
 
 (def head
@@ -18,10 +21,6 @@
            :href "/itera/plot/aggrid/styles/ag-grid.css"}]
    [:link {:rel  "stylesheet"
            :href "/itera/plot/aggrid/styles/ag-theme-quartz.css"}]])
-
-(defrecord Aggrid [hiccup]
-  itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup))
 
 (h/defc itera-aggrid
   "Vanilla ag-grid in a custom element. `options` is the JSON-parsed gridOptions."
@@ -41,10 +40,28 @@
   (unmount [_]
     (when-let [g (.-grid ctx)] (.destroy g))))
 
-(defn aggrid
+(defn- render
+  "Build the itera-aggrid element from an opts map (ag-grid gridOptions plus
+   :style/:class/:theme host passthrough)."
   [{:keys [style class theme] :as opts}]
-  (Aggrid.
-   (itera-aggrid (cond-> {:options (dissoc opts :style :class :theme)}
-                   style (assoc :style style)
-                   class (assoc :class class)
-                   theme (assoc :theme theme)))))
+  (itera-aggrid (cond-> {:options (dissoc opts :style :class :theme)}
+                  style (assoc :style style)
+                  class (assoc :class class)
+                  theme (assoc :theme theme))))
+
+(defrecord Aggrid [data]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_] (render {:rowData data}))
+  spec-plot/itera-spec-plot
+  (to-hiccup [_ spec window]
+    (let [style (spec-plot/window->style window)]
+      (render (cond-> {:rowData data}
+                spec  (assoc :columnDefs spec)
+                style (assoc :style style)))))
+  (default-spec [_] nil)
+  (spec-editor [_ _spec code-a]
+    (input-cm/codemirror-ui code-a {:style {:height "440px"}})))
+
+(defn aggrid
+  [data]
+  (->Aggrid data))
