@@ -9,6 +9,7 @@
    Only host-specific, non-extension requires belong in `requires` below."
   (:require [clojure.string :as str]
             [demo.page.codemirror :as page-codemirror]
+            [demo.page.fas :as page-fas]
             [demo.page.option :as page-option]
             [demo.page.overview :as page-overview]
             [itera.hyper :as hyper]))
@@ -38,7 +39,10 @@
                                        :get (page-option/page-option-playground ctx)}]
                      ["/demo/codemirror" {:name :demo-codemirror
                                           :title "CodeMirror Demo"
-                                          :get (page-codemirror/page-codemirror ctx)}]]]
+                                          :get (page-codemirror/page-codemirror ctx)}]
+                     ["/demo/fas" {:name :demo-fas
+                                   :title "Font Awesome Icons"
+                                   :get (page-fas/page-fas ctx)}]]]
     (hyper/start
      {:ctx ctx
       :routes (into [["/demo" {:name :demo

@@ -6,24 +6,32 @@
 
    Column definitions (the editable spec) come from the host through
    itera.plot-ui.protocol and mirror the dali-table `rtable` viewer's
-   server-expressible parts: column `:path` / `:header` / `:attrs` and basic
-   `:class` / `:style` / `:max-width` styling.  Client-only knobs (sorting,
-   virtualization) are out of scope.
+   server-expressible parts: column `:path` / `:header` / `:attrs`,
+   `:class` / `:style` / `:max-width` / `:width` styling, and formatting
+   through `:format` / `:format-opts` / `:style-fn`.  The format and style
+   keywords dispatch the multimethods in itera.plot.rtable-format-ui; a legacy
+   fn `:format` and fn `:attrs` are still applied directly.
 
    With no spec given, columns are derived from the first row's keys (the
-   header via the existing `header-label`).  The spec must be plain data (no
-   `:format`): the spec editor is an EDN textarea and fns cannot round-trip.
+   header via the existing `header-label`).  The spec editor is a table UI
+   (itera.plot.rtable-format-ui/rtable-format-edit-ui) that writes plain EDN,
+   so custom format/style methods must be registered by keyword.
 
    The returned `Rtable` record implements both itera.value.protocol (renders
    the default table) and itera.plot-ui.protocol (`:columns` as the editable
    spec)."
-  (:require [itera.input.codemirror :as input-cm]
+  (:require [clojure.string :as str]
+            [itera.plot.rtable-format-ui :as rtable-fmt]
             [itera.plot-ui.protocol :as spec-plot]
             [itera.value.protocol]))
 
 (def head
   [[:link {:rel  "stylesheet"
            :href "/itera/plot/rtable/rtable.css"}]])
+
+(def default-class
+  "Default table classes: compact padding, striping and row hover."
+  "padding-sm table-striped table-hover")
 
 (defn- col-value
   "Resolve a row's value for a column via its :path (keyword/vector) or :expr."
@@ -33,11 +41,15 @@
     expr (expr row)
     :else nil))
 
-(defn- format-boolean [b]
-  (case b true "\u2713" false "\u2715" ""))
-
-(defn- default-format [data]
-  (if (boolean? data) (format-boolean data) data))
+(defn- format-value
+  "Format VALUE for a column: a legacy fn :format is applied directly, a
+   keyword dispatches format-rtable-col, otherwise default-format is used."
+  [col value]
+  (let [fmt (:format col)]
+    (cond
+      (fn? fmt)      (fmt value)
+      (keyword? fmt) (rtable-fmt/format-rtable-col fmt (:format-opts col) value)
+      :else          (rtable-fmt/default-format value))))
 
 (defn- header-label [{:keys [header path]}]
   (or header
@@ -60,21 +72,48 @@
      :text-overflow "ellipsis"
      :white-space  "nowrap"}))
 
-(defn- cell-attrs [{:keys [class style max-width] :as _col}]
-  (let [style (merge (max-width-style max-width) style)]
+(defn- width-style [width]
+  (when (some? width)
+    {:width (if (number? width) (str width "px") width)}))
+
+(defn- cell-attrs [{:keys [class style max-width width]}]
+  (let [style (merge (max-width-style max-width) (width-style width) style)]
     (cond-> {}
       class       (assoc :class class)
       (seq style) (assoc :style style))))
 
+(defn- merge-cell-attrs
+  "Merge extra cell attrs into the static ones, joining class strings and
+   merging style maps instead of overwriting them."
+  [attrs extra]
+  (let [class (str/join " " (remove str/blank? [(:class attrs) (:class extra)]))
+        style (merge (:style attrs) (:style extra))]
+    (cond-> attrs
+      (not (str/blank? class)) (assoc :class class)
+      (seq style)              (assoc :style style))))
+
+(defn- style-extra
+  "Extra td attrs from a column's :style-fn; a legacy fn is applied directly."
+  [col value]
+  (let [s (:style-fn col)]
+    (cond
+      (fn? s)      (or (s value) {})
+      (keyword? s) (or (rtable-fmt/style-rtable-col s value) {})
+      :else        {})))
+
 (defn- default-render-cell
   "Default cell content: resolve, format and wrap in an element (optionally
    tagged by a column :attrs fn)."
-  [{:keys [format attrs el-type] :or {format default-format attrs (fn [_] {})} :as col} row]
-  [(or el-type :span) (attrs (col-value row col)) (format (col-value row col))])
+  [{:keys [attrs el-type] :as col} row]
+  (let [value (col-value row col)
+        attrs (if (fn? attrs) (attrs value) {})]
+    [(or el-type :span) attrs (format-value col value)]))
 
 (defn- cell-td [table-render-cell col row]
-  (let [rc (or (:render-cell col) table-render-cell)]
-    [:td (cell-attrs col) (rc col row)]))
+  (let [rc (or (:render-cell col) table-render-cell)
+        value (col-value row col)]
+    [:td (merge-cell-attrs (cell-attrs col) (style-extra col value))
+     (rc col row)]))
 
 (defn- render
   "Build the table hiccup from an opts map (columns/rows plus :class/:style
@@ -83,7 +122,7 @@
   (if (empty? rows)
     [:div {:style {:padding "1rem" :color "#888"}} "No rows in this table."]
     (let [rc (or render-cell default-render-cell)]
-      (into [:table {:class class :style style}]
+      (into [:table {:class (or class default-class) :style style}]
             (concat
              [(into [:thead]
                     [(into [:tr] (map (fn [c] [:th (cell-attrs c) (header-label c)]) columns))])]
@@ -94,17 +133,17 @@
 (defrecord Rtable [data]
   itera.value.protocol/itera-convertable
   (to-hiccup [_]
-    (render {:rows data :columns (default-columns data)}))
+    (render {:rows data :class default-class :columns (default-columns data)}))
   spec-plot/itera-spec-plot
   (to-formatted-hiccup [_ spec window]
     (render (cond-> {:rows data
                      :columns (or spec (default-columns data))}
               window (assoc :style (assoc (spec-plot/window->style window)
                                           :width "100%")
-                            :class "table-head-fixed"))))
+                            :class (str "table-head-fixed " default-class)))))
   (default-spec [_] (default-columns data))
-  (spec-editor [_ _spec code-a]
-    (input-cm/codemirror-ui code-a {:style {:height "440px"}})))
+  (spec-editor [v spec code-a]
+    (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a})))
 
 (defn rtable
   [data]

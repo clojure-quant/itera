@@ -11,7 +11,8 @@
 
    `:head` lists fully-qualified symbols of the project's head vars; they are
    resolved (loading the namespaces, which registers their Hyper client
-   components) and their values concatenated.
+   components) and their values concatenated.  A head value may be static
+   hiccup or a function of the request returning hiccup; see `resolve-heads`.
 
    `:option-ui` lists namespace symbols whose loading registers
    `itera.option.core/editor` implementations.
@@ -91,7 +92,10 @@
   "Return the raw declarations of every `itera-plots.edn` resource on the
    classpath:
    {:head [<qualified symbols>] :option-ui [<namespace symbols>]
-    :requires [<libspecs>]}, deduplicated in resource order."
+    :requires [<libspecs>]}, deduplicated in resource order.
+
+   Each `:head` symbol resolves to static hiccup or to a function of the
+   request returning hiccup (see `resolve-heads`)."
   []
   (let [entries (map (fn [[path stream-fn]]
                        (read-entry path (slurp (stream-fn) :encoding "UTF-8")))
@@ -100,14 +104,34 @@
      :option-ui (vec (distinct (mapcat :option-ui entries)))
      :requires (extension-requires entries)}))
 
+(defn- head-elements
+  "Normalize one head value to a vector of hiccup elements.
+   Accepts a single element [:link ...], a sequence of elements
+   [[:link ...]], or nil."
+  [value]
+  (cond
+    (nil? value)                                    []
+    (and (vector? value) (keyword? (first value)))  [value]
+    (sequential? value)                             (vec value)
+    :else                                           [value]))
+
 (defn resolve-heads
-  "Resolve head symbols to their values, loading their namespaces, and
-   concatenate the results into one deduplicated vector."
+  "Resolve head symbols to their values, loading their namespaces.
+
+   A value may be static hiccup or a function of the Ring request returning
+   hiccup.  If every value is static, return one vector of elements.  If any
+   value is a function, return a function of the request that concatenates the
+   static elements with the results of calling each dynamic head.  Both a
+   single element [:link ...] and a sequence of elements [[:link ...]] are
+   normalized, and nil values contribute nothing."
   [syms]
-  (->> (distinct syms)
-       (mapv resolve-head)
-       (apply concat)
-       vec))
+  (let [values (mapv resolve-head (distinct syms))]
+    (if (some fn? values)
+      (fn [req]
+        (vec (mapcat (fn [v]
+                       (head-elements (if (fn? v) (v req) v)))
+                     values)))
+      (vec (mapcat head-elements values)))))
 
 (defn require-option-uis!
   "Load every option-UI namespace so its `itera.option.core/editor` methods

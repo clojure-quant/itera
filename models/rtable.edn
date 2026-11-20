@@ -1,4 +1,6 @@
 {:graph/name "rtable"
+ :ns-data
+ "(ns itera.user.rtable\n  (:require [itera.plot.rtable-format-ui :as rtable-fmt]\n            [itera.util.color :as color]\n            [itera.util.fas :refer [fas]]))\n\n;; These defmethods register process-globally; re-evaluating this ns-data\n;; replaces the methods with the same dispatch keys.\n(def age-style\n  {:text-align \"right\"\n   :display \"block\"\n   :width \"2cm\"\n   :max-width \"2cm\"\n   :overflow \"hidden\"\n   :text-overflow \"ellipsis\"\n   :white-space \"nowrap\"})\n\n(defn age-color [age]\n  (assoc age-style\n         :background-color\n         (color/set-color (cond\n                            (< age 18) \"red-2\"\n                            (< age 65) \"green-2\"\n                            :else      \"blue-2\"))))\n\n(defmethod rtable-fmt/style-rtable-col :age-color [_ value]\n  {:style (age-color value)})\n\n(defn fmt-sex [sex]\n  (if (= sex :woman)\n    [:span (fas :fa-user-nurse) \" Woman\"]\n    [:span (fas :fa-user) \" Man\"]))\n\n(defmethod rtable-fmt/format-rtable-col :sex-icon [_ _ value]\n  (fmt-sex value))\n"
  :nodes
  [{:id "bars-data" :label "bars" :type :formula :show? false
    :position {:x 240 :y 60}
@@ -8,11 +10,15 @@
    :position {:x 240 :y 300}
    :code
    "(fn []\n  (deref (requiring-resolve 'demo.plot.table.rtable.itera/simple-rows)))"}
+  {:id "persons-data" :label "persons" :type :formula :show? false
+   :position {:x 240 :y 540}
+   :code
+   "(fn []\n  ((requiring-resolve 'demo.plot.table.rtable.itera/persons)))"}
   {:id "bars-plot" :label "rtable (bars)" :type :formula :show? true
    :position {:x 560 :y 60}
-   :spec [{:path :date :header "Date"}
-          {:path :close :header "Close"}
-          {:path :volume :header "Volume"}]
+   :spec [{:path :date :header "Date" :width 120 :format :format-date}
+          {:path :close :header "Close" :format :nr-format-auto}
+          {:path :volume :header "Volume" :format :nr-format-auto}]
    :code
    "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}
   {:id "simple-plot" :label "rtable (simple)" :type :formula :show? true
@@ -20,9 +26,22 @@
    :spec [{:path :close :header "Close"}
           {:path :sma :header "SMA"}]
    :code
+   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}
+  {:id "persons-plot" :label "rtable (persons)" :type :formula :show? true
+   :position {:x 560 :y 540}
+   :spec [{:path :id :header "ID" :width 60}
+          {:path :first-name :header "First" :width 100}
+          {:path :last-name :header "Last" :width 100}
+          {:path :age :header "Age" :width 60
+           :format :nr-format-auto :style-fn :age-color}
+          {:path :sex :header "Sex" :width 80 :format :sex-icon}
+          {:path :desc :header "Description" :max-width "240px"}]
+   :code
    "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.rtable/rtable) data))"}]
  :edges
  [{:id "e-bars" :source-node "bars-data" :source-port "out"
    :target-node "bars-plot" :target-port "data"}
   {:id "e-simple" :source-node "simple-data" :source-port "out"
-   :target-node "simple-plot" :target-port "data"}]}
+   :target-node "simple-plot" :target-port "data"}
+  {:id "e-persons" :source-node "persons-data" :source-port "out"
+   :target-node "persons-plot" :target-port "data"}]}

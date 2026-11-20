@@ -17,7 +17,9 @@
           itera.plot-discover).  Each of those resources is a map
           {:head [<qualified symbols>] :option-ui [<namespace symbols>]
            :requires [<libspecs>]}; the :option-ui namespaces are always
-          required, registering their option editors.
+          required, registering their option editors.  Head declarations may
+          be static hiccup or functions of the request returning hiccup; if
+          any is dynamic the default head becomes a function too.
    Extra optional key:
      :routes - extra reitit route entries appended after the discovered itera
                routes (see itera.routes/routes).

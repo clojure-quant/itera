@@ -1,0 +1,1397 @@
+;; Font Awesome Free 6.5.1 icon metadata: every icon whose
+;; "free" styles include "solid", generated from
+;; https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.5.1/metadata/icons.json
+;; on 2026-11-20. Shape: [{:name "..." :label "..." :aliases ["..."]} ...]
+;; sorted case-insensitively by :name. Regenerate when the CDN pin changes.
+[
+{:name "0", :label "0", :aliases []}
+{:name "1", :label "1", :aliases []}
+{:name "2", :label "2", :aliases []}
+{:name "3", :label "3", :aliases []}
+{:name "4", :label "4", :aliases []}
+{:name "5", :label "5", :aliases []}
+{:name "6", :label "6", :aliases []}
+{:name "7", :label "7", :aliases []}
+{:name "8", :label "8", :aliases []}
+{:name "9", :label "9", :aliases []}
+{:name "a", :label "A", :aliases []}
+{:name "address-book", :label "Address Book", :aliases ["contact-book"]}
+{:name "address-card", :label "Address Card", :aliases ["contact-card" "vcard"]}
+{:name "align-center", :label "Align Center", :aliases []}
+{:name "align-justify", :label "Align Justify", :aliases []}
+{:name "align-left", :label "Align Left", :aliases []}
+{:name "align-right", :label "Align Right", :aliases []}
+{:name "anchor", :label "Anchor", :aliases []}
+{:name "anchor-circle-check", :label "Anchor Circle Check", :aliases []}
+{:name "anchor-circle-exclamation", :label "Anchor Circle Exclamation", :aliases []}
+{:name "anchor-circle-xmark", :label "Anchor Circle Xmark", :aliases []}
+{:name "anchor-lock", :label "Anchor Lock", :aliases []}
+{:name "angle-down", :label "Angle Down", :aliases []}
+{:name "angle-left", :label "Angle Left", :aliases []}
+{:name "angle-right", :label "Angle Right", :aliases []}
+{:name "angle-up", :label "Angle Up", :aliases []}
+{:name "angles-down", :label "Angles Down", :aliases ["angle-double-down"]}
+{:name "angles-left", :label "Angles Left", :aliases ["angle-double-left"]}
+{:name "angles-right", :label "Angles Right", :aliases ["angle-double-right"]}
+{:name "angles-up", :label "Angles Up", :aliases ["angle-double-up"]}
+{:name "ankh", :label "Ankh", :aliases []}
+{:name "apple-whole", :label "Apple Whole", :aliases ["apple-alt"]}
+{:name "archway", :label "Archway", :aliases []}
+{:name "arrow-down", :label "Arrow Down", :aliases []}
+{:name "arrow-down-1-9", :label "Arrow Down 1 9", :aliases ["sort-numeric-asc" "sort-numeric-down"]}
+{:name "arrow-down-9-1", :label "Arrow Down 9 1", :aliases ["sort-numeric-desc" "sort-numeric-down-alt"]}
+{:name "arrow-down-a-z", :label "Arrow Down A Z", :aliases ["sort-alpha-asc" "sort-alpha-down"]}
+{:name "arrow-down-long", :label "Arrow Down Long", :aliases ["long-arrow-down"]}
+{:name "arrow-down-short-wide", :label "Arrow Down Short Wide", :aliases ["sort-amount-desc" "sort-amount-down-alt"]}
+{:name "arrow-down-up-across-line", :label "Arrow Down Up Across Line", :aliases []}
+{:name "arrow-down-up-lock", :label "Arrow Down Up Lock", :aliases []}
+{:name "arrow-down-wide-short", :label "Arrow Down Wide Short", :aliases ["sort-amount-asc" "sort-amount-down"]}
+{:name "arrow-down-z-a", :label "Arrow Down Z A", :aliases ["sort-alpha-desc" "sort-alpha-down-alt"]}
+{:name "arrow-left", :label "Arrow Left", :aliases []}
+{:name "arrow-left-long", :label "Arrow Left Long", :aliases ["long-arrow-left"]}
+{:name "arrow-pointer", :label "Arrow Pointer", :aliases ["mouse-pointer"]}
+{:name "arrow-right", :label "Arrow Right", :aliases []}
+{:name "arrow-right-arrow-left", :label "Arrow Right Arrow Left", :aliases ["exchange"]}
+{:name "arrow-right-from-bracket", :label "Arrow Right From Bracket", :aliases ["sign-out"]}
+{:name "arrow-right-long", :label "Arrow Right Long", :aliases ["long-arrow-right"]}
+{:name "arrow-right-to-bracket", :label "Arrow Right To Bracket", :aliases ["sign-in"]}
+{:name "arrow-right-to-city", :label "Arrow Right To City", :aliases []}
+{:name "arrow-rotate-left", :label "Arrow Rotate Left", :aliases ["arrow-left-rotate" "arrow-rotate-back" "arrow-rotate-backward" "undo"]}
+{:name "arrow-rotate-right", :label "Arrow Rotate Right", :aliases ["arrow-right-rotate" "arrow-rotate-forward" "redo"]}
+{:name "arrow-trend-down", :label "Arrow Trend Down", :aliases []}
+{:name "arrow-trend-up", :label "Arrow Trend Up", :aliases []}
+{:name "arrow-turn-down", :label "Arrow Turn Down", :aliases ["level-down"]}
+{:name "arrow-turn-up", :label "Arrow Turn Up", :aliases ["level-up"]}
+{:name "arrow-up", :label "Arrow Up", :aliases []}
+{:name "arrow-up-1-9", :label "Arrow Up 1 9", :aliases ["sort-numeric-up"]}
+{:name "arrow-up-9-1", :label "Arrow Up 9 1", :aliases ["sort-numeric-up-alt"]}
+{:name "arrow-up-a-z", :label "Arrow Up A Z", :aliases ["sort-alpha-up"]}
+{:name "arrow-up-from-bracket", :label "Arrow Up From Bracket", :aliases []}
+{:name "arrow-up-from-ground-water", :label "Arrow Up From Ground Water", :aliases []}
+{:name "arrow-up-from-water-pump", :label "Arrow Up From Water Pump", :aliases []}
+{:name "arrow-up-long", :label "Arrow Up Long", :aliases ["long-arrow-up"]}
+{:name "arrow-up-right-dots", :label "Arrow Up Right Dots", :aliases []}
+{:name "arrow-up-right-from-square", :label "Arrow Up Right From Square", :aliases ["external-link"]}
+{:name "arrow-up-short-wide", :label "Arrow Up Short Wide", :aliases ["sort-amount-up-alt"]}
+{:name "arrow-up-wide-short", :label "Arrow Up Wide Short", :aliases ["sort-amount-up"]}
+{:name "arrow-up-z-a", :label "Arrow Up Z A", :aliases ["sort-alpha-up-alt"]}
+{:name "arrows-down-to-line", :label "Arrows Down To Line", :aliases []}
+{:name "arrows-down-to-people", :label "Arrows Down To People", :aliases []}
+{:name "arrows-left-right", :label "Arrows Left Right", :aliases ["arrows-h"]}
+{:name "arrows-left-right-to-line", :label "Arrows Left Right To Line", :aliases []}
+{:name "arrows-rotate", :label "Arrows Rotate", :aliases ["refresh" "sync"]}
+{:name "arrows-spin", :label "Arrows Spin", :aliases []}
+{:name "arrows-split-up-and-left", :label "Arrows Split Up And Left", :aliases []}
+{:name "arrows-to-circle", :label "Arrows To Circle", :aliases []}
+{:name "arrows-to-dot", :label "Arrows To Dot", :aliases []}
+{:name "arrows-to-eye", :label "Arrows To Eye", :aliases []}
+{:name "arrows-turn-right", :label "Arrows Turn Right", :aliases []}
+{:name "arrows-turn-to-dots", :label "Arrows Turn To Dots", :aliases []}
+{:name "arrows-up-down", :label "Arrows Up Down", :aliases ["arrows-v"]}
+{:name "arrows-up-down-left-right", :label "Arrows Up Down Left Right", :aliases ["arrows"]}
+{:name "arrows-up-to-line", :label "Arrows Up To Line", :aliases []}
+{:name "asterisk", :label "Asterisk", :aliases []}
+{:name "at", :label "At", :aliases []}
+{:name "atom", :label "Atom", :aliases []}
+{:name "audio-description", :label "Audio Description", :aliases []}
+{:name "austral-sign", :label "Austral Sign", :aliases []}
+{:name "award", :label "Award", :aliases []}
+{:name "b", :label "B", :aliases []}
+{:name "baby", :label "Baby", :aliases []}
+{:name "baby-carriage", :label "Baby Carriage", :aliases ["carriage-baby"]}
+{:name "backward", :label "Backward", :aliases []}
+{:name "backward-fast", :label "Backward Fast", :aliases ["fast-backward"]}
+{:name "backward-step", :label "Backward Step", :aliases ["step-backward"]}
+{:name "bacon", :label "Bacon", :aliases []}
+{:name "bacteria", :label "Bacteria", :aliases []}
+{:name "bacterium", :label "Bacterium", :aliases []}
+{:name "bag-shopping", :label "Bag Shopping", :aliases ["shopping-bag"]}
+{:name "bahai", :label "Bahai", :aliases ["haykal"]}
+{:name "baht-sign", :label "Baht Sign", :aliases []}
+{:name "ban", :label "Ban", :aliases ["cancel"]}
+{:name "ban-smoking", :label "Ban Smoking", :aliases ["smoking-ban"]}
+{:name "bandage", :label "Bandage", :aliases ["band-aid"]}
+{:name "bangladeshi-taka-sign", :label "Bangladeshi Taka Sign", :aliases []}
+{:name "barcode", :label "Barcode", :aliases []}
+{:name "bars", :label "Bars", :aliases ["navicon"]}
+{:name "bars-progress", :label "Bars Progress", :aliases ["tasks-alt"]}
+{:name "bars-staggered", :label "Bars Staggered", :aliases ["reorder" "stream"]}
+{:name "baseball", :label "Baseball", :aliases ["baseball-ball"]}
+{:name "baseball-bat-ball", :label "Baseball Bat Ball", :aliases []}
+{:name "basket-shopping", :label "Basket Shopping", :aliases ["shopping-basket"]}
+{:name "basketball", :label "Basketball", :aliases ["basketball-ball"]}
+{:name "bath", :label "Bath", :aliases ["bathtub"]}
+{:name "battery-empty", :label "Battery Empty", :aliases ["battery-0"]}
+{:name "battery-full", :label "Battery Full", :aliases ["battery" "battery-5"]}
+{:name "battery-half", :label "Battery Half", :aliases ["battery-3"]}
+{:name "battery-quarter", :label "Battery Quarter", :aliases ["battery-2"]}
+{:name "battery-three-quarters", :label "Battery Three Quarters", :aliases ["battery-4"]}
+{:name "bed", :label "Bed", :aliases []}
+{:name "bed-pulse", :label "Bed Pulse", :aliases ["procedures"]}
+{:name "beer-mug-empty", :label "Beer Mug Empty", :aliases ["beer"]}
+{:name "bell", :label "Bell", :aliases []}
+{:name "bell-concierge", :label "Bell Concierge", :aliases ["concierge-bell"]}
+{:name "bell-slash", :label "Bell Slash", :aliases []}
+{:name "bezier-curve", :label "Bezier Curve", :aliases []}
+{:name "bicycle", :label "Bicycle", :aliases []}
+{:name "binoculars", :label "Binoculars", :aliases []}
+{:name "biohazard", :label "Biohazard", :aliases []}
+{:name "bitcoin-sign", :label "Bitcoin Sign", :aliases []}
+{:name "blender", :label "Blender", :aliases []}
+{:name "blender-phone", :label "Blender Phone", :aliases []}
+{:name "blog", :label "Blog", :aliases []}
+{:name "bold", :label "Bold", :aliases []}
+{:name "bolt", :label "Bolt", :aliases ["zap"]}
+{:name "bolt-lightning", :label "Bolt Lightning", :aliases []}
+{:name "bomb", :label "Bomb", :aliases []}
+{:name "bone", :label "Bone", :aliases []}
+{:name "bong", :label "Bong", :aliases []}
+{:name "book", :label "Book", :aliases []}
+{:name "book-atlas", :label "Book Atlas", :aliases ["atlas"]}
+{:name "book-bible", :label "Book Bible", :aliases ["bible"]}
+{:name "book-bookmark", :label "Book Bookmark", :aliases []}
+{:name "book-journal-whills", :label "Book Journal Whills", :aliases ["journal-whills"]}
+{:name "book-medical", :label "Book Medical", :aliases []}
+{:name "book-open", :label "Book Open", :aliases []}
+{:name "book-open-reader", :label "Book Open Reader", :aliases ["book-reader"]}
+{:name "book-quran", :label "Book Quran", :aliases ["quran"]}
+{:name "book-skull", :label "Book Skull", :aliases ["book-dead"]}
+{:name "book-tanakh", :label "Book Tanakh", :aliases ["tanakh"]}
+{:name "bookmark", :label "Bookmark", :aliases []}
+{:name "border-all", :label "Border All", :aliases []}
+{:name "border-none", :label "Border None", :aliases []}
+{:name "border-top-left", :label "Border Top Left", :aliases ["border-style"]}
+{:name "bore-hole", :label "Bore Hole", :aliases []}
+{:name "bottle-droplet", :label "Bottle Droplet", :aliases []}
+{:name "bottle-water", :label "Bottle Water", :aliases []}
+{:name "bowl-food", :label "Bowl Food", :aliases []}
+{:name "bowl-rice", :label "Bowl Rice", :aliases []}
+{:name "bowling-ball", :label "Bowling Ball", :aliases []}
+{:name "box", :label "Box", :aliases []}
+{:name "box-archive", :label "Box Archive", :aliases ["archive"]}
+{:name "box-open", :label "Box Open", :aliases []}
+{:name "box-tissue", :label "Box Tissue", :aliases []}
+{:name "boxes-packing", :label "Boxes Packing", :aliases []}
+{:name "boxes-stacked", :label "Boxes Stacked", :aliases ["boxes" "boxes-alt"]}
+{:name "braille", :label "Braille", :aliases []}
+{:name "brain", :label "Brain", :aliases []}
+{:name "brazilian-real-sign", :label "Brazilian Real Sign", :aliases []}
+{:name "bread-slice", :label "Bread Slice", :aliases []}
+{:name "bridge", :label "Bridge", :aliases []}
+{:name "bridge-circle-check", :label "Bridge Circle Check", :aliases []}
+{:name "bridge-circle-exclamation", :label "Bridge Circle Exclamation", :aliases []}
+{:name "bridge-circle-xmark", :label "Bridge Circle Xmark", :aliases []}
+{:name "bridge-lock", :label "Bridge Lock", :aliases []}
+{:name "bridge-water", :label "Bridge Water", :aliases []}
+{:name "briefcase", :label "Briefcase", :aliases []}
+{:name "briefcase-medical", :label "Briefcase Medical", :aliases []}
+{:name "broom", :label "Broom", :aliases []}
+{:name "broom-ball", :label "Broom Ball", :aliases ["quidditch" "quidditch-broom-ball"]}
+{:name "brush", :label "Brush", :aliases []}
+{:name "bucket", :label "Bucket", :aliases []}
+{:name "bug", :label "Bug", :aliases []}
+{:name "bug-slash", :label "Bug Slash", :aliases []}
+{:name "bugs", :label "Bugs", :aliases []}
+{:name "building", :label "Building", :aliases []}
+{:name "building-circle-arrow-right", :label "Building Circle Arrow Right", :aliases []}
+{:name "building-circle-check", :label "Building Circle Check", :aliases []}
+{:name "building-circle-exclamation", :label "Building Circle Exclamation", :aliases []}
+{:name "building-circle-xmark", :label "Building Circle Xmark", :aliases []}
+{:name "building-columns", :label "Building Columns", :aliases ["bank" "institution" "museum" "university"]}
+{:name "building-flag", :label "Building Flag", :aliases []}
+{:name "building-lock", :label "Building Lock", :aliases []}
+{:name "building-ngo", :label "Building Ngo", :aliases []}
+{:name "building-shield", :label "Building Shield", :aliases []}
+{:name "building-un", :label "Building Un", :aliases []}
+{:name "building-user", :label "Building User", :aliases []}
+{:name "building-wheat", :label "Building Wheat", :aliases []}
+{:name "bullhorn", :label "Bullhorn", :aliases []}
+{:name "bullseye", :label "Bullseye", :aliases []}
+{:name "burger", :label "Burger", :aliases ["hamburger"]}
+{:name "burst", :label "Burst", :aliases []}
+{:name "bus", :label "Bus", :aliases []}
+{:name "bus-simple", :label "Bus Simple", :aliases ["bus-alt"]}
+{:name "business-time", :label "Business Time", :aliases ["briefcase-clock"]}
+{:name "c", :label "C", :aliases []}
+{:name "cable-car", :label "Cable Car", :aliases ["tram"]}
+{:name "cake-candles", :label "Cake Candles", :aliases ["birthday-cake" "cake"]}
+{:name "calculator", :label "Calculator", :aliases []}
+{:name "calendar", :label "Calendar", :aliases []}
+{:name "calendar-check", :label "Calendar Check", :aliases []}
+{:name "calendar-day", :label "Calendar Day", :aliases []}
+{:name "calendar-days", :label "Calendar Days", :aliases ["calendar-alt"]}
+{:name "calendar-minus", :label "Calendar Minus", :aliases []}
+{:name "calendar-plus", :label "Calendar Plus", :aliases []}
+{:name "calendar-week", :label "Calendar Week", :aliases []}
+{:name "calendar-xmark", :label "Calendar Xmark", :aliases ["calendar-times"]}
+{:name "camera", :label "Camera", :aliases ["camera-alt"]}
+{:name "camera-retro", :label "Camera Retro", :aliases []}
+{:name "camera-rotate", :label "Camera Rotate", :aliases []}
+{:name "campground", :label "Campground", :aliases []}
+{:name "candy-cane", :label "Candy Cane", :aliases []}
+{:name "cannabis", :label "Cannabis", :aliases []}
+{:name "capsules", :label "Capsules", :aliases []}
+{:name "car", :label "Car", :aliases ["automobile"]}
+{:name "car-battery", :label "Car Battery", :aliases ["battery-car"]}
+{:name "car-burst", :label "Car Burst", :aliases ["car-crash"]}
+{:name "car-on", :label "Car On", :aliases []}
+{:name "car-rear", :label "Car Rear", :aliases ["car-alt"]}
+{:name "car-side", :label "Car Side", :aliases []}
+{:name "car-tunnel", :label "Car Tunnel", :aliases []}
+{:name "caravan", :label "Caravan", :aliases []}
+{:name "caret-down", :label "Caret Down", :aliases []}
+{:name "caret-left", :label "Caret Left", :aliases []}
+{:name "caret-right", :label "Caret Right", :aliases []}
+{:name "caret-up", :label "Caret Up", :aliases []}
+{:name "carrot", :label "Carrot", :aliases []}
+{:name "cart-arrow-down", :label "Cart Arrow Down", :aliases []}
+{:name "cart-flatbed", :label "Cart Flatbed", :aliases ["dolly-flatbed"]}
+{:name "cart-flatbed-suitcase", :label "Cart Flatbed Suitcase", :aliases ["luggage-cart"]}
+{:name "cart-plus", :label "Cart Plus", :aliases []}
+{:name "cart-shopping", :label "Cart Shopping", :aliases ["shopping-cart"]}
+{:name "cash-register", :label "Cash Register", :aliases []}
+{:name "cat", :label "Cat", :aliases []}
+{:name "cedi-sign", :label "Cedi Sign", :aliases []}
+{:name "cent-sign", :label "Cent Sign", :aliases []}
+{:name "certificate", :label "Certificate", :aliases []}
+{:name "chair", :label "Chair", :aliases []}
+{:name "chalkboard", :label "Chalkboard", :aliases ["blackboard"]}
+{:name "chalkboard-user", :label "Chalkboard User", :aliases ["chalkboard-teacher"]}
+{:name "champagne-glasses", :label "Champagne Glasses", :aliases ["glass-cheers"]}
+{:name "charging-station", :label "Charging Station", :aliases []}
+{:name "chart-area", :label "Chart Area", :aliases ["area-chart"]}
+{:name "chart-bar", :label "Chart Bar", :aliases ["bar-chart"]}
+{:name "chart-column", :label "Chart Column", :aliases []}
+{:name "chart-gantt", :label "Chart Gantt", :aliases []}
+{:name "chart-line", :label "Chart Line", :aliases ["line-chart"]}
+{:name "chart-pie", :label "Chart Pie", :aliases ["pie-chart"]}
+{:name "chart-simple", :label "Chart Simple", :aliases []}
+{:name "check", :label "Check", :aliases []}
+{:name "check-double", :label "Check Double", :aliases []}
+{:name "check-to-slot", :label "Check To Slot", :aliases ["vote-yea"]}
+{:name "cheese", :label "Cheese", :aliases []}
+{:name "chess", :label "Chess", :aliases []}
+{:name "chess-bishop", :label "Chess Bishop", :aliases []}
+{:name "chess-board", :label "Chess Board", :aliases []}
+{:name "chess-king", :label "Chess King", :aliases []}
+{:name "chess-knight", :label "Chess Knight", :aliases []}
+{:name "chess-pawn", :label "Chess Pawn", :aliases []}
+{:name "chess-queen", :label "Chess Queen", :aliases []}
+{:name "chess-rook", :label "Chess Rook", :aliases []}
+{:name "chevron-down", :label "Chevron Down", :aliases []}
+{:name "chevron-left", :label "Chevron Left", :aliases []}
+{:name "chevron-right", :label "Chevron Right", :aliases []}
+{:name "chevron-up", :label "Chevron Up", :aliases []}
+{:name "child", :label "Child", :aliases []}
+{:name "child-combatant", :label "Child Combatant", :aliases ["child-rifle"]}
+{:name "child-dress", :label "Child Dress", :aliases []}
+{:name "child-reaching", :label "Child Reaching", :aliases []}
+{:name "children", :label "Children", :aliases []}
+{:name "church", :label "Church", :aliases []}
+{:name "circle", :label "Circle", :aliases []}
+{:name "circle-arrow-down", :label "Circle Arrow Down", :aliases ["arrow-circle-down"]}
+{:name "circle-arrow-left", :label "Circle Arrow Left", :aliases ["arrow-circle-left"]}
+{:name "circle-arrow-right", :label "Circle Arrow Right", :aliases ["arrow-circle-right"]}
+{:name "circle-arrow-up", :label "Circle Arrow Up", :aliases ["arrow-circle-up"]}
+{:name "circle-check", :label "Circle Check", :aliases ["check-circle"]}
+{:name "circle-chevron-down", :label "Circle Chevron Down", :aliases ["chevron-circle-down"]}
+{:name "circle-chevron-left", :label "Circle Chevron Left", :aliases ["chevron-circle-left"]}
+{:name "circle-chevron-right", :label "Circle Chevron Right", :aliases ["chevron-circle-right"]}
+{:name "circle-chevron-up", :label "Circle Chevron Up", :aliases ["chevron-circle-up"]}
+{:name "circle-dollar-to-slot", :label "Circle Dollar To Slot", :aliases ["donate"]}
+{:name "circle-dot", :label "Circle Dot", :aliases ["dot-circle"]}
+{:name "circle-down", :label "Circle Down", :aliases ["arrow-alt-circle-down"]}
+{:name "circle-exclamation", :label "Circle Exclamation", :aliases ["exclamation-circle"]}
+{:name "circle-h", :label "Circle H", :aliases ["hospital-symbol"]}
+{:name "circle-half-stroke", :label "Circle Half Stroke", :aliases ["adjust"]}
+{:name "circle-info", :label "Circle Info", :aliases ["info-circle"]}
+{:name "circle-left", :label "Circle Left", :aliases ["arrow-alt-circle-left"]}
+{:name "circle-minus", :label "Circle Minus", :aliases ["minus-circle"]}
+{:name "circle-nodes", :label "Circle Nodes", :aliases []}
+{:name "circle-notch", :label "Circle Notch", :aliases []}
+{:name "circle-pause", :label "Circle Pause", :aliases ["pause-circle"]}
+{:name "circle-play", :label "Circle Play", :aliases ["play-circle"]}
+{:name "circle-plus", :label "Circle Plus", :aliases ["plus-circle"]}
+{:name "circle-question", :label "Circle Question", :aliases ["question-circle"]}
+{:name "circle-radiation", :label "Circle Radiation", :aliases ["radiation-alt"]}
+{:name "circle-right", :label "Circle Right", :aliases ["arrow-alt-circle-right"]}
+{:name "circle-stop", :label "Circle Stop", :aliases ["stop-circle"]}
+{:name "circle-up", :label "Circle Up", :aliases ["arrow-alt-circle-up"]}
+{:name "circle-user", :label "Circle User", :aliases ["user-circle"]}
+{:name "circle-xmark", :label "Circle Xmark", :aliases ["times-circle" "xmark-circle"]}
+{:name "city", :label "City", :aliases []}
+{:name "clapperboard", :label "Clapperboard", :aliases []}
+{:name "clipboard", :label "Clipboard", :aliases []}
+{:name "clipboard-check", :label "Clipboard Check", :aliases []}
+{:name "clipboard-list", :label "Clipboard List", :aliases []}
+{:name "clipboard-question", :label "Clipboard Question", :aliases []}
+{:name "clipboard-user", :label "Clipboard User", :aliases []}
+{:name "clock", :label "Clock", :aliases ["clock-four"]}
+{:name "clock-rotate-left", :label "Clock Rotate Left", :aliases ["history"]}
+{:name "clone", :label "Clone", :aliases []}
+{:name "closed-captioning", :label "Closed Captioning", :aliases []}
+{:name "cloud", :label "Cloud", :aliases []}
+{:name "cloud-arrow-down", :label "Cloud Arrow Down", :aliases ["cloud-download" "cloud-download-alt"]}
+{:name "cloud-arrow-up", :label "Cloud Arrow Up", :aliases ["cloud-upload" "cloud-upload-alt"]}
+{:name "cloud-bolt", :label "Cloud Bolt", :aliases ["thunderstorm"]}
+{:name "cloud-meatball", :label "Cloud Meatball", :aliases []}
+{:name "cloud-moon", :label "Cloud Moon", :aliases []}
+{:name "cloud-moon-rain", :label "Cloud Moon Rain", :aliases []}
+{:name "cloud-rain", :label "Cloud Rain", :aliases []}
+{:name "cloud-showers-heavy", :label "Cloud Showers Heavy", :aliases []}
+{:name "cloud-showers-water", :label "Cloud Showers Water", :aliases []}
+{:name "cloud-sun", :label "Cloud Sun", :aliases []}
+{:name "cloud-sun-rain", :label "Cloud Sun Rain", :aliases []}
+{:name "clover", :label "Clover", :aliases []}
+{:name "code", :label "Code", :aliases []}
+{:name "code-branch", :label "Code Branch", :aliases []}
+{:name "code-commit", :label "Code Commit", :aliases []}
+{:name "code-compare", :label "Code Compare", :aliases []}
+{:name "code-fork", :label "Code Fork", :aliases []}
+{:name "code-merge", :label "Code Merge", :aliases []}
+{:name "code-pull-request", :label "Code Pull Request", :aliases []}
+{:name "coins", :label "Coins", :aliases []}
+{:name "colon-sign", :label "Colon Sign", :aliases []}
+{:name "comment", :label "Comment", :aliases []}
+{:name "comment-dollar", :label "Comment Dollar", :aliases []}
+{:name "comment-dots", :label "Comment Dots", :aliases ["commenting"]}
+{:name "comment-medical", :label "Comment Medical", :aliases []}
+{:name "comment-slash", :label "Comment Slash", :aliases []}
+{:name "comment-sms", :label "Comment Sms", :aliases ["sms"]}
+{:name "comments", :label "Comments", :aliases []}
+{:name "comments-dollar", :label "Comments Dollar", :aliases []}
+{:name "compact-disc", :label "Compact Disc", :aliases []}
+{:name "compass", :label "Compass", :aliases []}
+{:name "compass-drafting", :label "Compass Drafting", :aliases ["drafting-compass"]}
+{:name "compress", :label "Compress", :aliases []}
+{:name "computer", :label "Computer", :aliases []}
+{:name "computer-mouse", :label "Computer Mouse", :aliases ["mouse"]}
+{:name "cookie", :label "Cookie", :aliases []}
+{:name "cookie-bite", :label "Cookie Bite", :aliases []}
+{:name "copy", :label "Copy", :aliases []}
+{:name "copyright", :label "Copyright", :aliases []}
+{:name "couch", :label "Couch", :aliases []}
+{:name "cow", :label "Cow", :aliases []}
+{:name "credit-card", :label "Credit Card", :aliases ["credit-card-alt"]}
+{:name "crop", :label "Crop", :aliases []}
+{:name "crop-simple", :label "Crop Simple", :aliases ["crop-alt"]}
+{:name "cross", :label "Cross", :aliases []}
+{:name "crosshairs", :label "Crosshairs", :aliases []}
+{:name "crow", :label "Crow", :aliases []}
+{:name "crown", :label "Crown", :aliases []}
+{:name "crutch", :label "Crutch", :aliases []}
+{:name "cruzeiro-sign", :label "Cruzeiro Sign", :aliases []}
+{:name "cube", :label "Cube", :aliases []}
+{:name "cubes", :label "Cubes", :aliases []}
+{:name "cubes-stacked", :label "Cubes Stacked", :aliases []}
+{:name "d", :label "D", :aliases []}
+{:name "database", :label "Database", :aliases []}
+{:name "delete-left", :label "Delete Left", :aliases ["backspace"]}
+{:name "democrat", :label "Democrat", :aliases []}
+{:name "desktop", :label "Desktop", :aliases ["desktop-alt"]}
+{:name "dharmachakra", :label "Dharmachakra", :aliases []}
+{:name "diagram-next", :label "Diagram Next", :aliases []}
+{:name "diagram-predecessor", :label "Diagram Predecessor", :aliases []}
+{:name "diagram-project", :label "Diagram Project", :aliases ["project-diagram"]}
+{:name "diagram-successor", :label "Diagram Successor", :aliases []}
+{:name "diamond", :label "Diamond", :aliases []}
+{:name "diamond-turn-right", :label "Diamond Turn Right", :aliases ["directions"]}
+{:name "dice", :label "Dice", :aliases []}
+{:name "dice-d20", :label "Dice D20", :aliases []}
+{:name "dice-d6", :label "Dice D6", :aliases []}
+{:name "dice-five", :label "Dice Five", :aliases []}
+{:name "dice-four", :label "Dice Four", :aliases []}
+{:name "dice-one", :label "Dice One", :aliases []}
+{:name "dice-six", :label "Dice Six", :aliases []}
+{:name "dice-three", :label "Dice Three", :aliases []}
+{:name "dice-two", :label "Dice Two", :aliases []}
+{:name "disease", :label "Disease", :aliases []}
+{:name "display", :label "Display", :aliases []}
+{:name "divide", :label "Divide", :aliases []}
+{:name "dna", :label "Dna", :aliases []}
+{:name "dog", :label "Dog", :aliases []}
+{:name "dollar-sign", :label "Dollar Sign", :aliases ["dollar" "usd"]}
+{:name "dolly", :label "Dolly", :aliases ["dolly-box"]}
+{:name "dong-sign", :label "Dong Sign", :aliases []}
+{:name "door-closed", :label "Door Closed", :aliases []}
+{:name "door-open", :label "Door Open", :aliases []}
+{:name "dove", :label "Dove", :aliases []}
+{:name "down-left-and-up-right-to-center", :label "Down Left And Up Right To Center", :aliases ["compress-alt"]}
+{:name "down-long", :label "Down Long", :aliases ["long-arrow-alt-down"]}
+{:name "download", :label "Download", :aliases []}
+{:name "dragon", :label "Dragon", :aliases []}
+{:name "draw-polygon", :label "Draw Polygon", :aliases []}
+{:name "droplet", :label "Droplet", :aliases ["tint"]}
+{:name "droplet-slash", :label "Droplet Slash", :aliases ["tint-slash"]}
+{:name "drum", :label "Drum", :aliases []}
+{:name "drum-steelpan", :label "Drum Steelpan", :aliases []}
+{:name "drumstick-bite", :label "Drumstick Bite", :aliases []}
+{:name "dumbbell", :label "Dumbbell", :aliases []}
+{:name "dumpster", :label "Dumpster", :aliases []}
+{:name "dumpster-fire", :label "Dumpster Fire", :aliases []}
+{:name "dungeon", :label "Dungeon", :aliases []}
+{:name "e", :label "E", :aliases []}
+{:name "ear-deaf", :label "Ear Deaf", :aliases ["deaf" "deafness" "hard-of-hearing"]}
+{:name "ear-listen", :label "Ear Listen", :aliases ["assistive-listening-systems"]}
+{:name "earth-africa", :label "Earth Africa", :aliases ["globe-africa"]}
+{:name "earth-americas", :label "Earth Americas", :aliases ["earth" "earth-america" "globe-americas"]}
+{:name "earth-asia", :label "Earth Asia", :aliases ["globe-asia"]}
+{:name "earth-europe", :label "Earth Europe", :aliases ["globe-europe"]}
+{:name "earth-oceania", :label "Earth Oceania", :aliases ["globe-oceania"]}
+{:name "egg", :label "Egg", :aliases []}
+{:name "eject", :label "Eject", :aliases []}
+{:name "elevator", :label "Elevator", :aliases []}
+{:name "ellipsis", :label "Ellipsis", :aliases ["ellipsis-h"]}
+{:name "ellipsis-vertical", :label "Ellipsis Vertical", :aliases ["ellipsis-v"]}
+{:name "envelope", :label "Envelope", :aliases []}
+{:name "envelope-circle-check", :label "Envelope Circle Check", :aliases []}
+{:name "envelope-open", :label "Envelope Open", :aliases []}
+{:name "envelope-open-text", :label "Envelope Open Text", :aliases []}
+{:name "envelopes-bulk", :label "Envelopes Bulk", :aliases ["mail-bulk"]}
+{:name "equals", :label "Equals", :aliases []}
+{:name "eraser", :label "Eraser", :aliases []}
+{:name "ethernet", :label "Ethernet", :aliases []}
+{:name "euro-sign", :label "Euro Sign", :aliases ["eur" "euro"]}
+{:name "exclamation", :label "Exclamation", :aliases []}
+{:name "expand", :label "Expand", :aliases []}
+{:name "explosion", :label "Explosion", :aliases []}
+{:name "eye", :label "Eye", :aliases []}
+{:name "eye-dropper", :label "Eye Dropper", :aliases ["eye-dropper-empty" "eyedropper"]}
+{:name "eye-low-vision", :label "Eye Low Vision", :aliases ["low-vision"]}
+{:name "eye-slash", :label "Eye Slash", :aliases []}
+{:name "f", :label "F", :aliases []}
+{:name "face-angry", :label "Face Angry", :aliases ["angry"]}
+{:name "face-dizzy", :label "Face Dizzy", :aliases ["dizzy"]}
+{:name "face-flushed", :label "Face Flushed", :aliases ["flushed"]}
+{:name "face-frown", :label "Face Frown", :aliases ["frown"]}
+{:name "face-frown-open", :label "Face Frown Open", :aliases ["frown-open"]}
+{:name "face-grimace", :label "Face Grimace", :aliases ["grimace"]}
+{:name "face-grin", :label "Face Grin", :aliases ["grin"]}
+{:name "face-grin-beam", :label "Face Grin Beam", :aliases ["grin-beam"]}
+{:name "face-grin-beam-sweat", :label "Face Grin Beam Sweat", :aliases ["grin-beam-sweat"]}
+{:name "face-grin-hearts", :label "Face Grin Hearts", :aliases ["grin-hearts"]}
+{:name "face-grin-squint", :label "Face Grin Squint", :aliases ["grin-squint"]}
+{:name "face-grin-squint-tears", :label "Face Grin Squint Tears", :aliases ["grin-squint-tears"]}
+{:name "face-grin-stars", :label "Face Grin Stars", :aliases ["grin-stars"]}
+{:name "face-grin-tears", :label "Face Grin Tears", :aliases ["grin-tears"]}
+{:name "face-grin-tongue", :label "Face Grin Tongue", :aliases ["grin-tongue"]}
+{:name "face-grin-tongue-squint", :label "Face Grin Tongue Squint", :aliases ["grin-tongue-squint"]}
+{:name "face-grin-tongue-wink", :label "Face Grin Tongue Wink", :aliases ["grin-tongue-wink"]}
+{:name "face-grin-wide", :label "Face Grin Wide", :aliases ["grin-alt"]}
+{:name "face-grin-wink", :label "Face Grin Wink", :aliases ["grin-wink"]}
+{:name "face-kiss", :label "Face Kiss", :aliases ["kiss"]}
+{:name "face-kiss-beam", :label "Face Kiss Beam", :aliases ["kiss-beam"]}
+{:name "face-kiss-wink-heart", :label "Face Kiss Wink Heart", :aliases ["kiss-wink-heart"]}
+{:name "face-laugh", :label "Face Laugh", :aliases ["laugh"]}
+{:name "face-laugh-beam", :label "Face Laugh Beam", :aliases ["laugh-beam"]}
+{:name "face-laugh-squint", :label "Face Laugh Squint", :aliases ["laugh-squint"]}
+{:name "face-laugh-wink", :label "Face Laugh Wink", :aliases ["laugh-wink"]}
+{:name "face-meh", :label "Face Meh", :aliases ["meh"]}
+{:name "face-meh-blank", :label "Face Meh Blank", :aliases ["meh-blank"]}
+{:name "face-rolling-eyes", :label "Face Rolling Eyes", :aliases ["meh-rolling-eyes"]}
+{:name "face-sad-cry", :label "Face Sad Cry", :aliases ["sad-cry"]}
+{:name "face-sad-tear", :label "Face Sad Tear", :aliases ["sad-tear"]}
+{:name "face-smile", :label "Face Smile", :aliases ["smile"]}
+{:name "face-smile-beam", :label "Face Smile Beam", :aliases ["smile-beam"]}
+{:name "face-smile-wink", :label "Face Smile Wink", :aliases ["smile-wink"]}
+{:name "face-surprise", :label "Face Surprise", :aliases ["surprise"]}
+{:name "face-tired", :label "Face Tired", :aliases ["tired"]}
+{:name "fan", :label "Fan", :aliases []}
+{:name "faucet", :label "Faucet", :aliases []}
+{:name "faucet-drip", :label "Faucet Drip", :aliases []}
+{:name "fax", :label "Fax", :aliases []}
+{:name "feather", :label "Feather", :aliases []}
+{:name "feather-pointed", :label "Feather Pointed", :aliases ["feather-alt"]}
+{:name "ferry", :label "Ferry", :aliases []}
+{:name "file", :label "File", :aliases []}
+{:name "file-arrow-down", :label "File Arrow Down", :aliases ["file-download"]}
+{:name "file-arrow-up", :label "File Arrow Up", :aliases ["file-upload"]}
+{:name "file-audio", :label "File Audio", :aliases []}
+{:name "file-circle-check", :label "File Circle Check", :aliases []}
+{:name "file-circle-exclamation", :label "File Circle Exclamation", :aliases []}
+{:name "file-circle-minus", :label "File Circle Minus", :aliases []}
+{:name "file-circle-plus", :label "File Circle Plus", :aliases []}
+{:name "file-circle-question", :label "File Circle Question", :aliases []}
+{:name "file-circle-xmark", :label "File Circle Xmark", :aliases []}
+{:name "file-code", :label "File Code", :aliases []}
+{:name "file-contract", :label "File Contract", :aliases []}
+{:name "file-csv", :label "File Csv", :aliases []}
+{:name "file-excel", :label "File Excel", :aliases []}
+{:name "file-export", :label "File Export", :aliases ["arrow-right-from-file"]}
+{:name "file-image", :label "File Image", :aliases []}
+{:name "file-import", :label "File Import", :aliases ["arrow-right-to-file"]}
+{:name "file-invoice", :label "File Invoice", :aliases []}
+{:name "file-invoice-dollar", :label "File Invoice Dollar", :aliases []}
+{:name "file-lines", :label "File Lines", :aliases ["file-alt" "file-text"]}
+{:name "file-medical", :label "File Medical", :aliases []}
+{:name "file-pdf", :label "File Pdf", :aliases []}
+{:name "file-pen", :label "File Pen", :aliases ["file-edit"]}
+{:name "file-powerpoint", :label "File Powerpoint", :aliases []}
+{:name "file-prescription", :label "File Prescription", :aliases []}
+{:name "file-shield", :label "File Shield", :aliases []}
+{:name "file-signature", :label "File Signature", :aliases []}
+{:name "file-video", :label "File Video", :aliases []}
+{:name "file-waveform", :label "File Waveform", :aliases ["file-medical-alt"]}
+{:name "file-word", :label "File Word", :aliases []}
+{:name "file-zipper", :label "File Zipper", :aliases ["file-archive"]}
+{:name "fill", :label "Fill", :aliases []}
+{:name "fill-drip", :label "Fill Drip", :aliases []}
+{:name "film", :label "Film", :aliases []}
+{:name "filter", :label "Filter", :aliases []}
+{:name "filter-circle-dollar", :label "Filter Circle Dollar", :aliases ["funnel-dollar"]}
+{:name "filter-circle-xmark", :label "Filter Circle Xmark", :aliases []}
+{:name "fingerprint", :label "Fingerprint", :aliases []}
+{:name "fire", :label "Fire", :aliases []}
+{:name "fire-burner", :label "Fire Burner", :aliases []}
+{:name "fire-extinguisher", :label "Fire Extinguisher", :aliases []}
+{:name "fire-flame-curved", :label "Fire Flame Curved", :aliases ["fire-alt"]}
+{:name "fire-flame-simple", :label "Fire Flame Simple", :aliases ["burn"]}
+{:name "fish", :label "Fish", :aliases []}
+{:name "fish-fins", :label "Fish Fins", :aliases []}
+{:name "flag", :label "Flag", :aliases []}
+{:name "flag-checkered", :label "Flag Checkered", :aliases []}
+{:name "flag-usa", :label "Flag Usa", :aliases []}
+{:name "flask", :label "Flask", :aliases []}
+{:name "flask-vial", :label "Flask Vial", :aliases []}
+{:name "floppy-disk", :label "Floppy Disk", :aliases ["save"]}
+{:name "florin-sign", :label "Florin Sign", :aliases []}
+{:name "folder", :label "Folder", :aliases ["folder-blank"]}
+{:name "folder-closed", :label "Folder Closed", :aliases []}
+{:name "folder-minus", :label "Folder Minus", :aliases []}
+{:name "folder-open", :label "Folder Open", :aliases []}
+{:name "folder-plus", :label "Folder Plus", :aliases []}
+{:name "folder-tree", :label "Folder Tree", :aliases []}
+{:name "font", :label "Font", :aliases []}
+{:name "font-awesome", :label "Font Awesome", :aliases ["font-awesome-flag" "font-awesome-logo-full"]}
+{:name "football", :label "Football", :aliases ["football-ball"]}
+{:name "forward", :label "Forward", :aliases []}
+{:name "forward-fast", :label "Forward Fast", :aliases ["fast-forward"]}
+{:name "forward-step", :label "Forward Step", :aliases ["step-forward"]}
+{:name "franc-sign", :label "Franc Sign", :aliases []}
+{:name "frog", :label "Frog", :aliases []}
+{:name "futbol", :label "Futbol", :aliases ["futbol-ball" "soccer-ball"]}
+{:name "g", :label "G", :aliases []}
+{:name "gamepad", :label "Gamepad", :aliases []}
+{:name "gas-pump", :label "Gas Pump", :aliases []}
+{:name "gauge", :label "Gauge", :aliases ["dashboard" "gauge-med" "tachometer-alt-average"]}
+{:name "gauge-high", :label "Gauge High", :aliases ["tachometer-alt" "tachometer-alt-fast"]}
+{:name "gauge-simple", :label "Gauge Simple", :aliases ["gauge-simple-med" "tachometer-average"]}
+{:name "gauge-simple-high", :label "Gauge Simple High", :aliases ["tachometer" "tachometer-fast"]}
+{:name "gavel", :label "Gavel", :aliases ["legal"]}
+{:name "gear", :label "Gear", :aliases ["cog"]}
+{:name "gears", :label "Gears", :aliases ["cogs"]}
+{:name "gem", :label "Gem", :aliases []}
+{:name "genderless", :label "Genderless", :aliases []}
+{:name "ghost", :label "Ghost", :aliases []}
+{:name "gift", :label "Gift", :aliases []}
+{:name "gifts", :label "Gifts", :aliases []}
+{:name "glass-water", :label "Glass Water", :aliases []}
+{:name "glass-water-droplet", :label "Glass Water Droplet", :aliases []}
+{:name "glasses", :label "Glasses", :aliases []}
+{:name "globe", :label "Globe", :aliases []}
+{:name "golf-ball-tee", :label "Golf Ball Tee", :aliases ["golf-ball"]}
+{:name "gopuram", :label "Gopuram", :aliases []}
+{:name "graduation-cap", :label "Graduation Cap", :aliases ["mortar-board"]}
+{:name "greater-than", :label "Greater Than", :aliases []}
+{:name "greater-than-equal", :label "Greater Than Equal", :aliases []}
+{:name "grip", :label "Grip", :aliases ["grip-horizontal"]}
+{:name "grip-lines", :label "Grip Lines", :aliases []}
+{:name "grip-lines-vertical", :label "Grip Lines Vertical", :aliases []}
+{:name "grip-vertical", :label "Grip Vertical", :aliases []}
+{:name "group-arrows-rotate", :label "Group Arrows Rotate", :aliases []}
+{:name "guarani-sign", :label "Guarani Sign", :aliases []}
+{:name "guitar", :label "Guitar", :aliases []}
+{:name "gun", :label "Gun", :aliases []}
+{:name "h", :label "H", :aliases []}
+{:name "hammer", :label "Hammer", :aliases []}
+{:name "hamsa", :label "Hamsa", :aliases []}
+{:name "hand", :label "Hand", :aliases ["hand-paper"]}
+{:name "hand-back-fist", :label "Hand Back Fist", :aliases ["hand-rock"]}
+{:name "hand-dots", :label "Hand Dots", :aliases ["allergies"]}
+{:name "hand-fist", :label "Hand Fist", :aliases ["fist-raised"]}
+{:name "hand-holding", :label "Hand Holding", :aliases []}
+{:name "hand-holding-dollar", :label "Hand Holding Dollar", :aliases ["hand-holding-usd"]}
+{:name "hand-holding-droplet", :label "Hand Holding Droplet", :aliases ["hand-holding-water"]}
+{:name "hand-holding-hand", :label "Hand Holding Hand", :aliases []}
+{:name "hand-holding-heart", :label "Hand Holding Heart", :aliases []}
+{:name "hand-holding-medical", :label "Hand Holding Medical", :aliases []}
+{:name "hand-lizard", :label "Hand Lizard", :aliases []}
+{:name "hand-middle-finger", :label "Hand Middle Finger", :aliases []}
+{:name "hand-peace", :label "Hand Peace", :aliases []}
+{:name "hand-point-down", :label "Hand Point Down", :aliases []}
+{:name "hand-point-left", :label "Hand Point Left", :aliases []}
+{:name "hand-point-right", :label "Hand Point Right", :aliases []}
+{:name "hand-point-up", :label "Hand Point Up", :aliases []}
+{:name "hand-pointer", :label "Hand Pointer", :aliases []}
+{:name "hand-scissors", :label "Hand Scissors", :aliases []}
+{:name "hand-sparkles", :label "Hand Sparkles", :aliases []}
+{:name "hand-spock", :label "Hand Spock", :aliases []}
+{:name "handcuffs", :label "Handcuffs", :aliases []}
+{:name "hands", :label "Hands", :aliases ["sign-language" "signing"]}
+{:name "hands-asl-interpreting", :label "Hands Asl Interpreting", :aliases ["american-sign-language-interpreting" "asl-interpreting" "hands-american-sign-language-interpreting"]}
+{:name "hands-bound", :label "Hands Bound", :aliases []}
+{:name "hands-bubbles", :label "Hands Bubbles", :aliases ["hands-wash"]}
+{:name "hands-clapping", :label "Hands Clapping", :aliases []}
+{:name "hands-holding", :label "Hands Holding", :aliases []}
+{:name "hands-holding-child", :label "Hands Holding Child", :aliases []}
+{:name "hands-holding-circle", :label "Hands Holding Circle", :aliases []}
+{:name "hands-praying", :label "Hands Praying", :aliases ["praying-hands"]}
+{:name "handshake", :label "Handshake", :aliases []}
+{:name "handshake-angle", :label "Handshake Angle", :aliases ["hands-helping"]}
+{:name "handshake-simple", :label "Handshake Simple", :aliases ["handshake-alt"]}
+{:name "handshake-simple-slash", :label "Handshake Simple Slash", :aliases ["handshake-alt-slash"]}
+{:name "handshake-slash", :label "Handshake Slash", :aliases []}
+{:name "hanukiah", :label "Hanukiah", :aliases []}
+{:name "hard-drive", :label "Hard Drive", :aliases ["hdd"]}
+{:name "hashtag", :label "Hashtag", :aliases []}
+{:name "hat-cowboy", :label "Hat Cowboy", :aliases []}
+{:name "hat-cowboy-side", :label "Hat Cowboy Side", :aliases []}
+{:name "hat-wizard", :label "Hat Wizard", :aliases []}
+{:name "head-side-cough", :label "Head Side Cough", :aliases []}
+{:name "head-side-cough-slash", :label "Head Side Cough Slash", :aliases []}
+{:name "head-side-mask", :label "Head Side Mask", :aliases []}
+{:name "head-side-virus", :label "Head Side Virus", :aliases []}
+{:name "heading", :label "Heading", :aliases ["header"]}
+{:name "headphones", :label "Headphones", :aliases []}
+{:name "headphones-simple", :label "Headphones Simple", :aliases ["headphones-alt"]}
+{:name "headset", :label "Headset", :aliases []}
+{:name "heart", :label "Heart", :aliases []}
+{:name "heart-circle-bolt", :label "Heart Circle Bolt", :aliases []}
+{:name "heart-circle-check", :label "Heart Circle Check", :aliases []}
+{:name "heart-circle-exclamation", :label "Heart Circle Exclamation", :aliases []}
+{:name "heart-circle-minus", :label "Heart Circle Minus", :aliases []}
+{:name "heart-circle-plus", :label "Heart Circle Plus", :aliases []}
+{:name "heart-circle-xmark", :label "Heart Circle Xmark", :aliases []}
+{:name "heart-crack", :label "Heart Crack", :aliases ["heart-broken"]}
+{:name "heart-pulse", :label "Heart Pulse", :aliases ["heartbeat"]}
+{:name "helicopter", :label "Helicopter", :aliases []}
+{:name "helicopter-symbol", :label "Helicopter Symbol", :aliases []}
+{:name "helmet-safety", :label "Helmet Safety", :aliases ["hard-hat" "hat-hard"]}
+{:name "helmet-un", :label "Helmet Un", :aliases []}
+{:name "highlighter", :label "Highlighter", :aliases []}
+{:name "hill-avalanche", :label "Hill Avalanche", :aliases []}
+{:name "hill-rockslide", :label "Hill Rockslide", :aliases []}
+{:name "hippo", :label "Hippo", :aliases []}
+{:name "hockey-puck", :label "Hockey Puck", :aliases []}
+{:name "holly-berry", :label "Holly Berry", :aliases []}
+{:name "horse", :label "Horse", :aliases []}
+{:name "horse-head", :label "Horse Head", :aliases []}
+{:name "hospital", :label "Hospital", :aliases ["hospital-alt" "hospital-wide"]}
+{:name "hospital-user", :label "Hospital User", :aliases []}
+{:name "hot-tub-person", :label "Hot Tub Person", :aliases ["hot-tub"]}
+{:name "hotdog", :label "Hotdog", :aliases []}
+{:name "hotel", :label "Hotel", :aliases []}
+{:name "hourglass", :label "Hourglass", :aliases ["hourglass-empty"]}
+{:name "hourglass-end", :label "Hourglass End", :aliases ["hourglass-3"]}
+{:name "hourglass-half", :label "Hourglass Half", :aliases ["hourglass-2"]}
+{:name "hourglass-start", :label "Hourglass Start", :aliases ["hourglass-1"]}
+{:name "house", :label "House", :aliases ["home" "home-alt" "home-lg-alt"]}
+{:name "house-chimney", :label "House Chimney", :aliases ["home-lg"]}
+{:name "house-chimney-crack", :label "House Chimney Crack", :aliases ["house-damage"]}
+{:name "house-chimney-medical", :label "House Chimney Medical", :aliases ["clinic-medical"]}
+{:name "house-chimney-user", :label "House Chimney User", :aliases []}
+{:name "house-chimney-window", :label "House Chimney Window", :aliases []}
+{:name "house-circle-check", :label "House Circle Check", :aliases []}
+{:name "house-circle-exclamation", :label "House Circle Exclamation", :aliases []}
+{:name "house-circle-xmark", :label "House Circle Xmark", :aliases []}
+{:name "house-crack", :label "House Crack", :aliases []}
+{:name "house-fire", :label "House Fire", :aliases []}
+{:name "house-flag", :label "House Flag", :aliases []}
+{:name "house-flood-water", :label "House Flood Water", :aliases []}
+{:name "house-flood-water-circle-arrow-right", :label "House Flood Water Circle Arrow Right", :aliases []}
+{:name "house-laptop", :label "House Laptop", :aliases ["laptop-house"]}
+{:name "house-lock", :label "House Lock", :aliases []}
+{:name "house-medical", :label "House Medical", :aliases []}
+{:name "house-medical-circle-check", :label "House Medical Circle Check", :aliases []}
+{:name "house-medical-circle-exclamation", :label "House Medical Circle Exclamation", :aliases []}
+{:name "house-medical-circle-xmark", :label "House Medical Circle Xmark", :aliases []}
+{:name "house-medical-flag", :label "House Medical Flag", :aliases []}
+{:name "house-signal", :label "House Signal", :aliases []}
+{:name "house-tsunami", :label "House Tsunami", :aliases []}
+{:name "house-user", :label "House User", :aliases ["home-user"]}
+{:name "hryvnia-sign", :label "Hryvnia Sign", :aliases ["hryvnia"]}
+{:name "hurricane", :label "Hurricane", :aliases []}
+{:name "i", :label "I", :aliases []}
+{:name "i-cursor", :label "I Cursor", :aliases []}
+{:name "ice-cream", :label "Ice Cream", :aliases []}
+{:name "icicles", :label "Icicles", :aliases []}
+{:name "icons", :label "Icons", :aliases ["heart-music-camera-bolt"]}
+{:name "id-badge", :label "Id Badge", :aliases []}
+{:name "id-card", :label "Id Card", :aliases ["drivers-license"]}
+{:name "id-card-clip", :label "Id Card Clip", :aliases ["id-card-alt"]}
+{:name "igloo", :label "Igloo", :aliases []}
+{:name "image", :label "Image", :aliases []}
+{:name "image-portrait", :label "Image Portrait", :aliases ["portrait"]}
+{:name "images", :label "Images", :aliases []}
+{:name "inbox", :label "Inbox", :aliases []}
+{:name "indent", :label "Indent", :aliases []}
+{:name "indian-rupee-sign", :label "Indian Rupee Sign", :aliases ["indian-rupee" "inr"]}
+{:name "industry", :label "Industry", :aliases []}
+{:name "infinity", :label "Infinity", :aliases []}
+{:name "info", :label "Info", :aliases []}
+{:name "italic", :label "Italic", :aliases []}
+{:name "j", :label "J", :aliases []}
+{:name "jar", :label "Jar", :aliases []}
+{:name "jar-wheat", :label "Jar Wheat", :aliases []}
+{:name "jedi", :label "Jedi", :aliases []}
+{:name "jet-fighter", :label "Jet Fighter", :aliases ["fighter-jet"]}
+{:name "jet-fighter-up", :label "Jet Fighter Up", :aliases []}
+{:name "joint", :label "Joint", :aliases []}
+{:name "jug-detergent", :label "Jug Detergent", :aliases []}
+{:name "k", :label "K", :aliases []}
+{:name "kaaba", :label "Kaaba", :aliases []}
+{:name "key", :label "Key", :aliases []}
+{:name "keyboard", :label "Keyboard", :aliases []}
+{:name "khanda", :label "Khanda", :aliases []}
+{:name "kip-sign", :label "Kip Sign", :aliases []}
+{:name "kit-medical", :label "Kit Medical", :aliases ["first-aid"]}
+{:name "kitchen-set", :label "Kitchen Set", :aliases []}
+{:name "kiwi-bird", :label "Kiwi Bird", :aliases []}
+{:name "l", :label "L", :aliases []}
+{:name "land-mine-on", :label "Land Mine On", :aliases []}
+{:name "landmark", :label "Landmark", :aliases []}
+{:name "landmark-dome", :label "Landmark Dome", :aliases ["landmark-alt"]}
+{:name "landmark-flag", :label "Landmark Flag", :aliases []}
+{:name "language", :label "Language", :aliases []}
+{:name "laptop", :label "Laptop", :aliases []}
+{:name "laptop-code", :label "Laptop Code", :aliases []}
+{:name "laptop-file", :label "Laptop File", :aliases []}
+{:name "laptop-medical", :label "Laptop Medical", :aliases []}
+{:name "lari-sign", :label "Lari Sign", :aliases []}
+{:name "layer-group", :label "Layer Group", :aliases []}
+{:name "leaf", :label "Leaf", :aliases []}
+{:name "left-long", :label "Left Long", :aliases ["long-arrow-alt-left"]}
+{:name "left-right", :label "Left Right", :aliases ["arrows-alt-h"]}
+{:name "lemon", :label "Lemon", :aliases []}
+{:name "less-than", :label "Less Than", :aliases []}
+{:name "less-than-equal", :label "Less Than Equal", :aliases []}
+{:name "life-ring", :label "Life Ring", :aliases []}
+{:name "lightbulb", :label "Lightbulb", :aliases []}
+{:name "lines-leaning", :label "Lines Leaning", :aliases []}
+{:name "link", :label "Link", :aliases ["chain"]}
+{:name "link-slash", :label "Link Slash", :aliases ["chain-broken" "chain-slash" "unlink"]}
+{:name "lira-sign", :label "Lira Sign", :aliases []}
+{:name "list", :label "List", :aliases ["list-squares"]}
+{:name "list-check", :label "List Check", :aliases ["tasks"]}
+{:name "list-ol", :label "List Ol", :aliases ["list-1-2" "list-numeric"]}
+{:name "list-ul", :label "List Ul", :aliases ["list-dots"]}
+{:name "litecoin-sign", :label "Litecoin Sign", :aliases []}
+{:name "location-arrow", :label "Location Arrow", :aliases []}
+{:name "location-crosshairs", :label "Location Crosshairs", :aliases ["location"]}
+{:name "location-dot", :label "Location Dot", :aliases ["map-marker-alt"]}
+{:name "location-pin", :label "Location Pin", :aliases ["map-marker"]}
+{:name "location-pin-lock", :label "Location Pin Lock", :aliases []}
+{:name "lock", :label "Lock", :aliases []}
+{:name "lock-open", :label "Lock Open", :aliases []}
+{:name "locust", :label "Locust", :aliases []}
+{:name "lungs", :label "Lungs", :aliases []}
+{:name "lungs-virus", :label "Lungs Virus", :aliases []}
+{:name "m", :label "M", :aliases []}
+{:name "magnet", :label "Magnet", :aliases []}
+{:name "magnifying-glass", :label "Magnifying Glass", :aliases ["search"]}
+{:name "magnifying-glass-arrow-right", :label "Magnifying Glass Arrow Right", :aliases []}
+{:name "magnifying-glass-chart", :label "Magnifying Glass Chart", :aliases []}
+{:name "magnifying-glass-dollar", :label "Magnifying Glass Dollar", :aliases ["search-dollar"]}
+{:name "magnifying-glass-location", :label "Magnifying Glass Location", :aliases ["search-location"]}
+{:name "magnifying-glass-minus", :label "Magnifying Glass Minus", :aliases ["search-minus"]}
+{:name "magnifying-glass-plus", :label "Magnifying Glass Plus", :aliases ["search-plus"]}
+{:name "manat-sign", :label "Manat Sign", :aliases []}
+{:name "map", :label "Map", :aliases []}
+{:name "map-location", :label "Map Location", :aliases ["map-marked"]}
+{:name "map-location-dot", :label "Map Location Dot", :aliases ["map-marked-alt"]}
+{:name "map-pin", :label "Map Pin", :aliases []}
+{:name "marker", :label "Marker", :aliases []}
+{:name "mars", :label "Mars", :aliases []}
+{:name "mars-and-venus", :label "Mars And Venus", :aliases []}
+{:name "mars-and-venus-burst", :label "Mars And Venus Burst", :aliases []}
+{:name "mars-double", :label "Mars Double", :aliases []}
+{:name "mars-stroke", :label "Mars Stroke", :aliases []}
+{:name "mars-stroke-right", :label "Mars Stroke Right", :aliases ["mars-stroke-h"]}
+{:name "mars-stroke-up", :label "Mars Stroke Up", :aliases ["mars-stroke-v"]}
+{:name "martini-glass", :label "Martini Glass", :aliases ["glass-martini-alt"]}
+{:name "martini-glass-citrus", :label "Martini Glass Citrus", :aliases ["cocktail"]}
+{:name "martini-glass-empty", :label "Martini Glass Empty", :aliases ["glass-martini"]}
+{:name "mask", :label "Mask", :aliases []}
+{:name "mask-face", :label "Mask Face", :aliases []}
+{:name "mask-ventilator", :label "Mask Ventilator", :aliases []}
+{:name "masks-theater", :label "Masks Theater", :aliases ["theater-masks"]}
+{:name "mattress-pillow", :label "Mattress Pillow", :aliases []}
+{:name "maximize", :label "Maximize", :aliases ["expand-arrows-alt"]}
+{:name "medal", :label "Medal", :aliases []}
+{:name "memory", :label "Memory", :aliases []}
+{:name "menorah", :label "Menorah", :aliases []}
+{:name "mercury", :label "Mercury", :aliases []}
+{:name "message", :label "Message", :aliases ["comment-alt"]}
+{:name "meteor", :label "Meteor", :aliases []}
+{:name "microchip", :label "Microchip", :aliases []}
+{:name "microphone", :label "Microphone", :aliases []}
+{:name "microphone-lines", :label "Microphone Lines", :aliases ["microphone-alt"]}
+{:name "microphone-lines-slash", :label "Microphone Lines Slash", :aliases ["microphone-alt-slash"]}
+{:name "microphone-slash", :label "Microphone Slash", :aliases []}
+{:name "microscope", :label "Microscope", :aliases []}
+{:name "mill-sign", :label "Mill Sign", :aliases []}
+{:name "minimize", :label "Minimize", :aliases ["compress-arrows-alt"]}
+{:name "minus", :label "Minus", :aliases ["subtract"]}
+{:name "mitten", :label "Mitten", :aliases []}
+{:name "mobile", :label "Mobile", :aliases ["mobile-android" "mobile-phone"]}
+{:name "mobile-button", :label "Mobile Button", :aliases []}
+{:name "mobile-retro", :label "Mobile Retro", :aliases []}
+{:name "mobile-screen", :label "Mobile Screen", :aliases ["mobile-android-alt"]}
+{:name "mobile-screen-button", :label "Mobile Screen Button", :aliases ["mobile-alt"]}
+{:name "money-bill", :label "Money Bill", :aliases []}
+{:name "money-bill-1", :label "Money Bill 1", :aliases ["money-bill-alt"]}
+{:name "money-bill-1-wave", :label "Money Bill 1 Wave", :aliases ["money-bill-wave-alt"]}
+{:name "money-bill-transfer", :label "Money Bill Transfer", :aliases []}
+{:name "money-bill-trend-up", :label "Money Bill Trend Up", :aliases []}
+{:name "money-bill-wave", :label "Money Bill Wave", :aliases []}
+{:name "money-bill-wheat", :label "Money Bill Wheat", :aliases []}
+{:name "money-bills", :label "Money Bills", :aliases []}
+{:name "money-check", :label "Money Check", :aliases []}
+{:name "money-check-dollar", :label "Money Check Dollar", :aliases ["money-check-alt"]}
+{:name "monument", :label "Monument", :aliases []}
+{:name "moon", :label "Moon", :aliases []}
+{:name "mortar-pestle", :label "Mortar Pestle", :aliases []}
+{:name "mosque", :label "Mosque", :aliases []}
+{:name "mosquito", :label "Mosquito", :aliases []}
+{:name "mosquito-net", :label "Mosquito Net", :aliases []}
+{:name "motorcycle", :label "Motorcycle", :aliases []}
+{:name "mound", :label "Mound", :aliases []}
+{:name "mountain", :label "Mountain", :aliases []}
+{:name "mountain-city", :label "Mountain City", :aliases []}
+{:name "mountain-sun", :label "Mountain Sun", :aliases []}
+{:name "mug-hot", :label "Mug Hot", :aliases []}
+{:name "mug-saucer", :label "Mug Saucer", :aliases ["coffee"]}
+{:name "music", :label "Music", :aliases []}
+{:name "n", :label "N", :aliases []}
+{:name "naira-sign", :label "Naira Sign", :aliases []}
+{:name "network-wired", :label "Network Wired", :aliases []}
+{:name "neuter", :label "Neuter", :aliases []}
+{:name "newspaper", :label "Newspaper", :aliases []}
+{:name "not-equal", :label "Not Equal", :aliases []}
+{:name "notdef", :label "Notdef", :aliases []}
+{:name "note-sticky", :label "Note Sticky", :aliases ["sticky-note"]}
+{:name "notes-medical", :label "Notes Medical", :aliases []}
+{:name "o", :label "O", :aliases []}
+{:name "object-group", :label "Object Group", :aliases []}
+{:name "object-ungroup", :label "Object Ungroup", :aliases []}
+{:name "oil-can", :label "Oil Can", :aliases []}
+{:name "oil-well", :label "Oil Well", :aliases []}
+{:name "om", :label "Om", :aliases []}
+{:name "otter", :label "Otter", :aliases []}
+{:name "outdent", :label "Outdent", :aliases ["dedent"]}
+{:name "p", :label "P", :aliases []}
+{:name "pager", :label "Pager", :aliases []}
+{:name "paint-roller", :label "Paint Roller", :aliases []}
+{:name "paintbrush", :label "Paintbrush", :aliases ["paint-brush"]}
+{:name "palette", :label "Palette", :aliases []}
+{:name "pallet", :label "Pallet", :aliases []}
+{:name "panorama", :label "Panorama", :aliases []}
+{:name "paper-plane", :label "Paper Plane", :aliases []}
+{:name "paperclip", :label "Paperclip", :aliases []}
+{:name "parachute-box", :label "Parachute Box", :aliases []}
+{:name "paragraph", :label "Paragraph", :aliases []}
+{:name "passport", :label "Passport", :aliases []}
+{:name "paste", :label "Paste", :aliases ["file-clipboard"]}
+{:name "pause", :label "Pause", :aliases []}
+{:name "paw", :label "Paw", :aliases []}
+{:name "peace", :label "Peace", :aliases []}
+{:name "pen", :label "Pen", :aliases []}
+{:name "pen-clip", :label "Pen Clip", :aliases ["pen-alt"]}
+{:name "pen-fancy", :label "Pen Fancy", :aliases []}
+{:name "pen-nib", :label "Pen Nib", :aliases []}
+{:name "pen-ruler", :label "Pen Ruler", :aliases ["pencil-ruler"]}
+{:name "pen-to-square", :label "Pen To Square", :aliases ["edit"]}
+{:name "pencil", :label "Pencil", :aliases ["pencil-alt"]}
+{:name "people-arrows", :label "People Arrows", :aliases ["people-arrows-left-right"]}
+{:name "people-carry-box", :label "People Carry Box", :aliases ["people-carry"]}
+{:name "people-group", :label "People Group", :aliases []}
+{:name "people-line", :label "People Line", :aliases []}
+{:name "people-pulling", :label "People Pulling", :aliases []}
+{:name "people-robbery", :label "People Robbery", :aliases []}
+{:name "people-roof", :label "People Roof", :aliases []}
+{:name "pepper-hot", :label "Pepper Hot", :aliases []}
+{:name "percent", :label "Percent", :aliases ["percentage"]}
+{:name "person", :label "Person", :aliases ["male"]}
+{:name "person-arrow-down-to-line", :label "Person Arrow Down To Line", :aliases []}
+{:name "person-arrow-up-from-line", :label "Person Arrow Up From Line", :aliases []}
+{:name "person-biking", :label "Person Biking", :aliases ["biking"]}
+{:name "person-booth", :label "Person Booth", :aliases []}
+{:name "person-breastfeeding", :label "Person Breastfeeding", :aliases []}
+{:name "person-burst", :label "Person Burst", :aliases []}
+{:name "person-cane", :label "Person Cane", :aliases []}
+{:name "person-chalkboard", :label "Person Chalkboard", :aliases []}
+{:name "person-circle-check", :label "Person Circle Check", :aliases []}
+{:name "person-circle-exclamation", :label "Person Circle Exclamation", :aliases []}
+{:name "person-circle-minus", :label "Person Circle Minus", :aliases []}
+{:name "person-circle-plus", :label "Person Circle Plus", :aliases []}
+{:name "person-circle-question", :label "Person Circle Question", :aliases []}
+{:name "person-circle-xmark", :label "Person Circle Xmark", :aliases []}
+{:name "person-digging", :label "Person Digging", :aliases ["digging"]}
+{:name "person-dots-from-line", :label "Person Dots From Line", :aliases ["diagnoses"]}
+{:name "person-dress", :label "Person Dress", :aliases ["female"]}
+{:name "person-dress-burst", :label "Person Dress Burst", :aliases []}
+{:name "person-drowning", :label "Person Drowning", :aliases []}
+{:name "person-falling", :label "Person Falling", :aliases []}
+{:name "person-falling-burst", :label "Person Falling Burst", :aliases []}
+{:name "person-half-dress", :label "Person Half Dress", :aliases []}
+{:name "person-harassing", :label "Person Harassing", :aliases []}
+{:name "person-hiking", :label "Person Hiking", :aliases ["hiking"]}
+{:name "person-military-pointing", :label "Person Military Pointing", :aliases []}
+{:name "person-military-rifle", :label "Person Military Rifle", :aliases []}
+{:name "person-military-to-person", :label "Person Military To Person", :aliases []}
+{:name "person-praying", :label "Person Praying", :aliases ["pray"]}
+{:name "person-pregnant", :label "Person Pregnant", :aliases []}
+{:name "person-rays", :label "Person Rays", :aliases []}
+{:name "person-rifle", :label "Person Rifle", :aliases []}
+{:name "person-running", :label "Person Running", :aliases ["running"]}
+{:name "person-shelter", :label "Person Shelter", :aliases []}
+{:name "person-skating", :label "Person Skating", :aliases ["skating"]}
+{:name "person-skiing", :label "Person Skiing", :aliases ["skiing"]}
+{:name "person-skiing-nordic", :label "Person Skiing Nordic", :aliases ["skiing-nordic"]}
+{:name "person-snowboarding", :label "Person Snowboarding", :aliases ["snowboarding"]}
+{:name "person-swimming", :label "Person Swimming", :aliases ["swimmer"]}
+{:name "person-through-window", :label "Person Through Window", :aliases []}
+{:name "person-walking", :label "Person Walking", :aliases ["walking"]}
+{:name "person-walking-arrow-loop-left", :label "Person Walking Arrow Loop Left", :aliases []}
+{:name "person-walking-arrow-right", :label "Person Walking Arrow Right", :aliases []}
+{:name "person-walking-dashed-line-arrow-right", :label "Person Walking Dashed Line Arrow Right", :aliases []}
+{:name "person-walking-luggage", :label "Person Walking Luggage", :aliases []}
+{:name "person-walking-with-cane", :label "Person Walking With Cane", :aliases ["blind"]}
+{:name "peseta-sign", :label "Peseta Sign", :aliases []}
+{:name "peso-sign", :label "Peso Sign", :aliases []}
+{:name "phone", :label "Phone", :aliases []}
+{:name "phone-flip", :label "Phone Flip", :aliases ["phone-alt"]}
+{:name "phone-slash", :label "Phone Slash", :aliases []}
+{:name "phone-volume", :label "Phone Volume", :aliases ["volume-control-phone"]}
+{:name "photo-film", :label "Photo Film", :aliases ["photo-video"]}
+{:name "piggy-bank", :label "Piggy Bank", :aliases []}
+{:name "pills", :label "Pills", :aliases []}
+{:name "pizza-slice", :label "Pizza Slice", :aliases []}
+{:name "place-of-worship", :label "Place Of Worship", :aliases []}
+{:name "plane", :label "Plane", :aliases []}
+{:name "plane-arrival", :label "Plane Arrival", :aliases []}
+{:name "plane-circle-check", :label "Plane Circle Check", :aliases []}
+{:name "plane-circle-exclamation", :label "Plane Circle Exclamation", :aliases []}
+{:name "plane-circle-xmark", :label "Plane Circle Xmark", :aliases []}
+{:name "plane-departure", :label "Plane Departure", :aliases []}
+{:name "plane-lock", :label "Plane Lock", :aliases []}
+{:name "plane-slash", :label "Plane Slash", :aliases []}
+{:name "plane-up", :label "Plane Up", :aliases []}
+{:name "plant-wilt", :label "Plant Wilt", :aliases []}
+{:name "plate-wheat", :label "Plate Wheat", :aliases []}
+{:name "play", :label "Play", :aliases []}
+{:name "plug", :label "Plug", :aliases []}
+{:name "plug-circle-bolt", :label "Plug Circle Bolt", :aliases []}
+{:name "plug-circle-check", :label "Plug Circle Check", :aliases []}
+{:name "plug-circle-exclamation", :label "Plug Circle Exclamation", :aliases []}
+{:name "plug-circle-minus", :label "Plug Circle Minus", :aliases []}
+{:name "plug-circle-plus", :label "Plug Circle Plus", :aliases []}
+{:name "plug-circle-xmark", :label "Plug Circle Xmark", :aliases []}
+{:name "plus", :label "Plus", :aliases ["add"]}
+{:name "plus-minus", :label "Plus Minus", :aliases []}
+{:name "podcast", :label "Podcast", :aliases []}
+{:name "poo", :label "Poo", :aliases []}
+{:name "poo-storm", :label "Poo Storm", :aliases ["poo-bolt"]}
+{:name "poop", :label "Poop", :aliases []}
+{:name "power-off", :label "Power Off", :aliases []}
+{:name "prescription", :label "Prescription", :aliases []}
+{:name "prescription-bottle", :label "Prescription Bottle", :aliases []}
+{:name "prescription-bottle-medical", :label "Prescription Bottle Medical", :aliases ["prescription-bottle-alt"]}
+{:name "print", :label "Print", :aliases []}
+{:name "pump-medical", :label "Pump Medical", :aliases []}
+{:name "pump-soap", :label "Pump Soap", :aliases []}
+{:name "puzzle-piece", :label "Puzzle Piece", :aliases []}
+{:name "q", :label "Q", :aliases []}
+{:name "qrcode", :label "Qrcode", :aliases []}
+{:name "question", :label "Question", :aliases []}
+{:name "quote-left", :label "Quote Left", :aliases ["quote-left-alt"]}
+{:name "quote-right", :label "Quote Right", :aliases ["quote-right-alt"]}
+{:name "r", :label "R", :aliases []}
+{:name "radiation", :label "Radiation", :aliases []}
+{:name "radio", :label "Radio", :aliases []}
+{:name "rainbow", :label "Rainbow", :aliases []}
+{:name "ranking-star", :label "Ranking Star", :aliases []}
+{:name "receipt", :label "Receipt", :aliases []}
+{:name "record-vinyl", :label "Record Vinyl", :aliases []}
+{:name "rectangle-ad", :label "Rectangle Ad", :aliases ["ad"]}
+{:name "rectangle-list", :label "Rectangle List", :aliases ["list-alt"]}
+{:name "rectangle-xmark", :label "Rectangle Xmark", :aliases ["rectangle-times" "times-rectangle" "window-close"]}
+{:name "recycle", :label "Recycle", :aliases []}
+{:name "registered", :label "Registered", :aliases []}
+{:name "repeat", :label "Repeat", :aliases []}
+{:name "reply", :label "Reply", :aliases ["mail-reply"]}
+{:name "reply-all", :label "Reply All", :aliases ["mail-reply-all"]}
+{:name "republican", :label "Republican", :aliases []}
+{:name "restroom", :label "Restroom", :aliases []}
+{:name "retweet", :label "Retweet", :aliases []}
+{:name "ribbon", :label "Ribbon", :aliases []}
+{:name "right-from-bracket", :label "Right From Bracket", :aliases ["sign-out-alt"]}
+{:name "right-left", :label "Right Left", :aliases ["exchange-alt"]}
+{:name "right-long", :label "Right Long", :aliases ["long-arrow-alt-right"]}
+{:name "right-to-bracket", :label "Right To Bracket", :aliases ["sign-in-alt"]}
+{:name "ring", :label "Ring", :aliases []}
+{:name "road", :label "Road", :aliases []}
+{:name "road-barrier", :label "Road Barrier", :aliases []}
+{:name "road-bridge", :label "Road Bridge", :aliases []}
+{:name "road-circle-check", :label "Road Circle Check", :aliases []}
+{:name "road-circle-exclamation", :label "Road Circle Exclamation", :aliases []}
+{:name "road-circle-xmark", :label "Road Circle Xmark", :aliases []}
+{:name "road-lock", :label "Road Lock", :aliases []}
+{:name "road-spikes", :label "Road Spikes", :aliases []}
+{:name "robot", :label "Robot", :aliases []}
+{:name "rocket", :label "Rocket", :aliases []}
+{:name "rotate", :label "Rotate", :aliases ["sync-alt"]}
+{:name "rotate-left", :label "Rotate Left", :aliases ["rotate-back" "rotate-backward" "undo-alt"]}
+{:name "rotate-right", :label "Rotate Right", :aliases ["redo-alt" "rotate-forward"]}
+{:name "route", :label "Route", :aliases []}
+{:name "rss", :label "Rss", :aliases ["feed"]}
+{:name "ruble-sign", :label "Ruble Sign", :aliases ["rouble" "rub" "ruble"]}
+{:name "rug", :label "Rug", :aliases []}
+{:name "ruler", :label "Ruler", :aliases []}
+{:name "ruler-combined", :label "Ruler Combined", :aliases []}
+{:name "ruler-horizontal", :label "Ruler Horizontal", :aliases []}
+{:name "ruler-vertical", :label "Ruler Vertical", :aliases []}
+{:name "rupee-sign", :label "Rupee Sign", :aliases ["rupee"]}
+{:name "rupiah-sign", :label "Rupiah Sign", :aliases []}
+{:name "s", :label "S", :aliases []}
+{:name "sack-dollar", :label "Sack Dollar", :aliases []}
+{:name "sack-xmark", :label "Sack Xmark", :aliases []}
+{:name "sailboat", :label "Sailboat", :aliases []}
+{:name "satellite", :label "Satellite", :aliases []}
+{:name "satellite-dish", :label "Satellite Dish", :aliases []}
+{:name "scale-balanced", :label "Scale Balanced", :aliases ["balance-scale"]}
+{:name "scale-unbalanced", :label "Scale Unbalanced", :aliases ["balance-scale-left"]}
+{:name "scale-unbalanced-flip", :label "Scale Unbalanced Flip", :aliases ["balance-scale-right"]}
+{:name "school", :label "School", :aliases []}
+{:name "school-circle-check", :label "School Circle Check", :aliases []}
+{:name "school-circle-exclamation", :label "School Circle Exclamation", :aliases []}
+{:name "school-circle-xmark", :label "School Circle Xmark", :aliases []}
+{:name "school-flag", :label "School Flag", :aliases []}
+{:name "school-lock", :label "School Lock", :aliases []}
+{:name "scissors", :label "Scissors", :aliases ["cut"]}
+{:name "screwdriver", :label "Screwdriver", :aliases []}
+{:name "screwdriver-wrench", :label "Screwdriver Wrench", :aliases ["tools"]}
+{:name "scroll", :label "Scroll", :aliases []}
+{:name "scroll-torah", :label "Scroll Torah", :aliases ["torah"]}
+{:name "sd-card", :label "Sd Card", :aliases []}
+{:name "section", :label "Section", :aliases []}
+{:name "seedling", :label "Seedling", :aliases ["sprout"]}
+{:name "server", :label "Server", :aliases []}
+{:name "shapes", :label "Shapes", :aliases ["triangle-circle-square"]}
+{:name "share", :label "Share", :aliases ["mail-forward"]}
+{:name "share-from-square", :label "Share From Square", :aliases ["share-square"]}
+{:name "share-nodes", :label "Share Nodes", :aliases ["share-alt"]}
+{:name "sheet-plastic", :label "Sheet Plastic", :aliases []}
+{:name "shekel-sign", :label "Shekel Sign", :aliases ["ils" "shekel" "sheqel" "sheqel-sign"]}
+{:name "shield", :label "Shield", :aliases ["shield-blank"]}
+{:name "shield-cat", :label "Shield Cat", :aliases []}
+{:name "shield-dog", :label "Shield Dog", :aliases []}
+{:name "shield-halved", :label "Shield Halved", :aliases ["shield-alt"]}
+{:name "shield-heart", :label "Shield Heart", :aliases []}
+{:name "shield-virus", :label "Shield Virus", :aliases []}
+{:name "ship", :label "Ship", :aliases []}
+{:name "shirt", :label "Shirt", :aliases ["t-shirt" "tshirt"]}
+{:name "shoe-prints", :label "Shoe Prints", :aliases []}
+{:name "shop", :label "Shop", :aliases ["store-alt"]}
+{:name "shop-lock", :label "Shop Lock", :aliases []}
+{:name "shop-slash", :label "Shop Slash", :aliases ["store-alt-slash"]}
+{:name "shower", :label "Shower", :aliases []}
+{:name "shrimp", :label "Shrimp", :aliases []}
+{:name "shuffle", :label "Shuffle", :aliases ["random"]}
+{:name "shuttle-space", :label "Shuttle Space", :aliases ["space-shuttle"]}
+{:name "sign-hanging", :label "Sign Hanging", :aliases ["sign"]}
+{:name "signal", :label "Signal", :aliases ["signal-5" "signal-perfect"]}
+{:name "signature", :label "Signature", :aliases []}
+{:name "signs-post", :label "Signs Post", :aliases ["map-signs"]}
+{:name "sim-card", :label "Sim Card", :aliases []}
+{:name "sink", :label "Sink", :aliases []}
+{:name "sitemap", :label "Sitemap", :aliases []}
+{:name "skull", :label "Skull", :aliases []}
+{:name "skull-crossbones", :label "Skull Crossbones", :aliases []}
+{:name "slash", :label "Slash", :aliases []}
+{:name "sleigh", :label "Sleigh", :aliases []}
+{:name "sliders", :label "Sliders", :aliases ["sliders-h"]}
+{:name "smog", :label "Smog", :aliases []}
+{:name "smoking", :label "Smoking", :aliases []}
+{:name "snowflake", :label "Snowflake", :aliases []}
+{:name "snowman", :label "Snowman", :aliases []}
+{:name "snowplow", :label "Snowplow", :aliases []}
+{:name "soap", :label "Soap", :aliases []}
+{:name "socks", :label "Socks", :aliases []}
+{:name "solar-panel", :label "Solar Panel", :aliases []}
+{:name "sort", :label "Sort", :aliases ["unsorted"]}
+{:name "sort-down", :label "Sort Down", :aliases ["sort-desc"]}
+{:name "sort-up", :label "Sort Up", :aliases ["sort-asc"]}
+{:name "spa", :label "Spa", :aliases []}
+{:name "spaghetti-monster-flying", :label "Spaghetti Monster Flying", :aliases ["pastafarianism"]}
+{:name "spell-check", :label "Spell Check", :aliases []}
+{:name "spider", :label "Spider", :aliases []}
+{:name "spinner", :label "Spinner", :aliases []}
+{:name "splotch", :label "Splotch", :aliases []}
+{:name "spoon", :label "Spoon", :aliases ["utensil-spoon"]}
+{:name "spray-can", :label "Spray Can", :aliases []}
+{:name "spray-can-sparkles", :label "Spray Can Sparkles", :aliases ["air-freshener"]}
+{:name "square", :label "Square", :aliases []}
+{:name "square-arrow-up-right", :label "Square Arrow Up Right", :aliases ["external-link-square"]}
+{:name "square-caret-down", :label "Square Caret Down", :aliases ["caret-square-down"]}
+{:name "square-caret-left", :label "Square Caret Left", :aliases ["caret-square-left"]}
+{:name "square-caret-right", :label "Square Caret Right", :aliases ["caret-square-right"]}
+{:name "square-caret-up", :label "Square Caret Up", :aliases ["caret-square-up"]}
+{:name "square-check", :label "Square Check", :aliases ["check-square"]}
+{:name "square-envelope", :label "Square Envelope", :aliases ["envelope-square"]}
+{:name "square-full", :label "Square Full", :aliases []}
+{:name "square-h", :label "Square H", :aliases ["h-square"]}
+{:name "square-minus", :label "Square Minus", :aliases ["minus-square"]}
+{:name "square-nfi", :label "Square Nfi", :aliases []}
+{:name "square-parking", :label "Square Parking", :aliases ["parking"]}
+{:name "square-pen", :label "Square Pen", :aliases ["pen-square" "pencil-square"]}
+{:name "square-person-confined", :label "Square Person Confined", :aliases []}
+{:name "square-phone", :label "Square Phone", :aliases ["phone-square"]}
+{:name "square-phone-flip", :label "Square Phone Flip", :aliases ["phone-square-alt"]}
+{:name "square-plus", :label "Square Plus", :aliases ["plus-square"]}
+{:name "square-poll-horizontal", :label "Square Poll Horizontal", :aliases ["poll-h"]}
+{:name "square-poll-vertical", :label "Square Poll Vertical", :aliases ["poll"]}
+{:name "square-root-variable", :label "Square Root Variable", :aliases ["square-root-alt"]}
+{:name "square-rss", :label "Square Rss", :aliases ["rss-square"]}
+{:name "square-share-nodes", :label "Square Share Nodes", :aliases ["share-alt-square"]}
+{:name "square-up-right", :label "Square Up Right", :aliases ["external-link-square-alt"]}
+{:name "square-virus", :label "Square Virus", :aliases []}
+{:name "square-xmark", :label "Square Xmark", :aliases ["times-square" "xmark-square"]}
+{:name "staff-snake", :label "Staff Snake", :aliases ["rod-asclepius" "rod-snake" "staff-aesculapius"]}
+{:name "stairs", :label "Stairs", :aliases []}
+{:name "stamp", :label "Stamp", :aliases []}
+{:name "stapler", :label "Stapler", :aliases []}
+{:name "star", :label "Star", :aliases []}
+{:name "star-and-crescent", :label "Star And Crescent", :aliases []}
+{:name "star-half", :label "Star Half", :aliases []}
+{:name "star-half-stroke", :label "Star Half Stroke", :aliases ["star-half-alt"]}
+{:name "star-of-david", :label "Star Of David", :aliases []}
+{:name "star-of-life", :label "Star Of Life", :aliases []}
+{:name "sterling-sign", :label "Sterling Sign", :aliases ["gbp" "pound-sign"]}
+{:name "stethoscope", :label "Stethoscope", :aliases []}
+{:name "stop", :label "Stop", :aliases []}
+{:name "stopwatch", :label "Stopwatch", :aliases []}
+{:name "stopwatch-20", :label "Stopwatch 20", :aliases []}
+{:name "store", :label "Store", :aliases []}
+{:name "store-slash", :label "Store Slash", :aliases []}
+{:name "street-view", :label "Street View", :aliases []}
+{:name "strikethrough", :label "Strikethrough", :aliases []}
+{:name "stroopwafel", :label "Stroopwafel", :aliases []}
+{:name "subscript", :label "Subscript", :aliases []}
+{:name "suitcase", :label "Suitcase", :aliases []}
+{:name "suitcase-medical", :label "Suitcase Medical", :aliases ["medkit"]}
+{:name "suitcase-rolling", :label "Suitcase Rolling", :aliases []}
+{:name "sun", :label "Sun", :aliases []}
+{:name "sun-plant-wilt", :label "Sun Plant Wilt", :aliases []}
+{:name "superscript", :label "Superscript", :aliases []}
+{:name "swatchbook", :label "Swatchbook", :aliases []}
+{:name "synagogue", :label "Synagogue", :aliases []}
+{:name "syringe", :label "Syringe", :aliases []}
+{:name "t", :label "T", :aliases []}
+{:name "table", :label "Table", :aliases []}
+{:name "table-cells", :label "Table Cells", :aliases ["th"]}
+{:name "table-cells-large", :label "Table Cells Large", :aliases ["th-large"]}
+{:name "table-columns", :label "Table Columns", :aliases ["columns"]}
+{:name "table-list", :label "Table List", :aliases ["th-list"]}
+{:name "table-tennis-paddle-ball", :label "Table Tennis Paddle Ball", :aliases ["ping-pong-paddle-ball" "table-tennis"]}
+{:name "tablet", :label "Tablet", :aliases ["tablet-android"]}
+{:name "tablet-button", :label "Tablet Button", :aliases []}
+{:name "tablet-screen-button", :label "Tablet Screen Button", :aliases ["tablet-alt"]}
+{:name "tablets", :label "Tablets", :aliases []}
+{:name "tachograph-digital", :label "Tachograph Digital", :aliases ["digital-tachograph"]}
+{:name "tag", :label "Tag", :aliases []}
+{:name "tags", :label "Tags", :aliases []}
+{:name "tape", :label "Tape", :aliases []}
+{:name "tarp", :label "Tarp", :aliases []}
+{:name "tarp-droplet", :label "Tarp Droplet", :aliases []}
+{:name "taxi", :label "Taxi", :aliases ["cab"]}
+{:name "teeth", :label "Teeth", :aliases []}
+{:name "teeth-open", :label "Teeth Open", :aliases []}
+{:name "temperature-arrow-down", :label "Temperature Arrow Down", :aliases ["temperature-down"]}
+{:name "temperature-arrow-up", :label "Temperature Arrow Up", :aliases ["temperature-up"]}
+{:name "temperature-empty", :label "Temperature Empty", :aliases ["temperature-0" "thermometer-0" "thermometer-empty"]}
+{:name "temperature-full", :label "Temperature Full", :aliases ["temperature-4" "thermometer-4" "thermometer-full"]}
+{:name "temperature-half", :label "Temperature Half", :aliases ["temperature-2" "thermometer-2" "thermometer-half"]}
+{:name "temperature-high", :label "Temperature High", :aliases []}
+{:name "temperature-low", :label "Temperature Low", :aliases []}
+{:name "temperature-quarter", :label "Temperature Quarter", :aliases ["temperature-1" "thermometer-1" "thermometer-quarter"]}
+{:name "temperature-three-quarters", :label "Temperature Three Quarters", :aliases ["temperature-3" "thermometer-3" "thermometer-three-quarters"]}
+{:name "tenge-sign", :label "Tenge Sign", :aliases ["tenge"]}
+{:name "tent", :label "Tent", :aliases []}
+{:name "tent-arrow-down-to-line", :label "Tent Arrow Down To Line", :aliases []}
+{:name "tent-arrow-left-right", :label "Tent Arrow Left Right", :aliases []}
+{:name "tent-arrow-turn-left", :label "Tent Arrow Turn Left", :aliases []}
+{:name "tent-arrows-down", :label "Tent Arrows Down", :aliases []}
+{:name "tents", :label "Tents", :aliases []}
+{:name "terminal", :label "Terminal", :aliases []}
+{:name "text-height", :label "Text Height", :aliases []}
+{:name "text-slash", :label "Text Slash", :aliases ["remove-format"]}
+{:name "text-width", :label "Text Width", :aliases []}
+{:name "thermometer", :label "Thermometer", :aliases []}
+{:name "thumbs-down", :label "Thumbs Down", :aliases []}
+{:name "thumbs-up", :label "Thumbs Up", :aliases []}
+{:name "thumbtack", :label "Thumbtack", :aliases ["thumb-tack"]}
+{:name "ticket", :label "Ticket", :aliases []}
+{:name "ticket-simple", :label "Ticket Simple", :aliases ["ticket-alt"]}
+{:name "timeline", :label "Timeline", :aliases []}
+{:name "toggle-off", :label "Toggle Off", :aliases []}
+{:name "toggle-on", :label "Toggle On", :aliases []}
+{:name "toilet", :label "Toilet", :aliases []}
+{:name "toilet-paper", :label "Toilet Paper", :aliases []}
+{:name "toilet-paper-slash", :label "Toilet Paper Slash", :aliases []}
+{:name "toilet-portable", :label "Toilet Portable", :aliases []}
+{:name "toilets-portable", :label "Toilets Portable", :aliases []}
+{:name "toolbox", :label "Toolbox", :aliases []}
+{:name "tooth", :label "Tooth", :aliases []}
+{:name "torii-gate", :label "Torii Gate", :aliases []}
+{:name "tornado", :label "Tornado", :aliases []}
+{:name "tower-broadcast", :label "Tower Broadcast", :aliases ["broadcast-tower"]}
+{:name "tower-cell", :label "Tower Cell", :aliases []}
+{:name "tower-observation", :label "Tower Observation", :aliases []}
+{:name "tractor", :label "Tractor", :aliases []}
+{:name "trademark", :label "Trademark", :aliases []}
+{:name "traffic-light", :label "Traffic Light", :aliases []}
+{:name "trailer", :label "Trailer", :aliases []}
+{:name "train", :label "Train", :aliases []}
+{:name "train-subway", :label "Train Subway", :aliases ["subway"]}
+{:name "train-tram", :label "Train Tram", :aliases []}
+{:name "transgender", :label "Transgender", :aliases ["transgender-alt"]}
+{:name "trash", :label "Trash", :aliases []}
+{:name "trash-arrow-up", :label "Trash Arrow Up", :aliases ["trash-restore"]}
+{:name "trash-can", :label "Trash Can", :aliases ["trash-alt"]}
+{:name "trash-can-arrow-up", :label "Trash Can Arrow Up", :aliases ["trash-restore-alt"]}
+{:name "tree", :label "Tree", :aliases []}
+{:name "tree-city", :label "Tree City", :aliases []}
+{:name "triangle-exclamation", :label "Triangle Exclamation", :aliases ["exclamation-triangle" "warning"]}
+{:name "trophy", :label "Trophy", :aliases []}
+{:name "trowel", :label "Trowel", :aliases []}
+{:name "trowel-bricks", :label "Trowel Bricks", :aliases []}
+{:name "truck", :label "Truck", :aliases []}
+{:name "truck-arrow-right", :label "Truck Arrow Right", :aliases []}
+{:name "truck-droplet", :label "Truck Droplet", :aliases []}
+{:name "truck-fast", :label "Truck Fast", :aliases ["shipping-fast"]}
+{:name "truck-field", :label "Truck Field", :aliases []}
+{:name "truck-field-un", :label "Truck Field Un", :aliases []}
+{:name "truck-front", :label "Truck Front", :aliases []}
+{:name "truck-medical", :label "Truck Medical", :aliases ["ambulance"]}
+{:name "truck-monster", :label "Truck Monster", :aliases []}
+{:name "truck-moving", :label "Truck Moving", :aliases []}
+{:name "truck-pickup", :label "Truck Pickup", :aliases []}
+{:name "truck-plane", :label "Truck Plane", :aliases []}
+{:name "truck-ramp-box", :label "Truck Ramp Box", :aliases ["truck-loading"]}
+{:name "tty", :label "Tty", :aliases ["teletype"]}
+{:name "turkish-lira-sign", :label "Turkish Lira Sign", :aliases ["try" "turkish-lira"]}
+{:name "turn-down", :label "Turn Down", :aliases ["level-down-alt"]}
+{:name "turn-up", :label "Turn Up", :aliases ["level-up-alt"]}
+{:name "tv", :label "Tv", :aliases ["television" "tv-alt"]}
+{:name "u", :label "U", :aliases []}
+{:name "umbrella", :label "Umbrella", :aliases []}
+{:name "umbrella-beach", :label "Umbrella Beach", :aliases []}
+{:name "underline", :label "Underline", :aliases []}
+{:name "universal-access", :label "Universal Access", :aliases []}
+{:name "unlock", :label "Unlock", :aliases []}
+{:name "unlock-keyhole", :label "Unlock Keyhole", :aliases ["unlock-alt"]}
+{:name "up-down", :label "Up Down", :aliases ["arrows-alt-v"]}
+{:name "up-down-left-right", :label "Up Down Left Right", :aliases ["arrows-alt"]}
+{:name "up-long", :label "Up Long", :aliases ["long-arrow-alt-up"]}
+{:name "up-right-and-down-left-from-center", :label "Up Right And Down Left From Center", :aliases ["expand-alt"]}
+{:name "up-right-from-square", :label "Up Right From Square", :aliases ["external-link-alt"]}
+{:name "upload", :label "Upload", :aliases []}
+{:name "user", :label "User", :aliases []}
+{:name "user-astronaut", :label "User Astronaut", :aliases []}
+{:name "user-check", :label "User Check", :aliases []}
+{:name "user-clock", :label "User Clock", :aliases []}
+{:name "user-doctor", :label "User Doctor", :aliases ["user-md"]}
+{:name "user-gear", :label "User Gear", :aliases ["user-cog"]}
+{:name "user-graduate", :label "User Graduate", :aliases []}
+{:name "user-group", :label "User Group", :aliases ["user-friends"]}
+{:name "user-injured", :label "User Injured", :aliases []}
+{:name "user-large", :label "User Large", :aliases ["user-alt"]}
+{:name "user-large-slash", :label "User Large Slash", :aliases ["user-alt-slash"]}
+{:name "user-lock", :label "User Lock", :aliases []}
+{:name "user-minus", :label "User Minus", :aliases []}
+{:name "user-ninja", :label "User Ninja", :aliases []}
+{:name "user-nurse", :label "User Nurse", :aliases []}
+{:name "user-pen", :label "User Pen", :aliases ["user-edit"]}
+{:name "user-plus", :label "User Plus", :aliases []}
+{:name "user-secret", :label "User Secret", :aliases []}
+{:name "user-shield", :label "User Shield", :aliases []}
+{:name "user-slash", :label "User Slash", :aliases []}
+{:name "user-tag", :label "User Tag", :aliases []}
+{:name "user-tie", :label "User Tie", :aliases []}
+{:name "user-xmark", :label "User Xmark", :aliases ["user-times"]}
+{:name "users", :label "Users", :aliases []}
+{:name "users-between-lines", :label "Users Between Lines", :aliases []}
+{:name "users-gear", :label "Users Gear", :aliases ["users-cog"]}
+{:name "users-line", :label "Users Line", :aliases []}
+{:name "users-rays", :label "Users Rays", :aliases []}
+{:name "users-rectangle", :label "Users Rectangle", :aliases []}
+{:name "users-slash", :label "Users Slash", :aliases []}
+{:name "users-viewfinder", :label "Users Viewfinder", :aliases []}
+{:name "utensils", :label "Utensils", :aliases ["cutlery"]}
+{:name "v", :label "V", :aliases []}
+{:name "van-shuttle", :label "Van Shuttle", :aliases ["shuttle-van"]}
+{:name "vault", :label "Vault", :aliases []}
+{:name "vector-square", :label "Vector Square", :aliases []}
+{:name "venus", :label "Venus", :aliases []}
+{:name "venus-double", :label "Venus Double", :aliases []}
+{:name "venus-mars", :label "Venus Mars", :aliases []}
+{:name "vest", :label "Vest", :aliases []}
+{:name "vest-patches", :label "Vest Patches", :aliases []}
+{:name "vial", :label "Vial", :aliases []}
+{:name "vial-circle-check", :label "Vial Circle Check", :aliases []}
+{:name "vial-virus", :label "Vial Virus", :aliases []}
+{:name "vials", :label "Vials", :aliases []}
+{:name "video", :label "Video", :aliases ["video-camera"]}
+{:name "video-slash", :label "Video Slash", :aliases []}
+{:name "vihara", :label "Vihara", :aliases []}
+{:name "virus", :label "Virus", :aliases []}
+{:name "virus-covid", :label "Virus Covid", :aliases []}
+{:name "virus-covid-slash", :label "Virus Covid Slash", :aliases []}
+{:name "virus-slash", :label "Virus Slash", :aliases []}
+{:name "viruses", :label "Viruses", :aliases []}
+{:name "voicemail", :label "Voicemail", :aliases []}
+{:name "volcano", :label "Volcano", :aliases []}
+{:name "volleyball", :label "Volleyball", :aliases ["volleyball-ball"]}
+{:name "volume-high", :label "Volume High", :aliases ["volume-up"]}
+{:name "volume-low", :label "Volume Low", :aliases ["volume-down"]}
+{:name "volume-off", :label "Volume Off", :aliases []}
+{:name "volume-xmark", :label "Volume Xmark", :aliases ["volume-mute" "volume-times"]}
+{:name "vr-cardboard", :label "Vr Cardboard", :aliases []}
+{:name "w", :label "W", :aliases []}
+{:name "walkie-talkie", :label "Walkie Talkie", :aliases []}
+{:name "wallet", :label "Wallet", :aliases []}
+{:name "wand-magic", :label "Wand Magic", :aliases ["magic"]}
+{:name "wand-magic-sparkles", :label "Wand Magic Sparkles", :aliases ["magic-wand-sparkles"]}
+{:name "wand-sparkles", :label "Wand Sparkles", :aliases []}
+{:name "warehouse", :label "Warehouse", :aliases []}
+{:name "water", :label "Water", :aliases []}
+{:name "water-ladder", :label "Water Ladder", :aliases ["ladder-water" "swimming-pool"]}
+{:name "wave-square", :label "Wave Square", :aliases []}
+{:name "weight-hanging", :label "Weight Hanging", :aliases []}
+{:name "weight-scale", :label "Weight Scale", :aliases ["weight"]}
+{:name "wheat-awn", :label "Wheat Awn", :aliases ["wheat-alt"]}
+{:name "wheat-awn-circle-exclamation", :label "Wheat Awn Circle Exclamation", :aliases []}
+{:name "wheelchair", :label "Wheelchair", :aliases []}
+{:name "wheelchair-move", :label "Wheelchair Move", :aliases ["wheelchair-alt"]}
+{:name "whiskey-glass", :label "Whiskey Glass", :aliases ["glass-whiskey"]}
+{:name "wifi", :label "Wifi", :aliases ["wifi-3" "wifi-strong"]}
+{:name "wind", :label "Wind", :aliases []}
+{:name "window-maximize", :label "Window Maximize", :aliases []}
+{:name "window-minimize", :label "Window Minimize", :aliases []}
+{:name "window-restore", :label "Window Restore", :aliases []}
+{:name "wine-bottle", :label "Wine Bottle", :aliases []}
+{:name "wine-glass", :label "Wine Glass", :aliases []}
+{:name "wine-glass-empty", :label "Wine Glass Empty", :aliases ["wine-glass-alt"]}
+{:name "won-sign", :label "Won Sign", :aliases ["krw" "won"]}
+{:name "worm", :label "Worm", :aliases []}
+{:name "wrench", :label "Wrench", :aliases []}
+{:name "x", :label "X", :aliases []}
+{:name "x-ray", :label "X Ray", :aliases []}
+{:name "xmark", :label "Xmark", :aliases ["close" "multiply" "remove" "times"]}
+{:name "xmarks-lines", :label "Xmarks Lines", :aliases []}
+{:name "y", :label "Y", :aliases []}
+{:name "yen-sign", :label "Yen Sign", :aliases ["cny" "jpy" "rmb" "yen"]}
+{:name "yin-yang", :label "Yin Yang", :aliases []}
+{:name "z", :label "Z", :aliases []}
+]

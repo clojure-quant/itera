@@ -1,8 +1,10 @@
 {:head      [itera.page.algo/head
              itera.plot.exception/head
              itera.plot.hiccup/head
-             itera.plot.text/head]
+             itera.plot.text/head
+             itera.util.fas/head]
  :option-ui [itera.option.default-ui itera.option.container]
  :requires  [[itera.plot.hiccup :refer [hiccup]]
              [itera.plot.text :refer [text]]
-             [itera.plot.image :refer [image image-inline]]]}
+             [itera.plot.image :refer [image image-inline]]
+             [itera.util.fas :refer [fas]]]}
