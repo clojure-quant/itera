@@ -38,6 +38,17 @@
       (is (nil? (:ex result)))
       (is (= wb (ns-name (find-ns wb)))))))
 
+(deftest create-workbook-ns-code-test
+  (testing "formats each required libspec"
+    (is (= "(ns itera.util.clj-test.workbook (:require [clojure.string :as string]\n  [clojure.edn :as edn]))"
+           (util/create-workbook-ns-code
+            "itera.util.clj-test.workbook"
+            '[[clojure.string :as string] [clojure.edn :as edn]]))))
+  (testing "emits a bare ns form without requires"
+    (is (= "(ns itera.util.clj-test.workbook)"
+           (util/create-workbook-ns-code
+            "itera.util.clj-test.workbook" nil)))))
+
 (deftest compile-formula-success-test
   (let [wb 'itera.util.clj-test.workbook-bare
         _ (util/create-workbook wb nil)

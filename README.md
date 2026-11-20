@@ -51,6 +51,49 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
 
 
 
+create itera.plot.rtable-format-ui ns
+
+(defn rtable-format-edit-ui [data opts])
+
+this should be used in itera.plot.rtable - spec-editor
+
+create a multimethod format-rtable-col 
+
+create a multimethod style-rtable-col 
+
+:prct should display a double in prct. 
+:nr-format-auto should be similar to: https://github.com/pink-gorilla/dali-table/blob/main/dali-table/src/rtable/format/number.cljs (but in clj)
+:format-date should be similar to: https://github.com/pink-gorilla/dali-table/blob/main/dali-table/src/rtable/format/date.cljs but in clj. 
+
+the ui is a table 
+columns: - column (can select all columns in the data)
+         - width a textbox where numbers can be inputted   
+         - format (can select any method that implements multimethod format-rtable-col)  
+         - format-opts (a textbox where something can be entered. this will be a parameter passed to format)
+         - style (can select any method that implemetns multimethod style-rtable-col)
+
+the rtable default ui shoudl also have padding-sm table-striped table-hover
+see: https://github.com/pink-gorilla/dali-table/blob/main/dali-table/src/notebook/dali/rtable/table/rtable.clj 
+
+in the model rtable 
+add a new formula to generate persons:
+https://github.com/pink-gorilla/dali-table/blob/main/demo/src/demo/table/data2.cljs
+
+and then set the edit spec to have custom styled columns.
+
+the custom style columns need to be defined in (:ns-data model)
+which the user can go by going to the tab ns. three you need to add a require
+so that the multimethods come to scope. and then you define them similar to here:
+
+https://github.com/pink-gorilla/dali-table/blob/main/demo/src/demo/table/columns2.cljs
+
+
+
+
+
+
+
+
 
 
 

@@ -14,19 +14,23 @@
 
 (def head [])
 
-(defrecord Fipp [hiccup]
+(defn render [data {:keys [class style] :as opts}]
+    [:pre (cond-> {}
+           class (assoc :class class)
+           style (assoc :style style))
+    (with-out-str (fipp-edn/pprint data))])
+
+(defrecord Fipp [data]
   itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup))
+  (to-hiccup [_] 
+    (render data {:style {:background "#d0d6fd"
+                          :margin "0.5rem"
+                          :border-radius "0.375rem"
+                          :overflow "auto"}})))
+
 
 (defn fipp
   "Pretty-print `value` with fipp and return it as a `<pre>` hiccup block
-   wrapped in an `itera-convertable` record.
-
-   Optional opts map: `{:class <string> :style <map>}` passthrough."
-  ([value] (fipp value nil))
-  ([value {:keys [class style]}]
-   (Fipp.
-    [:pre (cond-> {}
-            class (assoc :class class)
-            style (assoc :style style))
-     (with-out-str (fipp-edn/pprint value))])))
+   wrapped in an `itera-convertable` record."
+  [data]
+  (Fipp. data))

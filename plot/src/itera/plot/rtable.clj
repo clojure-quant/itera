@@ -99,7 +99,9 @@
   (to-formatted-hiccup [_ spec window]
     (render (cond-> {:rows data
                      :columns (or spec (default-columns data))}
-              window (assoc :style (spec-plot/window->style window)))))
+              window (assoc :style (assoc (spec-plot/window->style window)
+                                          :width "100%")
+                            :class "table-head-fixed"))))
   (default-spec [_] (default-columns data))
   (spec-editor [_ _spec code-a]
     (input-cm/codemirror-ui code-a {:style {:height "440px"}})))

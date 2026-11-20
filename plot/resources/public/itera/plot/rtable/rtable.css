@@ -80,24 +80,19 @@
   /* fixed header */
   /* https://www.w3docs.com/snippets/html/how-to-create-a-table-with-a-fixed-header-and-scrollable-body.html */
 
-  .table-head-fixed {
-    overflow-y: auto; /* make the table scrollable if its height is more than the container hight  */
-  }
-  
   .table-head-fixed thead {
     position: sticky;
     /* make the table heads sticky */
     top: 0px;
     /* table head will be placed from the top of the table and sticks to it */
-    border: "5px solid orange";
     background-color: coral;
   }
 
-  .table-head-fixed tbody tr th {
-    position: sticky;  /* make the table heads sticky */
-    top: 0px;  /* table head will be placed from the top of the table and sticks to it */
-    /*border: "5px solid orange";*/
-    /*background-color: red;*/
+  .table-head-fixed thead th {
+    position: sticky;
+    top: 0px;
+    z-index: 2;
+    background-color: coral;
   }
   
  .padding-sm td {

@@ -3,22 +3,17 @@
 
    Reads the model runner in `this` and its shown-node index cursor in `index`;
    option-ui nodes (value nodes with :value/editor :option-ui) are edited
-   through itera.model.ui, and shown values render
-   reactively via itera.value.converter.  Values implementing
-   itera.plot-ui.protocol/itera-spec-plot render through that protocol at a
-   fixed container size and expose an \"Edit spec\" CodeMirror popup; the edited
-   spec is persisted on the node via itera.model.ui/set-node-spec."
+   through itera.model.ui.  Each shown value renders reactively through
+   itera.model-ui.cell-ui/cell-ui; values implementing
+   itera.plot-ui.protocol/itera-spec-plot expose an \"Edit spec\" CodeMirror
+   popup rendered here, and the edited spec is persisted on the node via
+   itera.model.ui/set-node-spec."
   (:require [clojure.edn :as edn]
-            [clojure.pprint :as pprint]
             [hyper.core :as h]
             [itera.option.core :as options]
             [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.converter :as converter]
+            [itera.model-ui.cell-ui :as cell-ui]
             [itera.model.ui :as rui]))
-
-(def container-dimension
-  "Fixed plot container size (px) for the interact tab."
-  {:width 600 :height 400})
 
 (defn- close-spec!
   "Read the popup editor text as EDN and persist it onto the node's :spec,
@@ -100,53 +95,7 @@
                     :padding "0.75rem"}}
       (if (seq @index-a)
         (for [node-id (sort @index-a)]
-          (let [a     (rui/get-atom this node-id)
-                label (or (:label (rui/node-by-id this node-id)) node-id)]
-            [:div {:key node-id
-                   :style {:border-bottom "1px solid #f1f5f9"
-                           :padding "0.4rem 0"}}
-             (if a
-               (h/reactive [a]
-                 (let [v     @a
-                       spec? (satisfies? spec-plot/itera-spec-plot v)
-                       spec  (rui/node-spec this node-id)]
-                   [:div {:style {:display "flex"
-                                  :flex-direction "column"
-                                  :gap "0.35rem"}}
-                    [:div {:style {:display "flex"
-                                   :align-items "center"
-                                   :gap "0.35rem"}}
-                     (when spec?
-                       [:button {:type "button"
-                                 :title "Edit spec"
-                                 :aria-label "Edit spec"
-                                 :style {:cursor "pointer"
-                                         :border "none"
-                                         :background "transparent"
-                                         :padding "0"
-                                         :font-size "0.85rem"
-                                         :line-height "1"}
-                                 :data-on:click
-                                 (h/action
-                                  (reset! spec-code-a
-                                          (with-out-str (pprint/pprint spec)))
-                                  (reset! spec-popup-a node-id))}
-                        "✏️"])
-                     [:span {:style {:font-weight "600"
-                                     :font-family "monospace"
-                                     :font-size "0.8rem"}}
-                      label]]
-                    (if spec?
-                      [:div {:style {:width (str (:width container-dimension) "px")}}
-                       (spec-plot/to-formatted-hiccup v spec container-dimension)]
-                      [:div {:style {:font-size "0.9rem" :min-width "0"}}
-                       (converter/type->hiccup v)])]))
-               [:div {:style {:display "flex" :flex-direction "column" :gap "0.35rem"}}
-                [:div {:style {:font-weight "600" :font-family "monospace"
-                               :font-size "0.8rem"}}
-                 label]
-                [:div {:style {:font-size "0.9rem"}}
-                 [:span {:style {:color "#94a3b8"}} "—"]]])]))
+          (cell-ui/cell-ui this node-id))
         [:div {:style {:color "#64748b" :font-size "0.8rem"}} "No shown nodes."])]
      (when-let [node-id @spec-popup-a]
        (spec-popup this node-id spec-code-a spec-popup-a))]))

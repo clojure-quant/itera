@@ -72,14 +72,16 @@
     ;(info "eval-result: " r)
     r))
 
-
-(defn create-workbook [workbook-ns requires]
-  (clj-eval-raw
+(defn create-workbook-ns-code [workbook-ns requires]
    (if (seq requires)
      (str "(ns " workbook-ns " (:require "
           (string/join "\n  " (map pr-str requires))
           "))")
-     (str "(ns " workbook-ns ")"))))
+     (str "(ns " workbook-ns ")")))
+
+(defn create-workbook [workbook-ns requires]
+  (clj-eval-raw
+   (create-workbook-ns-code workbook-ns requires)))
 
 (defn compile-formula [workbook-ns code]
   (clj-eval {:code code :ns workbook-ns}))

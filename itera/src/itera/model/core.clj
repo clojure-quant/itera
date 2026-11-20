@@ -120,10 +120,15 @@
       (swap! (:node-dict-a r) assoc node-id updated)
       updated)))
 
-(defn create-runner [ctx {:keys [nodes edges] :as persistent-data}]
+(defn create-runner [ctx {:keys [nodes edges ns-data] :as persistent-data}]
   (let [graph-ns (str "itera.user." (:graph/name persistent-data))
-        _ (util/create-workbook graph-ns (or (:requires ctx) []))
+        ns-data  (if (nil? ns-data)
+                   (util/create-workbook-ns-code graph-ns (or (:requires ctx) []))
+                   ns-data)
+        ns-eval  (util/clj-eval-raw ns-data)
         this  {:graph-ns graph-ns
+               :ns-data ns-data
+               :ns-eval ns-eval
                :ctx ctx
                :node-dict-a (atom {})
                :edges-a (atom edges)}

@@ -2,11 +2,12 @@
   (:require
    [clojure.test :refer [deftest is testing use-fixtures]]
    [missionary.core :as m]
-   [itera.model.core :as rc]))
+   [itera.model.core :as rc]
+   [itera.util.clj :as util]))
 
 (def ^:private graph-names
   ["core-test-compile-error" "core-test-success" "core-test-unconnected-input"
-   "core-test-zero-arg"])
+   "core-test-zero-arg" "core-test-generated-ns" "core-test-provided-ns"])
 
 (defn- graph-nss []
   (map #(symbol (str "itera.user." %)) graph-names))
@@ -93,3 +94,29 @@
       (let [v (first values)]
         (is (rc/is-no-val? v))
         (is (= "boom" (ex-message (:ex v))))))))
+
+(deftest create-runner-generates-ns-data-test
+  (let [requires '[[clojure.string :as string]]
+        graph {:graph/name "core-test-generated-ns"
+               :nodes [{:id "n" :type :formula
+                        :code "(fn [] (string/upper-case \"abc\"))"}]
+               :edges []}
+        runner (rc/create-runner {:requires requires} graph)]
+    (is (= (util/create-workbook-ns-code "itera.user.core-test-generated-ns"
+                                         requires)
+           (:ns-data runner)))
+    (is (nil? (:ex (:ns-eval runner))))
+    (is (= "ABC" (rc/get-snapshot runner "n")))))
+
+(deftest create-runner-uses-provided-ns-data-test
+  (let [ns-data (str "(ns itera.user.core-test-provided-ns"
+                     " (:require [clojure.edn :as edn]))\n"
+                     "(def marker 41)")
+        graph {:graph/name "core-test-provided-ns"
+               :ns-data ns-data
+               :nodes [{:id "n" :type :formula :code "(fn [] marker)"}]
+               :edges []}
+        runner (rc/create-runner {} graph)]
+    (is (= ns-data (:ns-data runner)))
+    (is (nil? (:ex (:ns-eval runner))))
+    (is (= 41 (rc/get-snapshot runner "n")))))

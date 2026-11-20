@@ -146,11 +146,15 @@
   (when (model-exists? ctx model-name)
     (let [m (normalize-model (load-model ctx model-name))
           r (rc/create-runner ctx m)
+          m (if (nil? (:ns-data m))
+              (assoc m :ns-data (:ns-data r))
+              m)
           this {:ctx ctx
                 :model-name model-name
                 :graph-ns (:graph-ns r)
                 :runner r
                 :model-a (atom m)
+                :ns-eval-a (atom (:ns-eval r))
                 :graph-rev (atom 0)
                 :showing (atom {})
                 :disposers (atom {})
@@ -182,6 +186,25 @@
 
 (defn- bump-rev! [this]
   (when-let [a (:graph-rev this)] (swap! a inc)))
+
+;; ---------------------------------------------------------------------------
+;; ns-data
+;; ---------------------------------------------------------------------------
+
+(defn ns-data
+  "The model's :ns-data string."
+  [this]
+  (:ns-data @(:model-a this)))
+
+(defn set-ns-data!
+  "Set :ns-data on the model and evaluate it.  Returns the clj-eval-raw result,
+   or {:ex e} when evaluation throws.  Does not recompile formula nodes."
+  [this ns-data]
+  (swap! (:model-a this) assoc :ns-data ns-data)
+  (let [result (try (util/clj-eval-raw ns-data)
+                    (catch Exception e {:ex e}))]
+    (when-let [a (:ns-eval-a this)] (reset! a result))
+    result))
 
 ;; ---------------------------------------------------------------------------
 ;; ports
@@ -617,11 +640,12 @@
   "Serialize :model-a and write <path>/<name>.edn."
   [this]
   (let [model @(:model-a this)
-        persisted {:graph/name (:graph/name model)
-                   :nodes (mapv persist-node (:nodes model))
-                   :edges (mapv #(select-keys % [:id :source-node :source-port
-                                                 :target-node :target-port])
-                                (:edges model))}
+        persisted (cond-> (array-map :graph/name (:graph/name model))
+                    (some? (:ns-data model)) (assoc :ns-data (:ns-data model))
+                    true (assoc :nodes (mapv persist-node (:nodes model))
+                                :edges (mapv #(select-keys % [:id :source-node :source-port
+                                                              :target-node :target-port])
+                                             (:edges model))))
         file (model-file (:ctx this) (:model-name this))]
     (io/make-parents file)
     (spit file (with-out-str (binding [pprint/*print-right-margin* 110]

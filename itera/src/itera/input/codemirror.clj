@@ -111,14 +111,17 @@
    cursor/atom whose value is the code string).  On blur the editor emits the
    current document; the action writes code-a, re-rendering the page.
 
-   opts: {:style <host style map> :class <host class>}.  Must be called inside
-   a Hyper render context."
+   opts: {:style <host style map> :class <host class>
+          :on-change <fn of the new code string>}.  Without :on-change the
+   action writes code-a, as before.  Must be called inside a Hyper render
+   context."
   ([code-a] (codemirror-ui code-a nil))
   ([code-a opts]
-   (let [{:keys [style class]} opts]
+   (let [{:keys [style class on-change]} opts
+         apply-change (or on-change #(reset! code-a %))]
      (itera-codemirror
       (cond-> {:code (str (or @code-a ""))
                :data-on:code-change
-               (h/action (reset! code-a $detail))}
+               (h/action (apply-change $detail))}
         true  (assoc :style (merge {:width "100%" :height "320px"} style))
         class (assoc :class class))))))

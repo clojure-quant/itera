@@ -3,7 +3,8 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.test :refer [deftest is testing]]
-   [itera.model.ui :as rui]))
+   [itera.model.ui :as rui]
+   [itera.util.clj :as util]))
 
 (defn- fresh-ctx []
   (let [path (str (java.nio.file.Files/createTempDirectory
@@ -107,18 +108,64 @@
         (try
           (rui/save-model-edn! this)
           (let [saved (edn/read-string (slurp (model-file ctx name)))
+                saved-ns (:ns-data saved)
                 by-id (into {} (map (juxt :id identity)) (:nodes saved))]
+            (is (string? saved-ns))
+            (is (= (rui/ns-data this) saved-ns))
             (is (= :option-ui (:value/editor (get by-id "opt"))))
-            (is (= :edn (:value/editor (get by-id "edn")))))
-          (rui/stop-model this)
-          (let [reloaded (rui/start-model ctx name)]
-            (try
-              (is (= :option-ui (:value/editor (rui/node-by-id reloaded "opt"))))
-              (is (= :edn (:value/editor (rui/node-by-id reloaded "edn"))))
-              (finally
-                (rui/stop-model reloaded))))
+            (is (= :edn (:value/editor (get by-id "edn"))))
+            (rui/stop-model this)
+            (let [reloaded (rui/start-model ctx name)]
+              (try
+                (is (= saved-ns (rui/ns-data reloaded)))
+                (is (= :option-ui (:value/editor (rui/node-by-id reloaded "opt"))))
+                (is (= :edn (:value/editor (rui/node-by-id reloaded "edn"))))
+                (finally
+                  (rui/stop-model reloaded)))))
           (finally
             (rui/stop-model this))))
+      (finally
+        (cleanup! ctx name)))))
+
+(deftest start-model-seeds-generated-ns-data-test
+  (let [ctx (fresh-ctx)
+        name "ui-test-seeded-ns"]
+    (try
+      (with-started ctx name []
+        (fn [this]
+          (is (= (util/create-workbook-ns-code (str "itera.user." name) [])
+                 (rui/ns-data this)))))
+      (finally
+        (cleanup! ctx name)))))
+
+(deftest set-ns-data-evaluates-test
+  (let [ctx (fresh-ctx)
+        name "ui-test-set-ns"]
+    (try
+      (with-started ctx name []
+        (fn [this]
+          (let [ns-data (str "(ns itera.user.ui-test-set-ns"
+                             " (:require [clojure.string :as str]))")
+                result (rui/set-ns-data! this ns-data)]
+            (is (nil? (:ex result)))
+            (is (= ns-data (rui/ns-data this)))
+            (is (= "ABC" (:value (util/compile-formula
+                                  (:graph-ns this)
+                                  "(str/upper-case \"abc\")")))))))
+      (finally
+        (cleanup! ctx name)))))
+
+(deftest set-ns-data-returns-exception-test
+  (let [ctx (fresh-ctx)
+        name "ui-test-set-ns-error"]
+    (try
+      (with-started ctx name []
+        (fn [this]
+          (let [ns-data (str "(ns itera.user.ui-test-set-ns-error)\n"
+                             "(throw (ex-info \"boom\" {}))")
+                result (rui/set-ns-data! this ns-data)]
+            (is (= "boom" (ex-message (:ex result))))
+            (is (= ns-data (rui/ns-data this))))))
       (finally
         (cleanup! ctx name)))))
 
