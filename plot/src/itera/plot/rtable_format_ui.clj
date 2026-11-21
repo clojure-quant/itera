@@ -1,42 +1,58 @@
 (ns itera.plot.rtable-format-ui
-  "Column formatting methods and a table editor for an rtable spec.
+  "Formatting multimethods and a table editor for an rtable spec.
 
    `format-rtable-col` formats a cell value; it dispatches on a column's
-   :format keyword and receives the column's :format-opts string.  Built in:
-   :prct, :nr-format-auto and :format-date.  `style-rtable-col` returns extra
-   cell attrs {:class .. :style ..} for a value and dispatches on :style-fn.
-   Both multimethods have a :default method, so a nil/unknown keyword falls
-   back to plain formatting and no extra attrs.
+   :format keyword and receives the column's :format-opts string.
+   `style-rtable-col` returns extra cell attrs {:class .. :style ..} for a
+   value and dispatches on :style-fn.  Both multimethods have a :default
+   method, so a nil/unknown keyword falls back to plain formatting and no
+   extra attrs.
 
-   Viewer projects register their own methods (typically from a model's
-   :ns-data) with (defmethod format-rtable-col :my-format ...) and
+   The built-in :format methods (:nr-format-auto, :prct, :format-date) live
+   in itera.plot.rtable-default-column-formatter, which itera.plot.rtable
+   loads.  Viewer projects register their own methods (typically from a
+   model's :ns-data) with (defmethod format-rtable-col :my-format ...) and
    (defmethod style-rtable-col :my-style ...); `rtable-format-edit-ui` lists
    every registered keyword method in its dropdowns.
 
-   `rtable-format-edit-ui` is the rtable spec editor: one table row per spec
-   entry, editing :path / :width / :format / :format-opts / :style-fn.  All
-   edits are written immediately as EDN into the caller's code cursor, so the
-   existing spec popup persists them when it closes.
+   `rtable-format-edit-ui` is the rtable spec editor.  It writes the map spec
+   {:row-height <css length> :columns [<column-map> ...]}: a text input sets
+   the body row height, and the table has one row per :columns entry editing
+   :path / :width / :format / :format-opts / :style-fn.  All edits are written
+   immediately as EDN into the caller's code cursor, so the existing spec
+   popup persists them when it closes.
 
    Must be called inside a Hyper render context."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [hyper.core :as h])
-  (:import (java.time Instant ZoneOffset)
-           (java.time.format DateTimeFormatter)
-           (java.time.temporal TemporalAccessor)))
+            [hyper.core :as h]))
 
 ;; ---------------------------------------------------------------------------
 ;; formatting
 ;; ---------------------------------------------------------------------------
 
-(defn default-format
-  "Fallback cell formatting: booleans become check/cross, anything else is
-   returned unchanged."
-  [value]
-  (if (boolean? value)
-    (case value true "\u2713" false "\u2715" "")
-    value))
+(def default-row-height
+  "Body row height (a CSS length) used when a spec does not set :row-height."
+  "1.8rem")
+
+(defn valid-spec?
+  "True when SPEC is the map shape {:row-height <length> :columns [...]}.
+   Legacy column vectors are not accepted."
+  [spec]
+  (and (map? spec)
+       (vector? (:columns spec))))
+
+(defn normalize-spec
+  "Return SPEC with a non-blank string :row-height, filling in
+   default-row-height when it is missing or blank.  nil for an invalid spec."
+  [spec]
+  (when (valid-spec? spec)
+    (update spec :row-height
+            (fn [row-height]
+              (if (and (string? row-height)
+                       (not (str/blank? row-height)))
+                row-height
+                default-row-height)))))
 
 (defmulti format-rtable-col
   "Format VALUE for a column.  Dispatches on the :format keyword; OPTS is the
@@ -47,63 +63,6 @@
   "Return cell attrs {:class .. :style ..} for VALUE.  Dispatches on the
    :style-fn keyword; nil/{} means no extra attrs."
   (fn [style-fn _value] style-fn))
-
-(defn- format-number
-  "Format VALUE with the given java format string.  nil -> \"-\", strings pass
-   through unchanged."
-  [fmt value]
-  (cond
-    (nil? value)    "-"
-    (string? value) value
-    (number? value) (format fmt (double value))
-    :else           (str value)))
-
-(defmethod format-rtable-col :nr-format-auto
-  [_opts _ value]
-  (if (number? value)
-    (let [v (Math/abs (double value))]
-      (format-number (cond
-                       (> v 10000) "%.0f"
-                       (> v 1000)  "%.1f"
-                       (> v 100)   "%.2f"
-                       (> v 10)    "%.3f"
-                       (> v 1)     "%.4f"
-                       :else       "%.5f")
-                     value))
-    (format-number "%.0f" value)))
-
-(defmethod format-rtable-col :prct
-  [_opts _ value]
-  (cond
-    (nil? value)    "-"
-    (string? value) value
-    (number? value) (format "%.2f%%" (* 100.0 (double value)))
-    :else           (str value)))
-
-(defmethod format-rtable-col :format-date
-  [_opts opts value]
-  (cond
-    (nil? value)    ""
-    (string? value) value
-    :else
-    (let [pattern (if (and (string? opts) (not (str/blank? opts)))
-                    opts
-                    "yyyy-MM-dd")]
-      (try
-        (let [fmt (DateTimeFormatter/ofPattern pattern)]
-          (cond
-            (instance? Instant value)
-            (.format fmt (.atZone ^Instant value ZoneOffset/UTC))
-
-            (instance? TemporalAccessor value)
-            (.format fmt ^TemporalAccessor value)
-
-            :else (str value)))
-        (catch Exception _ (str value))))))
-
-(defmethod format-rtable-col :default
-  [_opts _ value]
-  (default-format value))
 
 (defmethod style-rtable-col :default
   [_style-fn _value]
@@ -132,9 +91,9 @@
           [] data))
 
 (defn- spec-paths
-  "Non-nil :path values from the spec."
+  "Non-nil :path values from the spec's :columns."
   [spec]
-  (keep :path spec))
+  (keep :path (:columns spec)))
 
 (defn- selectable-paths
   "Data columns plus spec paths that are absent from the data."
@@ -167,8 +126,8 @@
              (selectable-paths data spec))))
 
 (defn- read-spec
-  "Current spec: parsed from code-a when it is a non-blank EDN vector, else the
-   :spec argument, else []."
+  "Current spec map: parsed from code-a when it is valid EDN map, else the
+   :spec argument when it is valid, else a default empty-columns spec."
   [opts]
   (let [c (:code-a opts)
         text (try (when c @c) (catch Exception _ nil))
@@ -177,20 +136,21 @@
                    (edn/read-string text))
                  (catch Exception _ nil))]
     (cond
-      (vector? parsed)   parsed
-      (vector? (:spec opts)) (:spec opts)
-      (sequential? (:spec opts)) (vec (:spec opts))
-      :else [])))
+      (valid-spec? parsed)     (normalize-spec parsed)
+      (valid-spec? (:spec opts)) (normalize-spec (:spec opts))
+      :else                    {:row-height default-row-height :columns []})))
 
 (defn- write-spec!
   [code-a spec]
-  (reset! code-a (pr-str (vec spec))))
+  (reset! code-a (pr-str spec)))
 
 (defn- update-row!
   [opts idx f]
   (write-spec! (:code-a opts)
-               (mapv (fn [i row] (if (= i idx) (f row) row))
-                     (range) (read-spec opts))))
+               (update (read-spec opts) :columns
+                       (fn [columns]
+                         (mapv (fn [i row] (if (= i idx) (f row) row))
+                               (range) columns)))))
 
 (defn- assoc-row!
   [opts idx k v]
@@ -203,12 +163,30 @@
 (defn- delete-row!
   [opts idx]
   (write-spec! (:code-a opts)
-               (keep-indexed (fn [i row] (when (not= i idx) row))
-                             (read-spec opts))))
+               (update (read-spec opts) :columns
+                       (fn [columns]
+                         (keep-indexed (fn [i row] (when (not= i idx) row))
+                                       columns)))))
 
 (defn- add-row!
   [opts row]
-  (write-spec! (:code-a opts) (conj (read-spec opts) row)))
+  (write-spec! (:code-a opts)
+               (update (read-spec opts) :columns conj row)))
+
+(defn- valid-row-height?
+  "True for a CSS length the editor accepts: a number followed by px, em or
+   rem."
+  [s]
+  (boolean (re-matches #"\d+(\.\d+)?(px|em|rem)" (str/trim s))))
+
+(defn- set-row-height!
+  [opts s]
+  (let [s (str/trim s)
+        spec (read-spec opts)]
+    (cond
+      (str/blank? s)            (write-spec! (:code-a opts) (dissoc spec :row-height))
+      (valid-row-height? s)     (write-spec! (:code-a opts) (assoc spec :row-height s))
+      :else                     nil)))
 
 (defn- parse-width
   "Whole numbers become longs, other finite numbers doubles; nil when the text
@@ -268,22 +246,35 @@
    :font-size "1rem" :line-height "1" :padding "0.3rem 0.6rem"})
 
 (defn rtable-format-edit-ui
-  "Edit an rtable column spec as a table.
+  "Edit an rtable spec as a table.
 
    data  the table rows (used to list selectable columns)
    opts  {:spec <current spec> :code-a <hyper cursor holding EDN text>}
 
-   One row per spec entry: delete, column, width, format, format-opts, style.
-   The footer + button appends an entry seeded with the first data column.
-   Every edit resets code-a to (pr-str spec); the spec popup persists it on
-   Close.  Must be called inside a Hyper render context."
+   A row-height input sets the body row height (blank restores the default).
+   The table below has one row per :columns entry: delete, column, width,
+   format, format-opts, style.  The footer + button appends an entry seeded
+   with the first data column.  Every edit resets code-a to (pr-str spec);
+   the spec popup persists it on Close.  Must be called inside a Hyper render
+   context."
   [data opts]
   (let [spec     (read-spec opts)
+        columns  (:columns spec)
         col-opts (column-options data spec)
         formats  (method-names format-rtable-col)
         styles   (method-names style-rtable-col)
         first-col (first (data-columns data))]
     [:div {:style {:overflow "auto" :max-height "60vh"}}
+     [:div {:style {:display "flex" :align-items "center" :gap "0.5rem"
+                    :margin "0 0 0.5rem 0"}}
+      [:label {:style {:font-size "0.8rem" :color "#374151"}} "Row height"]
+      [:input {:type "text"
+               :value (or (:row-height spec) "")
+               :placeholder default-row-height
+               :title "CSS length in rem, px or em, e.g. 1.8rem"
+               :aria-label "Row height"
+               :style (assoc input-style :width "8rem")
+               :data-on:change (h/action (set-row-height! opts $value))}]]
      [:table {:style table-style}
       [:thead
        [:tr
@@ -294,7 +285,7 @@
         [:th {:style (assoc th-style :width opts-col-width)} "Options"]
         [:th {:style (assoc th-style :width style-col-width)} "Style"]]]
       [:tbody
-       (for [[idx row] (map-indexed vector spec)]
+       (for [[idx row] (map-indexed vector columns)]
          [:tr {:key idx}
           [:td {:style (assoc td-style :text-align "center")}
            [:button {:type "button" :title "Delete" :aria-label "Delete"

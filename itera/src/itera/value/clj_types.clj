@@ -33,6 +33,10 @@
   [:span {:class class}
    (pr-str v)])
 
+(defn- timevalue->hiccup [v class]
+  [:span {:class class}
+   (str v)])
+
 (def ^:private delim-style
   {:font-weight "700"
    :color "#0f766e"})
@@ -156,10 +160,50 @@
 
 ;; time
 
+(extend-type java.time.Instant
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-instant")))
+
 (extend-type java.time.LocalDate
   itera-convertable
   (to-hiccup [v]
-    (simplevalue->hiccup v "clj-localdate")))
+    (timevalue->hiccup v "clj-localdate")))
+
+(extend-type java.time.LocalDateTime
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-localdatetime")))
+
+(extend-type java.time.LocalTime
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-localtime")))
+
+(extend-type java.time.ZonedDateTime
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-zoneddatetime")))
+
+(extend-type java.time.OffsetDateTime
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-offsetdatetime")))
+
+(extend-type java.time.OffsetTime
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-offsettime")))
+
+(extend-type java.time.Duration
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-duration")))
+
+(extend-type java.time.Period
+  itera-convertable
+  (to-hiccup [v]
+    (timevalue->hiccup v "clj-period")))
 
 ;; renderers for collection of items
 

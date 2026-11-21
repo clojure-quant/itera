@@ -4,13 +4,22 @@
    The public `rtable` fn takes only the row `data`:
      (rtable [{...} ...])
 
-   Column definitions (the editable spec) come from the host through
-   itera.plot-ui.protocol and mirror the dali-table `rtable` viewer's
-   server-expressible parts: column `:path` / `:header` / `:attrs`,
-   `:class` / `:style` / `:max-width` / `:width` styling, and formatting
-   through `:format` / `:format-opts` / `:style-fn`.  The format and style
-   keywords dispatch the multimethods in itera.plot.rtable-format-ui; a legacy
-   fn `:format` and fn `:attrs` are still applied directly.
+   The editable spec is a map:
+     {:row-height \"1.8rem\"
+      :columns [{:path :close :header \"Close\"} ...]}
+
+   `:row-height` is a CSS length applied to every body <tr>; it defaults to
+   itera.plot.rtable-format-ui/default-row-height.  `:columns` definitions
+   mirror the dali-table `rtable` viewer's server-expressible parts: column
+   `:path` / `:header` / `:attrs`, `:class` / `:style` / `:max-width` /
+   `:width` styling, and formatting through `:format` / `:format-opts` /
+   `:style-fn`.  The format and style keywords dispatch the multimethods in
+   itera.plot.rtable-format-ui; the built-in format methods are registered by
+   itera.plot.rtable-default-column-formatter.  A legacy fn `:format` and fn
+   `:attrs` are still applied directly.
+
+   Legacy column vectors are not accepted: a non-map spec, or a map without a
+   vector :columns, renders an error block.
 
    With no spec given, columns are derived from the first row's keys (the
    header via the existing `header-label`).  The spec editor is a table UI
@@ -21,6 +30,7 @@
    the default table) and itera.plot-ui.protocol (`:columns` as the editable
    spec)."
   (:require [clojure.string :as str]
+            [itera.plot.rtable-default-column-formatter :as rtable-default-fmt]
             [itera.plot.rtable-format-ui :as rtable-fmt]
             [itera.plot-ui.protocol :as spec-plot]
             [itera.value.protocol]))
@@ -49,7 +59,7 @@
     (cond
       (fn? fmt)      (fmt value)
       (keyword? fmt) (rtable-fmt/format-rtable-col fmt (:format-opts col) value)
-      :else          (rtable-fmt/default-format value))))
+      :else          (rtable-default-fmt/default-format value))))
 
 (defn- header-label [{:keys [header path]}]
   (or header
@@ -117,8 +127,8 @@
 
 (defn- render
   "Build the table hiccup from an opts map (columns/rows plus :class/:style
-   table passthrough)."
-  [{:keys [columns rows class style render-cell] :as _opts}]
+   table passthrough and an optional :row-height applied to body rows)."
+  [{:keys [columns rows class style row-height render-cell] :as _opts}]
   (if (empty? rows)
     [:div {:style {:padding "1rem" :color "#888"}} "No rows in this table."]
     (let [rc (or render-cell default-render-cell)]
@@ -128,7 +138,9 @@
                     [(into [:tr] (map (fn [c] [:th (cell-attrs c) (header-label c)]) columns))])]
              [(into [:tbody]
                     (for [row rows]
-                      (into [:tr] (map (fn [c] (cell-td rc c row)) columns))))])))))
+                      (into [:tr (cond-> {}
+                                   row-height (assoc :style {:height row-height}))]
+                            (map (fn [c] (cell-td rc c row)) columns))))])))))
 
 (defrecord Rtable [data]
   itera.value.protocol/itera-convertable
@@ -136,12 +148,18 @@
     (render {:rows data :class default-class :columns (default-columns data)}))
   spec-plot/itera-spec-plot
   (to-formatted-hiccup [_ spec window]
-    (render (cond-> {:rows data
-                     :columns (or spec (default-columns data))}
-              window (assoc :style (assoc (spec-plot/window->style window)
-                                          :width "100%")
-                            :class (str "table-head-fixed " default-class)))))
-  (default-spec [_] (default-columns data))
+    (if-let [spec (rtable-fmt/normalize-spec spec)]
+      (render (cond-> {:rows data
+                       :columns (:columns spec)
+                       :row-height (:row-height spec)}
+                window (assoc :style (assoc (dissoc (spec-plot/window->style window) :height)
+                                            :width "100%")
+                              :class (str "table-head-fixed " default-class))))
+      [:div {:style {:padding "1rem" :color "#888"}}
+       "Invalid rtable spec: expected {:row-height <length> :columns [<column> ...]}"]))
+  (default-spec [_]
+    {:row-height rtable-fmt/default-row-height
+     :columns (or (default-columns data) [])})
   (spec-editor [v spec code-a]
     (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a})))
 
