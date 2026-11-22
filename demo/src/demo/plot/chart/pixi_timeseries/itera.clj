@@ -1,5 +1,6 @@
 (ns demo.plot.chart.pixi-timeseries.itera
-  (:require [itera.plot.pixi-timeseries.plot :as pixi]))
+  (:require [itera.value.protocol :as spec-plot]
+            [itera.plot.pixi-timeseries.plot :as pixi]))
 
 (defn- bar [i]
   (let [base  (+ 100 (* 10 (Math/sin (/ i 7.0))) (mod i 5))
@@ -33,6 +34,14 @@
 
 (defn calculate [_ctx _opts] ds)
 
+(defn plot
+  [opts ds]
+  (spec-plot/to-formatted-paged-hiccup
+   (pixi/pixi-timeseries-ds ds)
+   (:charts opts)
+   (:window opts)
+   (:window-selector opts)))
+
 (def ^:private plot-options
   [{:type :container
     :path [:window]
@@ -58,7 +67,7 @@
                          :window-selector {:display :nice :step 8}}
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
-   :plot/fn       pixi/pixi-timeseries-ds})
+   :plot/fn       plot})
 
 (def algo-pixi-timeseries-fixed
   {:calculate/fn calculate
@@ -67,4 +76,4 @@
                          :window-selector {:display :nice :step 8}}
    :plot/options  plot-options
    :plot/select   pixi/init-window-selector!
-   :plot/fn       pixi/pixi-timeseries-ds})
+   :plot/fn       plot})

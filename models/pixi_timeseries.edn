@@ -1,11 +1,13 @@
 {:graph/name "pixi_timeseries",
+ :ns-data
+ "(ns itera.user.pixi_timeseries (:require [itera.plot.hiccup :refer [hiccup]]\n  [itera.plot.text :refer [text]]\n  [itera.plot.image :refer [image image-inline]]\n  [itera.util.fas :refer [fas]]\n  [itera.plot.pixi-timeseries.plot :refer [pixi-timeseries pixi-timeseries-ds]]\n  [itera.plot.aggrid :refer [aggrid]]\n  [itera.plot.cheetah :refer [cheetah]]\n  [itera.plot.rtable :refer [rtable]]\n  [itera.plot.highcharts :refer [highchart highstock]]\n  [itera.plot.highcharts-timeseries :refer [highcharts-timeseries]]\n  [itera.plot.vega :refer [vega vegalite]]\n  [itera.plot.plotly :refer [plotly]]\n  [itera.plot.echarts :refer [echarts]]\n  [itera.plot.cytoscape :refer [cytoscape]]\n  [itera.plot.fipp :refer [fipp]]\n  [itera.plot.md :refer [md md-resource]]\n  [clojure.string :as string]\n  [clojure.edn :as edn]\n  [demo.flow :as df]))",
  :nodes
  [{:id "01-rows",
    :label "OHLC rows",
    :type :value,
-   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
+   :value/editor :edn,
    :value
    [{:date "2024-01-01", :open 100.0, :high 104.0, :low 99.0, :close 103.0}
     {:date "2024-01-02", :open 103.0, :high 106.0, :low 101.0, :close 102.0}
@@ -19,31 +21,33 @@
     {:date "2024-01-10", :open 109.0, :high 111.0, :low 106.0, :close 107.0}
     {:date "2024-01-11", :open 107.0, :high 109.0, :low 104.0, :close 105.0}
     {:date "2024-01-12", :open 105.0, :high 108.0, :low 103.0, :close 107.0}]}
-  {:id "02-charts",
-   :label "charts",
-   :type :value,
-   :value/editor :edn,
-   :show? false,
-   :position {:x 24, :y 360},
-   :value
-   [[{:type :bar, :col [:open :high :low :close]}
-     {:type :line, :col :close, :color "blue-5"}]
-    [{:type :line, :col :close, :color "green-5"}]]}
   {:id "03-plot",
    :label "pixi-timeseries",
    :type :formula,
    :show? true,
    :position {:x 420, :y 180},
+   :code "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec
+   [[{:type :bar, :col [:open :high :low :close]} {:type :line, :col :close, :color "blue-5"}]
+    [{:type :line, :col :close, :color "green-5"}]]}
+  {:id "cT_V-7o_j1jttN7C",
+   :label "bar-generated",
+   :type :formula,
+   :show? false,
+   :position {:x 0, :y 324},
    :code
-   "(fn [ctx rows charts]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries)\n   {:rows rows\n    :charts charts\n    :window {:mode :fixed :width 900 :height 600}\n    :style {:width \"900px\" :height \"600px\"}}))"}],
+   "(fn [_]\n  (let [rows (take 300 (drop 3200 ((requiring-resolve 'demo.data/bars))))]\n    (mapv (fn [idx row]\n            (assoc row\n                   :signal (= :long (:entry row))\n                   :pivot (case idx\n                            30 [95.0 100.0 110.0]\n                            80 [85.5 99.9 101.1]\n                            nil)))\n          (range)\n          rows)))"}
+  {:id "Poc5hqxV5UgnV4GD",
+   :label "pixi-timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 312, :y 396},
+   :code "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec [[{:type :bar, :col [:open :high :low :close]}]]}],
  :edges
- [{:id "e1",
-   :source-node "01-rows",
+ [{:id "e1", :source-node "01-rows", :source-port "out", :target-node "03-plot", :target-port "rows"}
+  {:id "37498a13-b0a2-40c1-86b7-51b3a7041526",
+   :source-node "cT_V-7o_j1jttN7C",
    :source-port "out",
-   :target-node "03-plot",
-   :target-port "rows"}
-  {:id "e2",
-   :source-node "02-charts",
-   :source-port "out",
-   :target-node "03-plot",
-   :target-port "charts"}]}
+   :target-node "Poc5hqxV5UgnV4GD",
+   :target-port "rows"}]}

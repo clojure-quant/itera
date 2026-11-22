@@ -28,7 +28,7 @@
               page.  :display defaults to :nice (windowed); with :all every
               row is sent and nothing is windowed.  :step (default 8) is
               server-side only and derives :rows-visible from :window :width
-              in :nice mode.  The window-selector option editor writes :end,
+              in :nice mode.  The plot-page-editor writes :end,
               :display and :step, while `init-window-selector!` fills
               :rows-all and :rows-visible from the result and the window
               width.  Without this key all rows are sent to the client.
@@ -39,19 +39,28 @@
    the payload reaches the browser: the component below is compiled to
    client-side JS and cannot call the JVM color namespace itself.
 
+   `pixi-timeseries` returns a value that stores only its rows; the charts
+   spec and the size are supplied by the itera.value.protocol methods.  The
+   editable charts spec is the bare panes vector above, the protocol `window`
+   supplies the size, and the page layer supplies the server-side row window
+   (navigated by `plot-page-editor`).  The generic `to-hiccup` path uses the
+   smart default spec at a fixed 900x600 fallback window because pixi cannot
+   measure the DOM.
+
    `pixi-timeseries-ds` accepts a dataset-like value (tech.ml dataset when
-   available, otherwise rows or a column map) and delegates to
-   `pixi-timeseries`.  Column maps whose columns have different lengths are
-   truncated to the shortest column."
+   available, otherwise rows or a column map) and delegates to the rows-only
+   constructor.  Column maps whose columns have different lengths are
+   truncated to the shortest column.
+
+   `select-rows` and `init-window-selector!` are used internally by the paged
+   methods and stay public for the legacy demo."
   (:require [hyper.core :as h]
+            [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
+            [itera.plot.pixi-timeseries.plot-page-editor :as page-editor]
             [itera.util.color :as colors]
-            [itera.value.protocol]))
+            [itera.value.protocol :as protocol]))
 
 (def head [])
-
-(defrecord PixiTimeseries [hiccup]
-  itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup))
 
 (defn- column-map->rows [m]
   (let [ks   (vec (keys m))
@@ -935,46 +944,64 @@
     (when (and (valid-size? w) (valid-size? h))
       {:width (str w "px") :height (str h "px")})))
 
+(def ^:private default-window
+  "Fallback host size for the generic to-hiccup path.  The model and interact
+   paths always supply their own window through the protocol."
+  {:width 900 :height 600})
+
+(defn- render
+  "Render selected ROWS with charts SPEC at WINDOW.  SPEC colors are resolved
+   server-side and dates normalized before the payload reaches the client."
+  [rows spec window]
+  (itera-pixi-timeseries
+   {:options (cond-> {:data (normalize-dates rows) :window window}
+               spec (assoc :charts (resolve-charts spec)))
+    :style   (merge {:display "block" :width "100%" :height "100%"}
+                    (window-size-style window))}))
+
+(defn- formatted-hiccup
+  "Render ROWS with SPEC (or the smart default when SPEC is nil) at WINDOW.
+   Invalid specs render fmt/invalid-spec-block."
+  [rows spec window]
+  (if-let [spec (fmt/normalize-spec (or spec (fmt/default-spec* rows)))]
+    (render rows spec window)
+    fmt/invalid-spec-block))
+
+(defrecord PixiTimeseries [data]
+  protocol/itera-convertable
+  (to-hiccup [_]
+    (formatted-hiccup data nil default-window))
+
+  protocol/itera-spec-plot
+  (to-formatted-hiccup [_ spec window]
+    (formatted-hiccup data spec window))
+  (default-spec [_]
+    (fmt/default-spec* data))
+  (spec-editor [_ spec code-a]
+    (fmt/pixi-timeseries-format-edit-ui data {:spec spec :code-a code-a}))
+
+  protocol/itera-page-plot
+  (to-formatted-paged-hiccup [v spec window page]
+    (let [page (or page (protocol/init-page v spec window))
+          rows (select-rows {:window window :window-selector page} data)]
+      (formatted-hiccup rows spec window)))
+  (init-page [_ _spec window]
+    (let [a (atom {:window window
+                   :window-selector {:display :nice :step 8}})]
+      (init-window-selector! a data)
+      (:window-selector @a)))
+  (page-editor [v spec window page-a]
+    (page-editor/page-editor-view v spec window page-a)))
+
 (defn pixi-timeseries
-  "Render a pixi.js time-series viewer.
-
-   Rows are windowed server-side.  When the options carry a :window-selector,
-   the client receives only the visible slice (see `select-rows`) and the
-   default view is the last page; without it all rows are sent and nothing is
-   hidden.  A :window-selector :display of :nice (the default) windows rows,
-   while :all sends every row.  :step lives under :window-selector and is
-   server-side only (it derives the visible row count), :end/:display/:step are
-   written by the window-selector option editor, and `init-window-selector!`
-   fills :rows-all/:rows-visible when installed as the algo's :plot/select.
-
-   The visible slice's :date column is normalized to strings/numbers before
-   serialization (java.time values become their ISO-like str form), and the
-   client draws a bottom date x-axis on the first pane from it.
-
-   :window :width/:height must be positive integers in both modes; the
-   viewer never measures the DOM.  With :mode :container the dimensions are
-   supplied by itera.container's measurement loop, so the caller (typically
-   itera.page.algo/algo-page) must withhold this viewer until that loop has
-   measured a complete window.  Invalid dimensions render
-   \"invalid :width and :height\" and draw nothing.  A caller-supplied :style
-   wins over the :window-derived host size.  Returns an `itera-convertable`
-   record."
-  [{:keys [style class rows data window] :as opts}]
-  (let [rows    (or rows data)
-        options (-> (dissoc opts :style :class :rows :data
-                            :window-selector)
-                    (assoc :data (normalize-dates (select-rows opts rows)))
-                    (cond-> (:charts opts) (update :charts resolve-charts)))
-        host-style (merge {:display "block"
-                           :width "100%"
-                           :height "100%"}
-                          (window-size-style window)
-                          style)]
-    (PixiTimeseries.
-     (itera-pixi-timeseries
-      (cond-> {:options options :style host-style}
-        class (assoc :class class))))))
+  "Return a pixi-timeseries viewer over ROWS (a vector of row maps with :date).
+   The charts spec and size are supplied by the itera.value.protocol methods:
+   `to-formatted-hiccup` takes {:panes...} + {:width :height}, `to-hiccup` uses
+   the smart default at a fixed fallback size."
+  [rows]
+  (->PixiTimeseries (vec (or rows []))))
 
 (defn pixi-timeseries-ds
-  [opts ds]
-  (pixi-timeseries (assoc opts :data (ds->rows ds))))
+  "Return a pixi-timeseries value from a dataset-like DS (rows or column map)."
+  [ds]
+  (pixi-timeseries (ds->rows ds)))

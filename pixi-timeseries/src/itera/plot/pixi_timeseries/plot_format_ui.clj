@@ -1,15 +1,29 @@
-(ns itera.plot.pixi-timeseries.options.chartspec
-  "The :chartspec option editor for the pixi-timeseries viewer.
+(ns itera.plot.pixi-timeseries.plot-format-ui
+  "Editable charts spec for the pixi-timeseries viewer.
 
-   A :chartspec option is a vector of panes, each pane a vector of plot maps
-   {:type <keyword> :col <keyword|vector> :color <string>}.  The editor adds
-   and removes panes and plots and edits each plot's :type, :col and :color.
-   :range plots edit a 2-element :col and :bar plots edit a 4-element :col
-   ([open high low close]); all other types edit a single :col.
+   The spec is a vector of panes, each pane a vector of plot maps
+   {:type <keyword> :col <keyword|vector> :color <string>}; it is exactly the
+   viewer's bare :charts vector, not a wrapper map:
 
-   The option :spec carries the available columns (required) and, optionally,
-   the colors; plot types always come from itera.plot.pixi-timeseries.plot-type/types."
-  (:require [hyper.core :as h]
+     [[{:type :bar :col [:open :high :low :close]}
+       {:type :line :col :close :color \"blue-5\"}]
+      [{:type :line :col :close :color \"green-5\"}]]
+
+   `pixi-timeseries-format-edit-ui` renders the pane/plot editor over a code
+   cursor; every edit resets that cursor to (pr-str charts) and the spec popup
+   persists it on Close.  Invalid EDN leaves the spec unchanged.
+
+   The legacy :chartspec option editor is kept as a thin adapter over
+   `charts-editor` so the demo algo page keeps working.  The option :spec
+   carries the available columns (required) and, optionally, the colors; plot
+   types always come from itera.plot.pixi-timeseries.plot-type/types.
+
+   This namespace must not require itera.plot.pixi-timeseries.plot: the viewer
+   requires this editor, not the other way around.  Must be called inside a
+   Hyper render context."
+  (:require [clojure.edn :as edn]
+            [clojure.string :as str]
+            [hyper.core :as h]
             [itera.option.core :as options]
             [itera.util.color :as colors]
             [itera.plot.pixi-timeseries.plot-type :as plot-type]))
@@ -25,14 +39,127 @@
   {:display "flex" :flex-direction "column"
    :font-size "0.68rem" :color "#374151" :gap "0.1rem"})
 
+(def invalid-spec-block
+  "Rendered in place of the viewer when a spec is not a charts vector."
+  [:div {:style {:padding "1rem" :color "#888"}}
+   "Invalid pixi-timeseries spec: expected a vector of panes of plot maps."])
+
+(defn valid-spec?
+  "True when SPEC is the charts vector shape: a vector of panes."
+  [spec]
+  (vector? spec))
+
+(defn normalize-spec
+  "Normalize SPEC into a vector of panes of plot maps, preserving unknown keys,
+   or nil when SPEC is not a vector.  A non-vector pane becomes an empty pane
+   and a non-map plot becomes an empty plot map."
+  [spec]
+  (when (valid-spec? spec)
+    (mapv (fn [pane]
+            (if (vector? pane)
+              (mapv (fn [plot] (if (map? plot) plot {})) pane)
+              []))
+          spec)))
+
+(defn- numeric-column?
+  [rows k]
+  (boolean (some #(number? (get % k)) rows)))
+
+(defn- rows-have-ohlc?
+  [rows]
+  (every? #(numeric-column? rows %) [:open :high :low :close]))
+
+(defn- first-numeric-column
+  [rows]
+  (let [row (first rows)]
+    (or (when (numeric-column? rows :close) :close)
+        (some (fn [k]
+                (when (and (not (contains? #{:date :epoch} k))
+                           (number? (get row k)))
+                  k))
+              (keys row)))))
+
+(defn default-spec*
+  "Smart default charts spec for ROWS: one :bar pane when the data has OHLC
+   columns, otherwise a :line on :close / the first numeric non-time column,
+   otherwise []."
+  [rows]
+  (cond
+    (empty? rows)
+    []
+
+    (rows-have-ohlc? rows)
+    [[{:type :bar :col [:open :high :low :close]}]]
+
+    :else
+    (if-let [col (first-numeric-column rows)]
+      [[{:type :line :col col}]]
+      [])))
+
+(defn data-columns
+  "Distinct map keys across DATA, in first-seen order."
+  [data]
+  (reduce (fn [ks row]
+            (if (map? row)
+              (reduce (fn [ks k]
+                        (if (some #(= k %) ks) ks (conj ks k)))
+                      ks (keys row))
+              ks))
+          [] data))
+
+(defn spec-columns
+  "Column keywords already referenced by SPEC, whether scalar or vector :col."
+  [spec]
+  (->> (or spec [])
+       (mapcat identity)
+       (keep :col)
+       (mapcat #(if (vector? %) % [%]))
+       (filter keyword?)
+       distinct
+       vec))
+
+(defn selectable-columns
+  "Data columns except time columns, plus columns already used by the spec."
+  [data spec]
+  (let [cols (remove #{:date :epoch} (data-columns data))]
+    (vec (distinct (concat cols (spec-columns spec))))))
+
+(defn palette*
+  "Named colors, plus any colors already used by SPEC."
+  [spec]
+  (let [used (->> (or spec [])
+                  (mapcat identity)
+                  (keep :color)
+                  (filter string?))]
+    (vec (distinct (concat (keys colors/colors) used)))))
+
+(defn- read-spec
+  "Current charts spec: valid EDN from code-a, else (:spec opts) when valid,
+   else []."
+  [opts]
+  (let [c      (:code-a opts)
+        text   (try (when c @c) (catch Exception _ nil))
+        parsed (try
+                 (when (and (string? text) (not (str/blank? text)))
+                   (edn/read-string text))
+                 (catch Exception _ nil))]
+    (cond
+      (valid-spec? parsed)       (normalize-spec parsed)
+      (valid-spec? (:spec opts)) (normalize-spec (:spec opts))
+      :else                      [])))
+
+(defn- write-spec!
+  [code-a spec]
+  (reset! code-a (pr-str spec)))
+
 (defn- columns
-  "The spec's required column keywords, or nil when missing/empty."
+  "The option's required column keywords, or nil when missing/empty."
   [opt]
   (let [cols (get-in opt [:spec :columns])]
     (when (seq cols) (vec cols))))
 
 (defn- palette
-  "The spec's optional color names, defaulting to itera.util.color/colors."
+  "The option's optional color names, defaulting to itera.util.color/colors."
   [opt]
   (let [cs (get-in opt [:spec :colors])]
     (if (seq cs) (vec cs) (vec (keys colors/colors)))))
@@ -207,13 +334,20 @@
          (for [c cols]
            [:option {:value (name c) :selected (= c col)} (name c)])]])]))
 
-(defmethod options/editor :chartspec [opt value set-fn update-fn _group]
-  (let [path        (options/norm-path (:path opt))
-        cols        (columns opt)
-        pal         (palette opt)
-        types       plot-type/types
-        charts      (if (vector? value) value [])
-        update*     (or update-fn (fn [p f] (set-fn p (f value))))
+(defn charts-editor
+  "Charts spec editor body.
+
+   charts   the charts vector (vector of panes of plot maps)
+   path     path passed through to update*
+   update*  two-arg (fn [path f]) read-modify-write of the charts value
+   cols     selectable column keywords
+   pal      selectable color names
+   types    plot type keywords"
+  [{:keys [charts path update* cols pal types]}]
+  (let [cols        (vec (or cols []))
+        pal         (vec (or pal []))
+        types       (vec (or types plot-type/types))
+        charts      (if (vector? charts) charts [])
         add-pane    (fn [cs] (conj (vec (or cs [])) [(default-plot cols pal)]))
         remove-pane (fn [cs i]
                       (let [cs (vec cs)]
@@ -221,39 +355,69 @@
         add-plot    (fn [cs i]
                       (update (vec (or cs [])) i (fnil conj [])
                               (default-plot cols pal)))]
+    [:div {:style {:display "flex" :flex-direction "column" :gap "0.5rem"}}
+     [:div {:style {:display "flex" :justify-content "flex-end"}}
+      [:button {:type "button" :style button-style
+                :data-on:click (h/action (update* path add-pane))}
+       "+ Pane"]]
+     (mapv
+      (fn [[i pane]]
+        (let [plots (if (vector? pane) pane [])]
+          [:details {:open true
+                     :style {:border "1px solid #e5e7eb"
+                             :border-radius "0.25rem"
+                             :padding "0.35rem" :background "#fafafa"}}
+           [:summary {:style {:font-size "0.75rem" :font-weight "600"
+                              :cursor "pointer"}}
+            (str "Pane " (inc i) " (" (count plots) " plots)")]
+           [:div {:style {:display "flex" :flex-direction "column"
+                          :gap "0.4rem" :margin-top "0.35rem"}}
+            [:div {:style {:display "flex" :gap "0.35rem"}}
+             [:button {:type "button" :style button-style
+                       :data-on:click
+                       (h/action (update* path (fn [cs] (add-plot cs i))))}
+              "+ Plot"]
+             [:button {:type "button"
+                       :style (assoc button-style :background "#fee2e2")
+                       :data-on:click
+                       (h/action (update* path (fn [cs] (remove-pane cs i))))}
+              "Remove Pane"]]
+            (mapv
+             (fn [[j plot]]
+               (plot-row {:path path :update* update* :cols cols
+                          :pal pal :types types :i i :j j :plot plot}))
+             (map-indexed vector plots))]]))
+      (map-indexed vector charts))]))
+
+(defn pixi-timeseries-format-edit-ui
+  "Edit a pixi-timeseries charts spec bound to code-a.
+
+   data  the plot rows (used to list selectable columns)
+   opts  {:spec <current charts vector> :code-a <hyper cursor holding EDN text>}
+
+   Every edit resets code-a to (pr-str charts); the spec popup persists it on
+   Close.  Must be called inside a Hyper render context."
+  [data opts]
+  (let [spec    (read-spec opts)
+        code-a  (:code-a opts)
+        update* (fn [_path f] (write-spec! code-a (f (read-spec opts))))]
+    (charts-editor {:charts spec
+                    :path [:charts]
+                    :update* update*
+                    :cols (selectable-columns data spec)
+                    :pal (palette* spec)
+                    :types plot-type/types})))
+
+(defmethod options/editor :chartspec [opt value set-fn update-fn _group]
+  (let [path    (options/norm-path (:path opt))
+        cols    (columns opt)
+        update* (or update-fn (fn [p f] (set-fn p (f value))))]
     (if (nil? cols)
       [:div {:style {:color "#b91c1c" :font-size "0.75rem"}}
        "ChartSpec: the option :spec must provide a non-empty :columns vector."]
-      [:div {:style {:display "flex" :flex-direction "column" :gap "0.5rem"}}
-       [:div {:style {:display "flex" :justify-content "flex-end"}}
-        [:button {:type "button" :style button-style
-                  :data-on:click (h/action (update* path add-pane))}
-         "+ Pane"]]
-       (mapv
-        (fn [[i pane]]
-          (let [plots (if (vector? pane) pane [])]
-            [:details {:open true
-                       :style {:border "1px solid #e5e7eb"
-                               :border-radius "0.25rem"
-                               :padding "0.35rem" :background "#fafafa"}}
-             [:summary {:style {:font-size "0.75rem" :font-weight "600"
-                                :cursor "pointer"}}
-              (str "Pane " (inc i) " (" (count plots) " plots)")]
-             [:div {:style {:display "flex" :flex-direction "column"
-                            :gap "0.4rem" :margin-top "0.35rem"}}
-              [:div {:style {:display "flex" :gap "0.35rem"}}
-               [:button {:type "button" :style button-style
-                         :data-on:click
-                         (h/action (update* path (fn [cs] (add-plot cs i))))}
-                "+ Plot"]
-               [:button {:type "button"
-                         :style (assoc button-style :background "#fee2e2")
-                         :data-on:click
-                         (h/action (update* path (fn [cs] (remove-pane cs i))))}
-                "Remove Pane"]]
-              (mapv
-               (fn [[j plot]]
-                 (plot-row {:path path :update* update* :cols cols
-                            :pal pal :types types :i i :j j :plot plot}))
-               (map-indexed vector plots))]]))
-        (map-indexed vector charts))])))
+      (charts-editor {:charts value
+                      :path path
+                      :update* update*
+                      :cols cols
+                      :pal (palette opt)
+                      :types plot-type/types}))))
