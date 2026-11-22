@@ -189,8 +189,8 @@
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
-   [:div {:style "display:flex;flex-direction:column;width:100%;height:100%"}
-    [:div {:class "pixi-canvas" :style "flex:1;min-height:0;position:relative"}]
+   [:div {:style "display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden"}
+    [:div {:class "pixi-canvas" :style "flex:1;min-height:0;position:relative;overflow:hidden"}]
     [:div {:class "pixi-error"
            :style "display:none;flex:1;min-height:0;align-items:center;justify-content:center;color:#b91c1c;font-size:0.85rem"}
      "invalid :width and :height"]])
@@ -783,7 +783,7 @@
                                                        (let [pane     (new pixi/Container)
                                                              bg       (new pixi/Graphics)
                                                              w        (.-width state)
-                                                             pad      10
+                                                             pad      0
                                                              inset    3
                                                              bw       (max 1 (- w (* 2 pad)))
                                                              bh       (max 1 (- height (* 2 pad)))
@@ -875,6 +875,7 @@
                                                          (draw-chart rows (aget charts 2) (+ h1 h2) h3 false))
                                                        (draw-date rows pane1))))]
                                       (.addChild stage container)
+                                      (set! (.-display (.-style (.-canvas app))) "block")
                                       (.appendChild el (.-canvas app))
                                       (redraw)))))))))]
              (set! (.-init ctx) init!)
@@ -956,7 +957,8 @@
   (itera-pixi-timeseries
    {:options (cond-> {:data (normalize-dates rows) :window window}
                spec (assoc :charts (resolve-charts spec)))
-    :style   (merge {:display "block" :width "100%" :height "100%"}
+    :style   (merge {:display "block" :width "100%" :height "100%"
+                     :overflow "hidden"}
                     (window-size-style window))}))
 
 (defn- formatted-hiccup
