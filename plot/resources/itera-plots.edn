@@ -14,6 +14,7 @@
             [itera.plot.cheetah :refer [cheetah]]
             [itera.plot.rtable :refer [rtable]]
             [itera.plot.highcharts :refer [highchart highstock]]
+            [itera.plot.highcharts-timeseries :refer [highcharts-timeseries]]
             [itera.plot.vega :refer [vega vegalite]]
             [itera.plot.plotly :refer [plotly]]
             [itera.plot.echarts :refer [echarts]]

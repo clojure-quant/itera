@@ -1,0 +1,70 @@
+{:graph/name "highcharts_timeseries",
+ :nodes
+ [{:id "rows",
+   :label "bars (300 rows)",
+   :type :formula,
+   :show? false,
+   :position {:x 24, :y 60},
+   :code
+   "(fn []\n  (let [rows (take 300 (drop 3200 ((requiring-resolve 'demo.data/bars))))]\n    (mapv (fn [idx row]\n            (assoc row\n                   :signal (= :long (:entry row))\n                   :pivot (case idx\n                            30 [95.0 100.0 110.0]\n                            80 [85.5 99.9 101.1]\n                            nil)))\n          (range)\n          rows)))"}
+  {:id "plot",
+   :label "highcharts timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.highcharts-timeseries/highcharts-timeseries) rows))",
+   :spec
+   {:plots
+    [{:height 360,
+      :series
+      [{:type :ohlc,
+        :columns [:open :high :low :close],
+        :mode :candle,
+        :name "ohlc",
+        :barcolor {:column :signal, :color {true "green-5"}}}
+       {:type :line, :columns [:close], :color "orange-3"}
+       {:type :point,
+        :columns [:pivot],
+        :vec? true,
+        :color "orange-3",
+        :marker "square",
+        :radius 5}
+       {:type :flags,
+        :columns [:entry],
+        :on-series "ohlc",
+        :fillColor "black",
+        :width 10,
+        :height 10,
+        :v2style {:long "url(/itera/plot/flags/arrow-up.svg)",
+                  true "url(/itera/plot/flags/arrow-down.svg)",
+                  :short "url(/itera/plot/flags/arrow-down.svg)"}}]}
+     {:height 140,
+      :series
+      [{:type :column, :columns [:volume], :color "blue-4"}
+       {:type :line, :columns [:daily-atr-mid], :color "red-5"}]}
+     {:height 140,
+      :series
+      [{:type :range,
+        :columns [:daily-atr-lower :daily-atr-upper],
+        :color "purple-4",
+        :opacity 0.4}
+       {:type :area, :columns [:daily-atr-mid], :color "teal-5", :opacity 0.2}]}
+     {:height 160,
+      :series
+      [{:type :hlc, :columns [:high :low :close], :color "gray-7"}
+       {:type :columnrange,
+        :columns [:low :high],
+        :color "amber-5",
+        :opacity 0.5}
+       {:type :spline, :columns [:close], :color "pink-6"}
+       {:type :areaspline,
+        :columns [:daily-atr-mid],
+        :color "indigo-4",
+        :opacity 0.15}]}]}}],
+ :edges
+ [{:id "e1",
+   :source-node "rows",
+   :source-port "out",
+   :target-node "plot",
+   :target-port "rows"}]}

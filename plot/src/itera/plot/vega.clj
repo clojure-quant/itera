@@ -1,29 +1,38 @@
 (ns itera.plot.vega
   "Vega-Lite and Vega viewers via vega-embed, as a Hyper client component.
 
-   opts:
-     :spec       the Vega-Lite (or Vega) spec map (required)
-     :data       optional data, one of:
-                   - a vector of rows  -> attached as the spec's :data.values
-                   - a map name -> rows -> attached as embed `datasets`
-                     (the spec then references it with {:data {:name ...}})
-     :embed-opts vega-embed EmbedOptions (e.g. :theme \"quartz\" :width :height)
-     :style :class  host passthrough
+   The public fns take only the chart `data`:
+
+     (vegalite rows)    ; Vega-Lite chart
+     (vega datasets)    ; raw Vega chart
+
+   The records store only the data and the mode (`:vega` or `:vegalite`).
+   The editable chart spec is supplied only through
+   itera.value.protocol/itera-spec-plot (the model node `:spec`); there is no
+   construction-time default spec, so a bare value renders an empty chart.
+
+   The spec is the Vega / Vega-Lite chart spec.  When rendered through
+   itera-spec-plot the container `window` {:width <px> :height <px>} is merged
+   into the spec's `:width`/`:height` (vega owns its size in the spec, so the
+   fixed interact window overrides any `:width`/`:height` set in the spec) and
+   the host element is sized from it.
+
+   Data attachment:
+     - a map name -> rows is attached as embed `datasets`
+       (the spec then references it with {:data {:name ...}});
+     - sequential rows are attached as the spec's `:data.values` for
+       `:vegalite` only; raw Vega data should be inline in the spec or a
+       named-dataset map.
 
    `vegalite` renders a Vega-Lite spec; `vega` forces vega-embed's \"vega\" mode
    for a raw Vega spec.
 
-   The returned `Vega` record implements both itera.value.protocol (a prebuilt
-   hiccup, byte-identical to the classic viewer) and itera.plot-ui.protocol
-   (`:spec` as the editable spec).  When rendered through itera-spec-plot the
-   container `window` {:width <px> :height <px>} is injected into the spec's
-   `:width`/`:height` (vega owns its size in the spec, so the fixed interact
-   window overrides any `:width`/`:height` set in the spec); `:style`/`:class`
-   stay host passthrough."
+   The returned `Vega` record implements both itera.value.protocol (renders the
+   data with an empty spec) and itera.value.protocol (`:spec` as the editable
+   spec)."
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
-            [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.protocol]))
+            [itera.value.protocol :as spec-plot]))
 
 (def head [])
 
@@ -51,45 +60,42 @@
       (let [v (.-view r)]
         (when v (.finalize v))))))
 
-(defn- payload
-  "Normalize viewer opts into the component `options` map."
-  [{:keys [spec data embed-opts]}]
-  (cond
-    (map? data)
-    {:spec spec :embedOpts (assoc (or embed-opts {}) :datasets data)}
+(defn- embed-options
+  "Build the itera-vega-embed `options` map from DATA, MODE, CHART-SPEC and
+   WINDOW.  DATA is rows/datasets only; the chart spec comes from the caller."
+  [data mode chart-spec window]
+  (let [spec (merge (if (map? chart-spec) chart-spec {})
+                    (select-keys window [:width :height]))
+        base-embed (cond-> {}
+                     (= mode :vega) (assoc :mode "vega"))
+        [spec embed-opts]
+        (cond
+          (map? data)
+          [spec (assoc base-embed :datasets data)]
 
-    (sequential? data)
-    {:spec (assoc spec :data {:values (vec data)}) :embedOpts (or embed-opts {})}
+          (and (= mode :vegalite) (sequential? data))
+          [(assoc spec :data {:values (vec data)}) base-embed]
 
-    :else
-    {:spec spec :embedOpts (or embed-opts {})}))
+          :else
+          [spec base-embed])]
+    {:spec spec :embedOpts embed-opts}))
 
 (defn- render
-  "Build the itera-vega-embed element from an opts map plus :mode
-   (:vega or :vegalite) and :style/:class host passthrough."
-  [{:keys [style class mode] :as opts}]
-  (let [p (payload opts)
-        p (if (= :vega mode)
-            (assoc p :embedOpts (assoc (:embedOpts p) :mode "vega"))
-            p)]
-    (itera-vega-embed (cond-> {:options p}
-                        style (assoc :style style)
-                        class (assoc :class class)))))
+  "Build the itera-vega-embed element.  STYLE is derived from WINDOW only."
+  [data mode chart-spec window]
+  (let [style (some-> window spec-plot/window->style)]
+    (itera-vega-embed
+     (cond-> {:options (embed-options data mode chart-spec window)}
+       style (assoc :style style)))))
 
-(defrecord Vega [hiccup opts spec]
+(defrecord Vega [data mode]
   itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup)
+  (to-hiccup [_] (render data mode nil nil))
   spec-plot/itera-spec-plot
-  (to-formatted-hiccup [_ spec window]
-    (render (assoc opts
-                   :spec (merge spec (select-keys window [:width :height]))
-                   :style (merge (:style opts) (spec-plot/window->style window)))))
-  (default-spec [_] spec)
+  (to-formatted-hiccup [_ spec window] (render data mode spec window))
+  (default-spec [_] nil)
   (spec-editor [_ _spec code-a]
     (input-cm/codemirror-ui code-a {:style {:height "440px"}})))
 
-(defn vegalite [opts]
-  (->Vega (render (assoc opts :mode :vegalite)) (assoc opts :mode :vegalite) (:spec opts)))
-
-(defn vega [opts]
-  (->Vega (render (assoc opts :mode :vega)) (assoc opts :mode :vega) (:spec opts)))
+(defn vegalite [data] (->Vega data :vegalite))
+(defn vega     [data] (->Vega data :vega))

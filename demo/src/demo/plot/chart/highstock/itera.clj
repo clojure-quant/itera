@@ -1,6 +1,7 @@
 (ns demo.plot.chart.highstock.itera
   (:require [demo.data :as data]
-            [itera.plot.highcharts :as hc]))
+            [itera.plot.highcharts :as hc]
+            [itera.plot.highcharts-timeseries :as timeseries]))
 
 (defn economic-activity []
   {:chart    {:type "line" :animation false}
@@ -23,32 +24,6 @@
 (defn- bars-slice []
   (take 300 (data/bars)))
 
-(defn- bars-signal-slice
-  "A 300-row window that contains :long/:short entry signals."
-  []
-  (take 300 (drop 3200 (data/bars))))
-
-(defn- with-signal [rows]
-  (mapv (fn [row]
-          (assoc row :signal (= :long (:entry row))))
-        rows))
-
-(defn- with-pivot [rows]
-  (mapv (fn [idx row]
-          (assoc row :pivot (case idx
-                              30 [95.0 100.0 110.0]
-                              80 [85.5 99.9 101.1]
-                              nil)))
-        (range)
-        rows))
-
-(defn- with-step-missing [rows]
-  (mapv (fn [idx row]
-          (assoc row :ind (when-not (<= 20 idx 39)
-                            (- (:close row) 2.5))))
-        (range)
-        rows))
-
 (def examples
   {:highstock/economic-activity
    {:label "Economic activity"
@@ -57,56 +32,7 @@
    :highstock/ds
    {:label "Dataset"
     :data  (fn []
-             {:charts [{:close {:type :line}
-                        :bar   {:type :ohlc :mode :candle}}
-                       {:volume :column}]
-              :rows   (bars-slice)})}
-
-   :highstock/ds-bar
-   {:label "Dataset flags"
-    :data  (fn []
-             {:charts [{:close {:type :line}
-                        :bar   {:type :ohlc :mode :candle}
-                        :entry {:type      :flags
-                                :fillColor "black"
-                                :width     10
-                                :height    10
-                                :v2style   {:long  "url(/itera/plot/flags/arrow-up.svg)"
-                                            true   "url(/itera/plot/flags/arrow-down.svg)"
-                                            :short "url(/itera/plot/flags/arrow-down.svg)"}}}
-                       {:volume :column}]
-              :rows   (bars-signal-slice)})}
-
-   :highstock/ds-barcolor
-   {:label "Dataset bar color"
-    :data  (fn []
-             {:charts [{:bar {:type     :ohlc
-                              :mode     :candle
-                              :barcolor {:column :signal
-                                         :color  {true "green-5"}}}}
-                       {:volume :column}]
-              :rows   (with-signal (bars-signal-slice))})}
-
-   :highstock/ds-pivot
-   {:label "Dataset pivot"
-    :data  (fn []
-             {:charts [{:close {:type :line :color "orange-3"}
-                        :bar   {:type :ohlc :mode :candle}
-                        :pivot {:type   :point
-                                :vec?   true
-                                :color  "orange-3"
-                                :marker "square"
-                                :radius 5}}
-                       {:volume :column}]
-              :rows   (with-pivot (take 100 (data/bars)))})}
-
-   :highstock/ds-step-missing
-   {:label "Dataset step gaps"
-    :data  (fn []
-             {:charts [{:bar {:type :ohlc :mode :candle}
-                        :ind {:type :step :color "red"}}
-                       {:volume :column}]
-              :rows   (with-step-missing (take 100 (data/bars)))})}})
+             {:rows (bars-slice)})}})
 
 (defn options [_ctx]
   [{:type :select
@@ -125,11 +51,8 @@
     :highstock/economic-activity
     (hc/highstock (assoc data :style {:width "100%" :height "400px"}))
 
-    (:highstock/ds :highstock/ds-bar :highstock/ds-barcolor
-     :highstock/ds-pivot :highstock/ds-step-missing)
-    (hc/highstock-ds {:style  {:width "100%"}
-                      :charts (:charts data)}
-                     (:rows data))))
+    :highstock/ds
+    (timeseries/highcharts-timeseries (:rows data))))
 
 (def algo-highstock
   {:calculate/options options

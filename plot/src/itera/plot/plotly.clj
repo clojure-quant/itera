@@ -6,12 +6,12 @@
 
    `data` maps to Plotly.newPlot's first positional arg.  The non-data
    presentation (the editable spec) comes from the host through
-   itera.plot-ui.protocol as `{:layout ... :config ...}`, mapping to
+   itera.value.protocol as `{:layout ... :config ...}`, mapping to
    Plotly.newPlot's remaining positional args; `default-spec` is `nil`, so a
    bare value renders the traces with Plotly's default layout.
 
    The returned `Plotly` record implements both itera.value.protocol (renders
-   the traces) and itera.plot-ui.protocol (`{:layout ... :config ...}` as the
+   the traces) and itera.value.protocol (`{:layout ... :config ...}` as the
    editable spec).  When rendered through itera-spec-plot the container
    `window` {:width <px> :height <px>} is merged into the spec's `:layout`
    (with `:autosize false`) and the host element is sized from it, so the fixed
@@ -20,8 +20,7 @@
    Plotly injects its own styles, so `head` is empty."
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
-            [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.protocol]))
+            [itera.value.protocol :as spec-plot]))
 
 (def head [])
 

@@ -5,16 +5,15 @@
      (aggrid [{...} ...])
 
    Column definitions (the editable spec) come from the host through
-   itera.plot-ui.protocol; when no spec is given ag-grid auto-generates columns
+   itera.value.protocol; when no spec is given ag-grid auto-generates columns
    from the row data.
 
    The returned `Aggrid` record implements both itera.value.protocol (renders
-   `{:rowData data}`) and itera.plot-ui.protocol (`:columnDefs` as the editable
+   `{:rowData data}`) and itera.value.protocol (`:columnDefs` as the editable
    spec)."
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
-            [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.protocol]))
+            [itera.value.protocol :as spec-plot]))
 
 (def head
   [[:link {:rel  "stylesheet"

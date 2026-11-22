@@ -1,5 +1,6 @@
 (ns demo.plot.chart.vegalite.itera
   (:require [demo.data :as data]
+            [itera.value.protocol :as spec-plot]
             [itera.plot.vega :as vega]))
 
 (def nav-spec
@@ -79,10 +80,7 @@
     (assoc (data) :example example)))
 
 (defn plot [_opts {:keys [spec data]}]
-  (vega/vegalite {:spec       spec
-                  :data       data
-                  :embed-opts {:theme "quartz"}
-                  :style      {:width "100%" :height "400px"}}))
+  (spec-plot/to-formatted-hiccup (vega/vegalite data) spec nil))
 
 (def algo-vegalite
   {:calculate/options options

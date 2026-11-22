@@ -27,13 +27,18 @@
    so custom format/style methods must be registered by keyword.
 
    The returned `Rtable` record implements both itera.value.protocol (renders
-   the default table) and itera.plot-ui.protocol (`:columns` as the editable
-   spec)."
+   the default table) and itera.value.protocol (`:columns` as the editable
+   spec).
+
+   It also implements itera-page-plot: the interact-tab cell UI renders one
+   page of 10 rows at a time and shows a page editor below the table with
+   first/previous/next/last buttons and an editable page number.
+   `to-hiccup` still renders the full table."
   (:require [clojure.string :as str]
             [itera.plot.rtable-default-column-formatter :as rtable-default-fmt]
             [itera.plot.rtable-format-ui :as rtable-fmt]
-            [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.protocol]))
+            [itera.plot.rtable-page-editor :as page-editor]
+            [itera.value.protocol :as spec-plot]))
 
 (def head
   [[:link {:rel  "stylesheet"
@@ -142,6 +147,27 @@
                                    row-height (assoc :style {:height row-height}))]
                             (map (fn [c] (cell-td rc c row)) columns))))])))))
 
+(def page-row-size
+  "Rows shown per page by the itera-page-plot implementation."
+  10)
+
+(defn- page-count
+  "Number of pages: ceil(row-count / page-row-size), at least 1."
+  [row-count]
+  (max 1 (quot (+ row-count (dec page-row-size)) page-row-size)))
+
+(defn- clamp-current [total current]
+  (max 1 (min (or current 1) total)))
+
+(defn- page-rows
+  "The rows of PAGE, using drop/take so seq and vector data both work."
+  [rows page]
+  (let [row-size (or (:page/row-size page) page-row-size)
+        start    (* (dec (clamp-current (:page/total page 1)
+                                        (:page/current page 1)))
+                    row-size)]
+    (into [] (take row-size (drop start rows)))))
+
 (defrecord Rtable [data]
   itera.value.protocol/itera-convertable
   (to-hiccup [_]
@@ -161,7 +187,22 @@
     {:row-height rtable-fmt/default-row-height
      :columns (or (default-columns data) [])})
   (spec-editor [v spec code-a]
-    (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a})))
+    (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a}))
+  spec-plot/itera-page-plot
+  (to-formatted-paged-hiccup [v spec window page]
+    (let [page (or page (spec-plot/init-page v spec window))]
+      (spec-plot/to-formatted-hiccup
+       (assoc v :data (page-rows (:data v) page))
+       spec
+       window)))
+
+  (init-page [v _spec _window]
+    {:page/row-size page-row-size
+     :page/total    (page-count (count (:data v)))
+     :page/current  1})
+
+  (page-editor [v _spec _window page-a]
+    (page-editor/page-editor-view v page-a)))
 
 (defn rtable
   [data]

@@ -49,7 +49,3 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
 
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
 
-
-
-
-

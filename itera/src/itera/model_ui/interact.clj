@@ -5,13 +5,13 @@
    option-ui nodes (value nodes with :value/editor :option-ui) are edited
    through itera.model.ui.  Each shown value renders reactively through
    itera.model-ui.cell-ui/cell-ui; values implementing
-   itera.plot-ui.protocol/itera-spec-plot expose an \"Edit spec\" CodeMirror
+   itera.value.protocol/itera-spec-plot expose an \"Edit spec\" CodeMirror
    popup rendered here, and the edited spec is persisted on the node via
    itera.model.ui/set-node-spec."
   (:require [clojure.edn :as edn]
             [hyper.core :as h]
             [itera.option.core :as options]
-            [itera.plot-ui.protocol :as spec-plot]
+            [itera.value.protocol :as spec-plot]
             [itera.model-ui.cell-ui :as cell-ui]
             [itera.model.ui :as rui]))
 

@@ -1,11 +1,12 @@
 (ns itera.plot.md
   "Markdown viewer (pure hiccup, no JS).
 
-   Markdown is rendered to HTML on the server with commonmark-hiccup and
-   embedded verbatim inside an `.itera-md` container whose typography comes
-   from the stylesheet exposed via `head`.
+   The markdown source is stored together with the `:class` / `:style`
+   container passthrough; conversion to HTML with commonmark-hiccup happens
+   lazily in `to-hiccup`, embedded verbatim inside an `.itera-md` container
+   whose typography comes from the stylesheet exposed via `head`.
 
-   `md` renders markdown given as a string; `md-resource` reads it from a
+   `md` takes markdown given as a string; `md-resource` reads it from a
    classpath resource first:
 
      (md \"# Title\")
@@ -31,38 +32,40 @@
      .itera-md table { border-collapse: collapse; }
      .itera-md th, .itera-md td { border: 1px solid #ccc; padding: 0.25rem 0.6rem; }"]])
 
-(defrecord Md [hiccup]
-  itera.value.protocol/itera-convertable
-  (to-hiccup [_] hiccup))
-
 (defn- container-attrs [class style]
   (cond-> {:class "itera-md"}
     class (update :class #(str % " " class))
     style (assoc :style style)))
 
-(defn- markdown->hiccup [markdown {:keys [class style]}]
+(defn render
+  "Render markdown source to the `itera-md` container hiccup."
+  [markdown {:keys [class style]}]
   [:div (container-attrs class style)
    (chassis/raw (commonmark/markdown->html (str (or markdown ""))))])
 
+(defrecord Md [markdown class style]
+  itera.value.protocol/itera-convertable
+  (to-hiccup [_]
+    (render markdown {:class class :style style})))
+
 (defn md
   "Render markdown given as a string to a hiccup tree wrapped in an
-   `itera-convertable` record.
+   `itera-convertable` record that renders the source lazily.
 
    Optional opts map: `{:class <string> :style <map>}` container passthrough."
   ([markdown] (md markdown nil))
   ([markdown opts]
-   (Md. (markdown->hiccup markdown opts))))
+   (let [{:keys [class style]} opts]
+     (Md. (str (or markdown "")) class style))))
 
 (defn md-resource
   "Render markdown read from a classpath resource to a hiccup tree wrapped in
-   an `itera-convertable` record.
+   an `itera-convertable` record that renders the source lazily.
 
    Optional opts map: `{:class <string> :style <map>}` container passthrough.
    A missing resource renders an inline notice instead of throwing."
   ([resource] (md-resource resource nil))
-  ([resource {:keys [class style] :as opts}]
-   (Md.
-    (if-let [r (io/resource resource)]
-      (markdown->hiccup (slurp r :encoding "UTF-8") opts)
-      [:div (container-attrs class style)
-       [:p "Markdown resource not found: " (str resource)]]))))
+  ([resource {:keys [class style]}]
+   (if-let [r (io/resource resource)]
+     (Md. (slurp r :encoding "UTF-8") class style)
+     (Md. (str "Markdown resource not found: " resource) class style))))

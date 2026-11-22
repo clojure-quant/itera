@@ -30,8 +30,8 @@
    [itera.input.option :as input-option]
    [itera.model.core :as rc]
    [itera.model.formula :as f]
-   [itera.plot-ui.protocol :as plot-ui]
-   [itera.util.clj :as util])
+   [itera.util.clj :as util]
+   [itera.value.protocol :as spec-plot])
   (:import
    [java.io File]))
 
@@ -541,8 +541,8 @@
   (or (:spec (node-by-id this node-id))
       (when-let [a (get-atom this node-id)]
         (let [v @a]
-          (when (satisfies? plot-ui/itera-spec-plot v)
-            (plot-ui/default-spec v))))))
+          (when (satisfies? spec-plot/itera-spec-plot v)
+            (spec-plot/default-spec v))))))
 
 (defn set-node-spec
   "Persist a plot node's edited :spec into :model-a."

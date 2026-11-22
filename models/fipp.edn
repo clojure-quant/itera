@@ -20,7 +20,8 @@
    :show? true,
    :position {:x 384, :y 60},
    :code
-   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.fipp/fipp)\n   data\n   {:style {:background \"#f6f6f6\"\n            :padding \"0.75rem\"\n            :border-radius \"0.375rem\"\n            :overflow \"auto\"}}))"}],
+   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.fipp/fipp) data))"
+   :spec {:width 70, :print-length nil, :print-level nil, :print-meta false}}],
  :edges
  [{:id "e1",
    :source-node "01-data",

@@ -1,5 +1,6 @@
 (ns demo.plot.chart.vega.itera
-  (:require [itera.plot.vega :as vega]))
+  (:require [itera.value.protocol :as spec-plot]
+            [itera.plot.vega :as vega]))
 
 (def symbol-spec
   {:$schema "https://vega.github.io/schema/vega/v5.json"
@@ -290,10 +291,7 @@
     (assoc (data) :example example)))
 
 (defn plot [_opts {:keys [spec data]}]
-  (vega/vega {:spec       spec
-              :data       data
-              :embed-opts {:theme "quartz"}
-              :style      {:width "100%" :height "400px"}}))
+  (spec-plot/to-formatted-hiccup (vega/vega data) spec nil))
 
 (def algo-vega
   {:calculate/options options

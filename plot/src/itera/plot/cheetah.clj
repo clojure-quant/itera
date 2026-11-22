@@ -5,20 +5,19 @@
      (cheetah [{...} ...])
 
    Column definitions (the editable spec) come from the host through
-   itera.plot-ui.protocol and map onto cheetah-grid's ListGrid `header`.
+   itera.value.protocol and map onto cheetah-grid's ListGrid `header`.
    cheetah-grid does not auto-generate columns, so with no spec given the grid
    renders empty; `default-spec` is `nil`.
 
    The returned `Cheetah` record implements both itera.value.protocol (renders
-   `{:records data}`) and itera.plot-ui.protocol (`:columns` as the editable
+   `{:records data}`) and itera.value.protocol (`:columns` as the editable
    spec).
 
    cheetah-grid ships no stylesheet: its CSS is injected by the JS bundle, so
    `head` is empty."
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
-            [itera.plot-ui.protocol :as spec-plot]
-            [itera.value.protocol]))
+            [itera.value.protocol :as spec-plot]))
 
 (def head [])
 

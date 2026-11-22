@@ -1,39 +1,43 @@
-{:graph/name "aggrid"
+{:graph/name "aggrid",
+ :ns-data
+ "(ns itera.user.aggrid\n  (:require [clojure.data.csv :as csv]\n            [clojure.java.io :as io]\n            [itera.plot.aggrid :refer [aggrid]]))\n\n(def ^:private bars*\n  (delay\n    (with-open [r (io/reader (io/resource \"data/bars-1m-full.csv\"))]\n      (let [[header & rows] (csv/read-csv r)\n            idx (zipmap (map keyword header) (range))]\n        (mapv (fn [row]\n                {:date (nth row (idx :date))\n                 :open (Double/parseDouble (nth row (idx :open)))})\n              rows)))))\n\n(def cars\n  [{\"make\" \"Toyota\"  \"model\" \"Celica\" \"price\" 35000}\n   {\"make\" \"Ford\"    \"model\" \"Mondeo\" \"price\" 32000}\n   {\"make\" \"Porsche\" \"model\" \"Boxter\" \"price\" 72000}])\n\n(defn unicode-rows []\n  (mapv (fn [row action]\n          {\"date\"   (:date row)\n           \"open\"   (:open row)\n           \"action\" action})\n        (take 10 @bars*)\n        [\"😀\" \"\" \"\" \"★\" \"\" \"\" \"❂\" \"\" \"\" \"\"]))",
  :nodes
- [{:id "cars-data"
-   :label "cars"
-   :type :formula
-   :show? false
-   :position {:x 240 :y 60}
-   :code "(fn []\n  (deref (requiring-resolve 'demo.plot.table.aggrid.itera/cars)))"}
-  {:id "unicode-data"
-   :label "unicode rows"
-   :type :formula
-   :show? false
-   :position {:x 240 :y 300}
-   :code "(fn []\n  ((requiring-resolve 'demo.plot.table.aggrid.itera/unicode-rows)))"}
-  {:id "cars-plot"
-   :label "aggrid (cars)"
-   :type :formula
-   :show? true
-   :position {:x 560 :y 60}
-   :spec [{:field "make" :headerName "Make"}
-          {:field "model" :headerName "Model"}
-          {:field "price" :headerName "Price"}]
-   :code "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.aggrid/aggrid) data))"}
-  {:id "unicode-plot"
-   :label "aggrid (unicode)"
-   :type :formula
-   :show? true
-   :position {:x 560 :y 300}
-   :spec [{:field "date" :headerName "Date"}
-          {:field "open" :headerName "Open"}
-          {:field "action" :headerName "Action"}]
-   :code "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.aggrid/aggrid) data))"}]
+ [{:id "cars-data",
+   :label "cars",
+   :type :formula,
+   :show? false,
+   :position {:x 240, :y 60},
+   :code "(fn []\n  cars)"}
+  {:id "unicode-data",
+   :label "unicode rows",
+   :type :formula,
+   :show? false,
+   :position {:x 240, :y 300},
+   :code "(fn []\n  (unicode-rows))"}
+  {:id "cars-plot",
+   :label "aggrid (cars)",
+   :type :formula,
+   :show? true,
+   :position {:x 560, :y 60},
+   :code "(fn [ctx data]\n  (aggrid data))",
+   :spec
+   [{:field "make", :headerName "Make"}
+    {:field "model", :headerName "Model"}
+    {:field "price", :headerName "Price"}]}
+  {:id "unicode-plot",
+   :label "aggrid (unicode)",
+   :type :formula,
+   :show? true,
+   :position {:x 560, :y 300},
+   :code "(fn [ctx data]\n  (aggrid data))",
+   :spec
+   [{:field "date", :headerName "Date"}
+    {:field "open", :headerName "Open"}
+    {:field "action", :headerName "Action"}]}],
  :edges
- [{:id "e-cars"
-   :source-node "cars-data" :source-port "out"
-   :target-node "cars-plot" :target-port "data"}
-  {:id "e-unicode"
-   :source-node "unicode-data" :source-port "out"
-   :target-node "unicode-plot" :target-port "data"}]}
+ [{:id "e-cars", :source-node "cars-data", :source-port "out", :target-node "cars-plot", :target-port "data"}
+  {:id "e-unicode",
+   :source-node "unicode-data",
+   :source-port "out",
+   :target-node "unicode-plot",
+   :target-port "data"}]}

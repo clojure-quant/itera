@@ -12,10 +12,7 @@
 (defn calculate [_ctx _opts] data)
 
 (defn plot [_opts value]
-  (fipp/fipp value {:style {:background     "#f6f6f6"
-                            :padding        "0.75rem"
-                            :border-radius  "0.375rem"
-                            :overflow       "auto"}}))
+  (fipp/fipp value))
 
 (def algo-fipp
   {:calculate/fn calculate
