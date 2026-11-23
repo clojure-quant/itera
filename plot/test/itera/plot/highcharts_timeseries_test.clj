@@ -5,7 +5,9 @@
    [clojure.test :refer [deftest is testing]]
    [itera.plot.highcharts-timeseries :as ts]
    [itera.plot.highcharts-timeseries-format-ui :as fmt]
-   [itera.value.protocol :as protocol]))
+   [itera.plot.highcharts-timeseries-page-editor :as page]
+   [itera.value.protocol :as protocol]
+   [tech.v3.dataset :as ds]))
 
 (def ^:private rows
   [{:epoch 1000 :open 10 :high 12 :low 9 :close 11 :volume 100
@@ -280,6 +282,91 @@
     (is (= :itera-highstock tag))
     (is (str/includes? (:options attrs) "\"candlestick\""))
     (is (str/includes? (:options attrs) "\"column\""))))
+
+;; ---------------------------------------------------------------------------
+;; seq and dataset data (protocol-only storage) and paging
+;; ---------------------------------------------------------------------------
+
+(def ^:private window {:width 600 :height 400})
+
+(defn- ohlc-rows
+  [n]
+  (mapv (fn [i] {:epoch i :open 1 :high 2 :low 0 :close 1 :volume 3})
+        (range n)))
+
+(defn- elements [tag view]
+  (filter #(and (vector? %) (= tag (first %)))
+          (tree-seq coll? seq view)))
+
+(deftest seq-data-test
+  (let [seq-data (map identity rows)
+        v        (ts/highcharts-timeseries seq-data)]
+    (testing "the seq is stored as-is, not coerced to a vector"
+      (is (= seq-data (:data v)))
+      (is (instance? clojure.lang.LazySeq (:data v))))
+    (testing "the default spec still picks OHLC + volume"
+      (is (= 2 (count (:plots (protocol/default-spec v))))))
+    (testing "the preformatted path works from seq data"
+      (is (= :itera-highstock
+             (first (protocol/to-formatted-hiccup v nil window)))))
+    (testing "paging works from seq data"
+      (is (= 3 (:rows-all (protocol/init-page v nil window)))))))
+
+(deftest dataset-data-test
+  (let [d (ds/->dataset {:epoch  (vec (range 100))
+                         :open   (vec (repeat 100 1))
+                         :high   (vec (repeat 100 2))
+                         :low    (vec (repeat 100 0))
+                         :close  (vec (repeat 100 1))
+                         :volume (vec (repeat 100 3))})
+        v (ts/highcharts-timeseries d)]
+    (testing "the dataset is stored as-is"
+      (is (identical? d (:data v))))
+    (testing "column types are inferred from the dataset datatypes"
+      (is (= {:epoch :number :open :number :high :number
+              :low :number :close :number :volume :number}
+             (protocol/column-info (:data v)))))
+    (testing "the default spec picks OHLC + volume"
+      (is (= 2 (count (:plots (protocol/default-spec v))))))
+    (testing "the preformatted path works from dataset data"
+      (is (= :itera-highstock
+             (first (protocol/to-formatted-hiccup v nil window)))))))
+
+(deftest page-geometry-test
+  (let [v (ts/highcharts-timeseries (ohlc-rows 100))]
+    (testing "a 600px window at 8px per row shows 75 of 100 rows"
+      (is (= {:step 8 :end 100 :rows-all 100 :rows-visible 75}
+             (protocol/init-page v nil window))))))
+
+(deftest paged-slicing-test
+  (let [v      (ts/highcharts-timeseries (ohlc-rows 100))
+        pg     {:step 8 :end 100 :rows-all 100 :rows-visible 75}
+        [tag attrs] (protocol/to-formatted-paged-hiccup v nil window pg)]
+    (is (= :itera-highstock tag))
+    (testing "the page slice is the last 75 rows ending at the exclusive :end"
+      (is (str/includes? (:options attrs) "\"x\":25"))
+      (is (not (str/includes? (:options attrs) "\"x\":0"))))))
+
+(deftest page-editor-test
+  (let [view     (page/page-editor-view {:step 8 :end 100 :rows-visible 75}
+                                        {:width 600} 100 nil)
+        range-a  (second (first (elements :input view)))
+        select-a (second (first (elements :select view)))
+        options  (elements :option view)]
+    (testing "the range slider is bounded by the derived window and total"
+      (is (= "75" (:min range-a)))
+      (is (= "100" (:max range-a)))
+      (is (= "100" (:value range-a))))
+    (testing "the step select offers the current pixels-per-row"
+      (is (some #(= "8" (nth % 2)) options)))
+    (testing "the summary names the visible window"
+      (is (some #{"Showing 26\u2013100 of 100"}
+                (filter string? (flatten view)))))
+    (testing "with no page cursor every control is disabled and actionless"
+      (is (true? (:disabled range-a)))
+      (is (nil? (:data-on:change range-a)))
+      (is (true? (:disabled select-a)))
+      (is (nil? (:data-on:change select-a))))))
 
 ;; ---------------------------------------------------------------------------
 ;; editor helpers

@@ -2,7 +2,8 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [itera.plot.rtable :as rtable]
-   [itera.value.protocol :as spec-plot]))
+   [itera.value.protocol :as spec-plot]
+   [tech.v3.dataset :as ds]))
 
 (defn- rows
   [n]
@@ -80,3 +81,35 @@
       (is (= 25 (count (body-rows
                         (spec-plot/to-formatted-paged-hiccup
                          v spec nil {:page/total 1 :page/current 1}))))))))
+
+;; ---------------------------------------------------------------------------
+;; seq and dataset data (protocol-only storage)
+;; ---------------------------------------------------------------------------
+
+(deftest seq-data-test
+  (let [seq-data (map identity (rows 25))
+        v        (rtable/rtable seq-data)]
+    (testing "the seq is stored as-is, not coerced to a vector"
+      (is (= seq-data (:data v)))
+      (is (instance? clojure.lang.LazySeq (:data v))))
+    (testing "row count and paging read through the protocol"
+      (is (= 25 (spec-plot/total-rows (:data v))))
+      (is (= {:page/row-size 10 :page/total 3 :page/current 1}
+             (spec-plot/init-page v spec window)))
+      (is (= 5 (count (body-rows (paged v {:page/total 3 :page/current 3}))))))))
+
+(deftest dataset-data-test
+  (let [d (ds/->dataset {:a (vec (range 25))
+                         :b (mapv #(str "v" %) (range 25))})
+        v (rtable/rtable d)]
+    (testing "the dataset is stored as-is"
+      (is (identical? d (:data v))))
+    (testing "column types come from the dataset datatypes"
+      (is (= {:a :number :b :string} (spec-plot/column-info (:data v)))))
+    (testing "row count and default columns read through the protocol"
+      (is (= 25 (spec-plot/total-rows (:data v))))
+      (is (= [{:path :a} {:path :b}] (:columns (spec-plot/default-spec v)))))
+    (testing "paged rendering matches the seq case"
+      (is (= {:page/row-size 10 :page/total 3 :page/current 1}
+             (spec-plot/init-page v spec window)))
+      (is (= 5 (count (body-rows (paged v {:page/total 3 :page/current 3}))))))))

@@ -4,7 +4,8 @@
    [clojure.test :refer [deftest is testing]]
    [itera.plot.pixi-timeseries.plot :as pixi]
    [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
-   [itera.value.protocol :as protocol]))
+   [itera.value.protocol :as protocol]
+   [tech.v3.dataset :as ds]))
 
 (def ^:private window
   {:width 600 :height 400})
@@ -66,7 +67,55 @@
 
 (deftest ds-constructor-test
   (is (= [{:close 1.0}]
-         (:data (pixi/pixi-timeseries-ds [{:close 1.0}])))))
+         (:data (pixi/pixi-timeseries [{:close 1.0}])))))
+
+;; ---------------------------------------------------------------------------
+;; seq and dataset data (protocol-only storage)
+;; ---------------------------------------------------------------------------
+
+(deftest seq-data-test
+  (let [rows (map identity (ohlc-rows 24))
+        v    (pixi/pixi-timeseries rows)]
+    (testing "the seq is stored as-is, not coerced to a vector"
+      (is (= rows (:data v)))
+      (is (instance? clojure.lang.LazySeq (:data v))))
+    (testing "the default spec works from seq data"
+      (is (= [[{:type :bar :col [:open :high :low :close]}]]
+             (protocol/default-spec v))))
+    (testing "the preformatted path works from seq data"
+      (is (= :itera-pixi-timeseries
+             (first (protocol/to-formatted-hiccup v nil window)))))
+    (testing "paging works from seq data"
+      (is (= {:display :nice
+              :step 8
+              :end 24
+              :rows-all 24
+              :rows-visible 24}
+             (protocol/init-page v nil window)))
+      (let [hiccup (protocol/to-formatted-paged-hiccup v nil window nil)]
+        (is (= :itera-pixi-timeseries (first hiccup)))
+        (is (str/includes? (:options (second hiccup)) "2024-01-24"))))))
+
+(deftest dataset-data-test
+  (let [d  (ds/->dataset
+            {:date  (mapv #(str (.plusDays (java.time.LocalDate/of 2024 1 1) %))
+                          (range 12))
+             :open  (mapv #(+ 100.0 %) (range 12))
+             :high  (mapv #(+ 102.0 %) (range 12))
+             :low   (mapv #(+ 99.0 %) (range 12))
+             :close (mapv #(+ 101.0 %) (range 12))})
+        v  (pixi/pixi-timeseries d)]
+    (testing "the dataset is stored as-is"
+      (is (identical? d (:data v))))
+    (testing "column types are inferred from the dataset datatypes"
+      (is (= :number (:close (protocol/column-info (:data v)))))
+      (is (= :string (:date (protocol/column-info (:data v))))))
+    (testing "the default spec and paged path work from dataset data"
+      (is (= [[{:type :bar :col [:open :high :low :close]}]]
+             (protocol/default-spec v)))
+      (let [hiccup (protocol/to-formatted-paged-hiccup v nil window nil)]
+        (is (= :itera-pixi-timeseries (first hiccup)))
+        (is (str/includes? (:options (second hiccup)) "2024-01-12"))))))
 
 ;; ---------------------------------------------------------------------------
 ;; normalize spec

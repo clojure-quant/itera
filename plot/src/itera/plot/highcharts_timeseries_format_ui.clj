@@ -25,7 +25,13 @@
             [clojure.string :as str]
             [hyper.core :as h]
             [itera.plot.highcharts-timeseries-types :as types]
-            [itera.util.color :as color]))
+            [itera.util.color :as color]
+            ;; Loading these itera value namespaces (from the itera project)
+            ;; registers itera-table-info for the table shapes this editor can
+            ;; receive (vectors/seqs and tech.ml/tablecloth datasets).
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as protocol]
+            [itera.value.vector-table-info]))
 
 (def default-plot-height
   "Plot height (px) used when a plot does not set :height."
@@ -117,16 +123,18 @@
   [code-a spec]
   (reset! code-a (pr-str spec)))
 
-(defn- data-columns
-  "Distinct map keys across DATA, in first-seen order."
+(defn- table-column-info
+  "Column name -> inferred type for DATA; {} when DATA is nil or does not
+   implement itera-table-info."
   [data]
-  (reduce (fn [ks row]
-            (if (map? row)
-              (reduce (fn [ks k]
-                        (if (some #(= k %) ks) ks (conj ks k)))
-                      ks (keys row))
-              ks))
-          [] data))
+  (if (and data (satisfies? protocol/itera-table-info data))
+    (protocol/column-info data)
+    {}))
+
+(defn- data-columns
+  "Distinct column names across the table DATA, in column-info key order."
+  [data]
+  (vec (keys (table-column-info data))))
 
 (defn- spec-columns
   "Column keywords already referenced by SPEC."

@@ -21,8 +21,12 @@
    Legacy column vectors are not accepted: a non-map spec, or a map without a
    vector :columns, renders an error block.
 
-   With no spec given, columns are derived from the first row's keys (the
-   header via the existing `header-label`).  The spec editor is a table UI
+   `data` may be any table value implementing
+   itera.value.protocol/itera-table-info (a vector/seq of row maps or a
+   tech.ml/tablecloth dataset); it is stored as-is and every count / slice /
+   type / row-map step goes through that protocol.  With no spec given,
+   columns are derived from the table's column-info keys (the header via the
+   existing `header-label`).  The spec editor is a table UI
    (itera.plot.rtable-format-ui/rtable-format-edit-ui) that writes plain EDN,
    so custom format/style methods must be registered by keyword.
 
@@ -34,14 +38,21 @@
    page at a time and shows a page editor below the table with first/previous/
    next/last buttons and an editable page number.  Rows per page come from the
    window height, the fixed header height and the spec's :row-height (not a
-   constant).  With no positive window height the table is not paginated.  All
-   page controls are always rendered and are disabled at the ends (or when
-   there is only one page).  `to-hiccup` still renders the full table."
+   constant).  With no positive window height the table is not paginated, and
+   the page slice is taken through `select-rows`.  All page controls are always
+   rendered and are disabled at the ends (or when there is only one page).
+   `to-hiccup` still renders the full table."
   (:require [clojure.string :as str]
             [itera.plot.rtable-default-column-formatter :as rtable-default-fmt]
             [itera.plot.rtable-format-ui :as rtable-fmt]
             [itera.plot.rtable-page-editor :as page-editor]
-            [itera.value.protocol :as spec-plot]))
+            ;; Loading these itera value namespaces (from the itera project)
+            ;; registers itera-table-info for vectors, seqs and
+            ;; tech.ml/tablecloth datasets; the record accesses :data only
+            ;; through that protocol.
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as spec-plot]
+            [itera.value.vector-table-info]))
 
 (def head
   [[:link {:rel  "stylesheet"
@@ -76,12 +87,27 @@
         path            (str path)
         :else           "")))
 
+(defn- table-column-info
+  "Column name -> inferred type for DATA; {} when DATA is nil or does not
+   implement itera-table-info."
+  [data]
+  (if (and data (satisfies? spec-plot/itera-table-info data))
+    (spec-plot/column-info data)
+    {}))
+
+(defn- table-rows
+  "Rows of DATA as a sequence of maps; [] when DATA is nil or does not
+   implement itera-table-info."
+  [data]
+  (if (and data (satisfies? spec-plot/itera-table-info data))
+    (spec-plot/as-seq-of-maps data)
+    []))
+
 (defn- default-columns
-  "Columns derived from the first row's keys; the header comes from
-   header-label.  nil when there are no rows."
-  [rows]
-  (when-let [row (first rows)]
-    (mapv (fn [k] {:path k}) (keys row))))
+  "Columns derived from the table's column-info keys, in order; the header
+   comes from header-label.  [] when there are no columns."
+  [data]
+  (mapv (fn [k] {:path k}) (keys (table-column-info data))))
 
 (defn- max-width-style [max-width]
   (when max-width
@@ -196,22 +222,16 @@
 (defn- clamp-current [total current]
   (max 1 (min (or current 1) total)))
 
-(defn- page-rows
-  "Rows of the 1-based CURRENT page, at ROW-SIZE.  All rows when ROW-SIZE nil."
-  [rows row-size current]
-  (if (and row-size (pos? row-size))
-    (let [start (* (dec current) row-size)]
-      (into [] (take row-size (drop start rows))))
-    (vec rows)))
-
 (defrecord Rtable [data]
   itera.value.protocol/itera-convertable
   (to-hiccup [_]
-    (render {:rows data :class default-class :columns (default-columns data)}))
+    (render {:rows (table-rows data)
+             :class default-class
+             :columns (default-columns data)}))
   spec-plot/itera-spec-plot
   (to-formatted-hiccup [_ spec window]
     (if-let [spec (rtable-fmt/normalize-spec spec)]
-      (render (cond-> {:rows data
+      (render (cond-> {:rows (table-rows data)
                        :columns (:columns spec)
                        :row-height (:row-height spec)}
                 window (assoc :style (assoc (dissoc (spec-plot/window->style window) :height)
@@ -221,28 +241,31 @@
        "Invalid rtable spec: expected {:row-height <length> :columns [<column> ...]}"]))
   (default-spec [_]
     {:row-height rtable-fmt/default-row-height
-     :columns (or (default-columns data) [])})
-  (spec-editor [v spec code-a]
-    (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a}))
+     :columns (default-columns data)})
+  (spec-editor [_ spec code-a]
+    (rtable-fmt/rtable-format-edit-ui data {:spec spec :code-a code-a}))
   spec-plot/itera-page-plot
   (to-formatted-paged-hiccup [v spec window page]
-    (let [{:keys [row-size total]} (page-geometry (count (:data v)) spec window)
-          current (clamp-current total (:page/current page 1))]
-      (spec-plot/to-formatted-hiccup
-       (assoc v :data (page-rows (:data v) row-size current))
-       spec
-       window)))
+    (let [n (spec-plot/total-rows data)
+          {:keys [row-size total]} (page-geometry n spec window)
+          current (clamp-current total (:page/current page 1))
+          sliced (if (and row-size (pos? row-size))
+                   (spec-plot/select-rows data (* (dec current) row-size)
+                                          (* current row-size))
+                   data)]
+      (spec-plot/to-formatted-hiccup (assoc v :data sliced) spec window)))
 
-  (init-page [v spec window]
-    (let [{:keys [row-size total]} (page-geometry (count (:data v)) spec window)]
+  (init-page [_ spec window]
+    (let [{:keys [row-size total]} (page-geometry (spec-plot/total-rows data)
+                                                  spec window)]
       {:page/row-size row-size
        :page/total    total
        :page/current  1}))
 
-  (page-editor [v spec window page-a]
-    (let [{:keys [total]} (page-geometry (count (:data v)) spec window)]
+  (page-editor [_ spec window page-a]
+    (let [{:keys [total]} (page-geometry (spec-plot/total-rows data) spec window)]
       (page-editor/page-editor-view total page-a))))
 
 (defn rtable
   [data]
-  (->Rtable data))
+  (->Rtable (or data [])))

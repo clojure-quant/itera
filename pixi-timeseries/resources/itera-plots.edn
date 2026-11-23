@@ -2,4 +2,4 @@
  :option-ui [itera.plot.pixi-timeseries.plot-format-ui
              itera.plot.pixi-timeseries.plot-page-editor]
  :requires  [[itera.plot.pixi-timeseries.plot
-              :refer [pixi-timeseries pixi-timeseries-ds]]]}
+              :refer [pixi-timeseries]]]}

@@ -26,7 +26,13 @@
             [hyper.core :as h]
             [itera.option.core :as options]
             [itera.util.color :as colors]
-            [itera.plot.pixi-timeseries.plot-type :as plot-type]))
+            [itera.plot.pixi-timeseries.plot-type :as plot-type]
+            ;; Loading these itera value namespaces (now from the itera
+            ;; project) registers itera-table-info for the table shapes this
+            ;; editor can receive (vectors/seqs and tech.ml datasets).
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as protocol]
+            [itera.value.vector-table-info]))
 
 (def ^:private field-style
   {:width "100%"})
@@ -61,51 +67,43 @@
               []))
           spec)))
 
-(defn- numeric-column?
-  [rows k]
-  (boolean (some #(number? (get % k)) rows)))
-
-(defn- rows-have-ohlc?
-  [rows]
-  (every? #(numeric-column? rows %) [:open :high :low :close]))
-
-(defn- first-numeric-column
-  [rows]
-  (let [row (first rows)]
-    (or (when (numeric-column? rows :close) :close)
-        (some (fn [k]
-                (when (and (not (contains? #{:date :epoch} k))
-                           (number? (get row k)))
-                  k))
-              (keys row)))))
+(defn- table-column-info
+  "Column name -> type for DATA; {} when DATA is nil or does not implement
+   itera-table-info."
+  [data]
+  (if (and data (satisfies? protocol/itera-table-info data))
+    (protocol/column-info data)
+    {}))
 
 (defn default-spec*
-  "Smart default charts spec for ROWS: one :bar pane when the data has OHLC
-   columns, otherwise a :line on :close / the first numeric non-time column,
-   otherwise []."
-  [rows]
-  (cond
-    (empty? rows)
-    []
+  "Smart default charts spec for the table DATA: one :bar pane when the data
+   has numeric OHLC columns, otherwise a :line on :close / the first numeric
+   non-time column, otherwise []."
+  [data]
+  (let [info (table-column-info data)
+        num? (fn [k] (= :number (get info k)))]
+    (cond
+      (empty? info)
+      []
 
-    (rows-have-ohlc? rows)
-    [[{:type :bar :col [:open :high :low :close]}]]
+      (and (num? :open) (num? :high) (num? :low) (num? :close))
+      [[{:type :bar :col [:open :high :low :close]}]]
 
-    :else
-    (if-let [col (first-numeric-column rows)]
-      [[{:type :line :col col}]]
-      [])))
+      (num? :close)
+      [[{:type :line :col :close}]]
+
+      :else
+      (if-let [col (first (filter (fn [k]
+                                    (and (num? k)
+                                         (not (contains? #{:date :epoch} k))))
+                                  (keys info)))]
+        [[{:type :line :col col}]]
+        []))))
 
 (defn data-columns
-  "Distinct map keys across DATA, in first-seen order."
+  "Distinct column names across the table DATA, in column-info key order."
   [data]
-  (reduce (fn [ks row]
-            (if (map? row)
-              (reduce (fn [ks k]
-                        (if (some #(= k %) ks) ks (conj ks k)))
-                      ks (keys row))
-              ks))
-          [] data))
+  (vec (keys (table-column-info data))))
 
 (defn spec-columns
   "Column keywords already referenced by SPEC, whether scalar or vector :col."
@@ -121,7 +119,7 @@
 (defn selectable-columns
   "Data columns except time columns, plus columns already used by the spec."
   [data spec]
-  (let [cols (remove #{:date :epoch} (data-columns data))]
+  (let [cols (remove #{:date :epoch} (keys (table-column-info data)))]
     (vec (distinct (concat cols (spec-columns spec))))))
 
 (defn palette*
@@ -392,7 +390,7 @@
 (defn pixi-timeseries-format-edit-ui
   "Edit a pixi-timeseries charts spec bound to code-a.
 
-   data  the plot rows (used to list selectable columns)
+   data  the plot table (used to list selectable columns via itera-table-info)
    opts  {:spec <current charts vector> :code-a <hyper cursor holding EDN text>}
 
    Every edit resets code-a to (pr-str charts); the spec popup persists it on

@@ -25,7 +25,13 @@
    Must be called inside a Hyper render context."
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [hyper.core :as h]))
+            [hyper.core :as h]
+            ;; Loading these itera value namespaces (from the itera project)
+            ;; registers itera-table-info for the table shapes this editor can
+            ;; receive (vectors/seqs and tech.ml/tablecloth datasets).
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as protocol]
+            [itera.value.vector-table-info]))
 
 ;; ---------------------------------------------------------------------------
 ;; formatting
@@ -79,16 +85,18 @@
        (remove #{:default})
        (sort-by name)))
 
-(defn- data-columns
-  "Distinct map keys across DATA, in first-seen order."
+(defn- table-column-info
+  "Column name -> inferred type for DATA; {} when DATA is nil or does not
+   implement itera-table-info."
   [data]
-  (reduce (fn [ks row]
-            (if (map? row)
-              (reduce (fn [ks k]
-                        (if (some #(= k %) ks) ks (conj ks k)))
-                      ks (keys row))
-              ks))
-          [] data))
+  (if (and data (satisfies? protocol/itera-table-info data))
+    (protocol/column-info data)
+    {}))
+
+(defn- data-columns
+  "Distinct column names across the table DATA, in column-info key order."
+  [data]
+  (vec (keys (table-column-info data))))
 
 (defn- spec-paths
   "Non-nil :path values from the spec's :columns."

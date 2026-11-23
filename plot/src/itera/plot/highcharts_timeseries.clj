@@ -1,7 +1,10 @@
 (ns itera.plot.highcharts-timeseries
   "Multi-pane Highstock timeseries viewer with an editable plot/series spec.
 
-   The public `highcharts-timeseries` fn takes only the row `data`:
+   The public `highcharts-timeseries` fn takes only the table `data` (any value
+   implementing itera.value.protocol/itera-table-info: a vector/seq of row maps
+   or a tech.ml/tablecloth dataset); it is stored as-is:
+
      (highcharts-timeseries rows)
 
    Each row is a map with :epoch (long ms) or :date (Instant / ISO string).
@@ -26,18 +29,28 @@
    (or :id :name (str first column) (name :type)); a :flags series targets
    the first :ohlc/:hlc series in its plot unless :on-series names a sibling.
 
-   With no spec, `default-spec*` picks OHLC + volume when the rows have
-   :open/:high/:low/:close, otherwise a line on :close / the first numeric
-   non-time column, otherwise no plots.
+   With no spec, `default-spec*` picks OHLC + volume when the table has
+   numeric :open/:high/:low/:close columns, otherwise a line on :close / the
+   first numeric non-time column, otherwise no plots.
 
    The returned record implements both itera.value.protocol (renders the
-   default spec) and itera.value.protocol (the plot/series spec).  The
-   editor lives in itera.plot.highcharts-timeseries-format-ui."
+   default spec) and itera.value.protocol (the plot/series spec), and
+   itera-page-plot: the paged path windows rows by the live window width and a
+   pixels-per-row step (navigated by itera.plot.highcharts-timeseries-page-editor),
+   slicing through `select-rows`; the chart height still comes from the plot
+   spec.  The editor lives in itera.plot.highcharts-timeseries-format-ui."
   (:require [itera.plot.highcharts :as highcharts]
             [itera.plot.highcharts-timeseries-format-ui :as fmt]
+            [itera.plot.highcharts-timeseries-page-editor :as page-editor]
             [itera.plot.highcharts-timeseries-types :as types]
             [itera.util.color :as color]
-            [itera.value.protocol :as protocol])
+            ;; Loading these itera value namespaces (from the itera project)
+            ;; registers itera-table-info for vectors, seqs and
+            ;; tech.ml/tablecloth datasets; the record accesses :data only
+            ;; through that protocol.
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as protocol]
+            [itera.value.vector-table-info])
   (:import (java.time Instant LocalDate LocalDateTime ZonedDateTime)))
 
 (def default-plot-height
@@ -309,54 +322,50 @@
                    (:series plot)))
            (range) plots)))
 
-(defn- numeric-column?
-  [rows k]
-  (boolean (some #(number? (get % k)) rows)))
-
-(defn- rows-have-ohlc?
-  [rows]
-  (every? #(numeric-column? rows %) [:open :high :low :close]))
-
-(defn- first-numeric-column
-  [rows]
-  (let [row (first rows)]
-    (or (when (numeric-column? rows :close) :close)
-        (some (fn [k]
-                (when (and (not (contains? #{:epoch :date} k))
-                           (number? (get row k)))
-                  k))
-              (keys row)))))
+(defn- table-column-info
+  "Column name -> inferred type for DATA; {} when DATA is nil or does not
+   implement itera-table-info."
+  [data]
+  (if (and data (satisfies? protocol/itera-table-info data))
+    (protocol/column-info data)
+    {}))
 
 (defn default-spec*
-  "Smart default spec for ROWS: OHLC + volume when the data has OHLC keys,
-   otherwise a line on :close / the first numeric non-time column, otherwise
-   {:plots []}."
-  [rows]
-  (cond
-    (empty? rows)
-    {:plots []}
+  "Smart default spec for the table DATA: OHLC + volume when the table has
+   numeric :open/:high/:low/:close columns, otherwise a line on :close / the
+   first numeric non-time column, otherwise {:plots []}."
+  [data]
+  (let [info (table-column-info data)
+        num? (fn [k] (= :number (get info k)))]
+    (cond
+      (empty? info)
+      {:plots []}
 
-    (rows-have-ohlc? rows)
-    {:plots (cond-> [{:height 400
-                      :series [{:type    :ohlc
-                                :columns [:open :high :low :close]
-                                :mode    :candle}]}]
-              (numeric-column? rows :volume)
-              (conj {:height 120
-                     :series [{:type    :column
-                               :columns [:volume]}]}))}
+      (and (num? :open) (num? :high) (num? :low) (num? :close))
+      {:plots (cond-> [{:height 400
+                        :series [{:type    :ohlc
+                                  :columns [:open :high :low :close]
+                                  :mode    :candle}]}]
+                (num? :volume)
+                (conj {:height 120
+                       :series [{:type    :column
+                                 :columns [:volume]}]}))}
 
-    :else
-    (if-let [col (first-numeric-column rows)]
-      {:plots [{:height 400
-                :series [{:type :line :columns [col]}]}]}
-      {:plots []})))
+      :else
+      (if-let [col (or (when (num? :close) :close)
+                       (first (filter #(and (num? %)
+                                            (not (contains? #{:epoch :date} %)))
+                                      (keys info))))]
+        {:plots [{:height 400
+                  :series [{:type :line :columns [col]}]}]}
+        {:plots []}))))
 
 (defn build-options
-  "Build the Highcharts options map from a normalized SPEC and ROWS.
-   Returns only the options: no :style / :class host passthrough."
-  [spec rows]
-  (let [rows   (mapv ensure-epoch rows)
+  "Build the Highcharts options map from a normalized SPEC and table DATA.
+   Rows are read through itera-table-info.  Returns only the options: no
+   :style / :class host passthrough."
+  [spec data]
+  (let [rows   (mapv ensure-epoch (protocol/as-seq-of-maps data))
         plots  (:plots spec)
         descs  (-> (plot-descs plots) attach-flags-targets)
         series (mapv (fn [series]
@@ -370,10 +379,10 @@
         (assoc-in [:chart :height] total))))
 
 (defn render
-  "Render a normalized SPEC over ROWS as an itera-highstock hiccup element.
-   The host is full width and as tall as the summed plot heights."
-  [spec rows]
-  (let [options (build-options spec rows)
+  "Render a normalized SPEC over table DATA as an itera-highstock hiccup
+   element.  The host is full width and as tall as the summed plot heights."
+  [spec data]
+  (let [options (build-options spec data)
         height  (get-in options [:chart :height])
         style   {:width "100%" :height (str height "px")}]
     (protocol/to-hiccup (highcharts/highstock (assoc options :style style)))))
@@ -386,29 +395,52 @@
   [:div {:style {:padding "1rem" :color "#888"}}
    "Invalid highcharts-timeseries spec: expected {:plots [{:height <px> :series [<series> ...]} ...]}"])
 
+(defn- formatted-hiccup
+  "Render table DATA with SPEC (or the smart default when SPEC is nil).
+   Rows are read through itera-table-info.  An empty table renders
+   no-rows-block and an invalid spec renders invalid-spec-block."
+  [data spec _window]
+  (if (zero? (protocol/total-rows data))
+    no-rows-block
+    (if-let [spec (fmt/normalize-spec (or spec (default-spec* data)))]
+      (render spec data)
+      invalid-spec-block)))
+
 (defrecord HighchartsTimeseries [data]
   protocol/itera-convertable
   (to-hiccup [_]
-    (if (empty? data)
-      no-rows-block
-      (render (default-spec* data) data)))
+    (formatted-hiccup data nil nil))
 
   protocol/itera-spec-plot
-  (to-formatted-hiccup [_ spec _window]
-    (if (empty? data)
-      no-rows-block
-      (if-let [spec (fmt/normalize-spec (or spec (default-spec* data)))]
-        (render spec data)
-        invalid-spec-block)))
+  (to-formatted-hiccup [_ spec window]
+    (formatted-hiccup data spec window))
   (default-spec [_]
     (default-spec* data))
-  (spec-editor [v spec code-a]
+  (spec-editor [_ spec code-a]
     (fmt/highcharts-timeseries-format-edit-ui
-     (:data v)
-     {:spec spec :code-a code-a})))
+     data
+     {:spec spec :code-a code-a}))
+
+  protocol/itera-page-plot
+  (to-formatted-paged-hiccup [v spec window page]
+    (let [page    (or page (protocol/init-page v spec window))
+          n       (protocol/total-rows data)
+          visible (page-editor/visible-rows window page n)
+          end     (page-editor/clamp-end n visible (:end page))
+          sliced  (protocol/select-rows data (- end visible) end)
+          spec    (or spec (default-spec* data))]
+      (formatted-hiccup sliced spec window)))
+  (init-page [_ _spec window]
+    (page-editor/initial-page window (protocol/total-rows data)))
+  (page-editor [v spec window page-a]
+    (let [page (if page-a @page-a (protocol/init-page v spec window))
+          n    (protocol/total-rows data)]
+      (page-editor/page-editor-view page window n page-a))))
 
 (defn highcharts-timeseries
-  "Return a highcharts-timeseries viewer over ROWS (a vector of row maps with
-   :epoch or :date)."
-  [rows]
-  (->HighchartsTimeseries (vec (or rows []))))
+  "Return a highcharts-timeseries viewer over DATA (any value implementing
+   itera.value.protocol/itera-table-info, e.g. a vector/seq of row maps with
+   :epoch or :date, or a tech.ml/tablecloth dataset).  The data value is
+   stored as-is."
+  [data]
+  (->HighchartsTimeseries (or data [])))

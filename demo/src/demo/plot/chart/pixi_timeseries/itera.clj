@@ -37,7 +37,7 @@
 (defn plot
   [opts ds]
   (spec-plot/to-formatted-paged-hiccup
-   (pixi/pixi-timeseries-ds ds)
+   (pixi/pixi-timeseries ds)
    (:charts opts)
    (:window opts)
    (:window-selector opts)))

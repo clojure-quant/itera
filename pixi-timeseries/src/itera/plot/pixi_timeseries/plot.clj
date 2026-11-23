@@ -2,7 +2,8 @@
   "pixi.js time-series viewer as a Hyper client component.
 
    opts:
-     :data    rows (vector of maps) or a column map; required
+     :data    a table value implementing itera-table-info (a vector/seq of
+              row maps or a tech.ml/tablecloth dataset); required
      :charts  vector of panes, each a vector of series maps:
               {:type one of itera.plot.pixi-timeseries.plot-type/types
                :col  <kw> or [<kw> <kw>] for :range
@@ -42,19 +43,15 @@
    the payload reaches the browser: the component below is compiled to
    client-side JS and cannot call the JVM color namespace itself.
 
-   `pixi-timeseries` returns a value that stores only its rows; the charts
-   spec and the size are supplied by the itera.value.protocol methods.  The
-   editable charts spec is the bare panes vector above, the protocol `window`
-   supplies the size, and the page layer supplies the server-side row window
-   (navigated by `plot-page-editor`).  The generic `to-hiccup` path uses the
-   smart default spec at a fixed 900x600 fallback window because pixi cannot
-   measure the DOM.
-
-   `pixi-timeseries-ds` accepts a dataset-like value (tech.ml dataset when
-   available, otherwise rows or a column map) and delegates to the rows-only
-   constructor.  Column maps whose columns have different lengths are
-   truncated to the shortest column.
-
+   `pixi-timeseries` returns a value that stores its data as-is (a vector, a
+   seq or a dataset); every calculation reads it through
+   itera.value.protocol/itera-table-info.  The charts spec and the size are
+   supplied by the itera.value.protocol methods.  The editable charts spec is
+   the bare panes vector above, the protocol `window` supplies the size, and
+   the page layer supplies the server-side row window (navigated by
+   `plot-page-editor`).  The generic `to-hiccup` path uses the smart default
+   spec at a fixed 900x600 fallback window because pixi cannot measure the
+   DOM.  
    `select-rows` and `init-window-selector!` are used internally by the paged
    methods and stay public for the legacy demo."
   (:require [hyper.core :as h]
@@ -62,31 +59,15 @@
             [itera.plot.pixi-timeseries.plot-page-editor :as page-editor]
             [itera.plot.pixi-timeseries.window :as plot-window]
             [itera.util.color :as colors]
-            [itera.value.protocol :as protocol]))
+            ;; Loading these itera value namespaces (now from the itera
+            ;; project) registers itera-table-info for vectors, seqs and
+            ;; tech.ml/tablecloth datasets; the record accesses :data only
+            ;; through that protocol.
+            [itera.value.dataset-table-info]
+            [itera.value.protocol :as protocol]
+            [itera.value.vector-table-info]))
 
 (def head [])
-
-(defn- column-map->rows [m]
-  (let [ks   (vec (keys m))
-        cols (mapv #(vec (get m %)) ks)
-        n    (apply min (map count cols))]
-    (mapv (fn [i] (zipmap ks (map #(nth % i) cols))) (range n))))
-
-(defn- tech-rows [ds]
-  (when-let [rows-fn (try (requiring-resolve 'tech.v3.dataset/rows)
-                          (catch Throwable _ nil))]
-    (try (vec (rows-fn ds)) (catch Throwable _ nil))))
-
-(defn- ds->rows [ds]
-  (or (tech-rows ds)
-      (cond
-        (nil? ds)        []
-        (sequential? ds) (vec ds)
-        (map? ds)        (if (every? sequential? (vals ds))
-                           (column-map->rows ds)
-                           [ds])
-        :else            (throw (ex-info "Unsupported dataset value"
-                                         {:type (type ds)})))))
 
 (defn- visible-rows
   "Rows per viewport derived from the live :window :width and :step, clamped
@@ -113,21 +94,26 @@
    row count (the last page).  Both are clamped against the rows actually
    passed in, not :rows-all.
 
-   Without a :window-selector, or for non-sequential/empty rows, all rows are
-   returned unchanged.
+   Without a :window-selector, or for a value that does not implement
+   itera-table-info, or for an empty table, all rows are returned unchanged.
 
    Do not use this directly as :plot/select: that hook receives the plot
    options cursor, not a map.  Use `init-window-selector!` there."
   [opts rows]
   (let [sel (:window-selector opts)]
-    (if (or (nil? sel) (not (sequential? rows)) (empty? rows))
+    (if (or (nil? sel) (not (satisfies? protocol/itera-table-info rows)))
       rows
-      (let [rows    (vec rows)
-            n       (count rows)
+      (let [n       (protocol/total-rows rows)
             sel     (if (map? sel) sel {:end sel})
             display (or (:display sel) :nice)]
-        (if (= display :all)
+        (cond
+          (= display :all)
           rows
+
+          (zero? n)
+          rows
+
+          :else
           (let [derived (plot-window/rows-visible (:window opts) sel)
                 stored  (:rows-visible sel)
                 visible (max 1 (min n (or derived
@@ -137,7 +123,7 @@
                 end     (let [e (:end sel)]
                           (if (number? e) (long e) n))
                 end     (max visible (min n end))]
-            (subvec rows (- end visible) end)))))))
+            (protocol/select-rows rows (- end visible) end)))))))
 
 (defn init-window-selector!
   "Cursor-aware :plot/select hook for server-side row windowing.
@@ -154,7 +140,9 @@
    Returns the result unchanged."
   [plot-options-a result]
   (let [opts      @plot-options-a
-        row-count (if (nil? result) 0 (count result))
+        row-count (if (and result (satisfies? protocol/itera-table-info result))
+                    (protocol/total-rows result)
+                    0)
         visible   (visible-rows opts row-count)
         current   (:window-selector opts)
         sel       (cond
@@ -958,11 +946,12 @@
                     (window-size-style window))}))
 
 (defn- formatted-hiccup
-  "Render ROWS with SPEC (or the smart default when SPEC is nil) at WINDOW.
-   Invalid specs render fmt/invalid-spec-block."
-  [rows spec window]
-  (if-let [spec (fmt/normalize-spec (or spec (fmt/default-spec* rows)))]
-    (render rows spec window)
+  "Render TABLE with SPEC (or the smart default when SPEC is nil) at WINDOW.
+   Rows are read through itera-table-info.  Invalid specs render
+   fmt/invalid-spec-block."
+  [table spec window]
+  (if-let [spec (fmt/normalize-spec (or spec (fmt/default-spec* table)))]
+    (render (protocol/as-seq-of-maps table) spec window)
     fmt/invalid-spec-block))
 
 (defrecord PixiTimeseries [data]
@@ -992,14 +981,11 @@
     (page-editor/page-editor-view v spec window page-a)))
 
 (defn pixi-timeseries
-  "Return a pixi-timeseries viewer over ROWS (a vector of row maps with :date).
-   The charts spec and size are supplied by the itera.value.protocol methods:
-   `to-formatted-hiccup` takes {:panes...} + {:width :height}, `to-hiccup` uses
-   the smart default at a fixed fallback size."
+  "Return a pixi-timeseries viewer over ROWS (any value implementing
+   itera.value.protocol/itera-table-info, e.g. a vector/seq of row maps or a
+   tech.ml/tablecloth dataset).  The charts spec and size are supplied by the
+   itera.value.protocol methods: `to-formatted-hiccup` takes {:panes...} +
+   {:width :height}, `to-hiccup` uses the smart default at a fixed fallback
+   size.  The data value is stored as-is."
   [rows]
-  (->PixiTimeseries (vec (or rows []))))
-
-(defn pixi-timeseries-ds
-  "Return a pixi-timeseries value from a dataset-like DS (rows or column map)."
-  [ds]
-  (pixi-timeseries (ds->rows ds)))
+  (->PixiTimeseries (or rows [])))

@@ -24,6 +24,20 @@
   (init-page [data spec window])
   (page-editor [data spec window page-a]))
 
+(defprotocol itera-table-info
+  "Table-shaped data access: a row count, a clamped row slice, per-column
+   inferred types, and the rows as a sequence of maps."
+  (total-rows [_]
+    "Number of rows in the table.")
+  (select-rows [_ idx-start idx-end]
+    "Rows in the half-open index range [idx-start idx-end), clamped to the
+     table bounds.  Returns a value of the same table shape.")
+  (column-info [_]
+    "Map of column name -> inferred type keyword
+     (:number :string :boolean :keyword :time :nil :mixed :unknown).")
+  (as-seq-of-maps [_]
+    "The rows as a sequence of maps from column name to scalar value."))
+
 
 (comment 
   (defrecord Hiccup [data]
