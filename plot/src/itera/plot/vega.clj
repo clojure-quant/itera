@@ -15,7 +15,10 @@
    itera-spec-plot the container `window` {:width <px> :height <px>} is merged
    into the spec's `:width`/`:height` (vega owns its size in the spec, so the
    fixed interact window overrides any `:width`/`:height` set in the spec) and
-   the host element is sized from it.
+   the host element is sized from it.  Since Vega's `width`/`height` are the
+   plot rectangle, a raw Vega spec's `autosize` is normalized to `fit` with
+   `:contains` padding when a window is supplied, so the axes and padding fit
+   inside the cell instead of being clipped.
 
    Data attachment:
      - a map name -> raw value is injected into a raw Vega spec's matching
@@ -92,6 +95,32 @@
                     entries)))
     spec))
 
+(defn- window-autosize
+  "Vega's width/height are the plot rectangle.  itera supplies the cell size
+   as width/height, so fit the gutters inside that size instead of letting the
+   default pad autosize grow the canvas past the cell.  Signal-valued autosize
+   and an explicit \"none\" are left alone."
+  [autosize]
+  (let [type (if (map? autosize) (:type autosize) autosize)
+        type (or type "pad")]
+    (cond
+      (and (map? autosize) (:signal autosize)) autosize
+      (= "none" type) autosize
+      (#{"pad" "fit" "fit-x" "fit-y"} type)
+      (-> (if (map? autosize) autosize {})
+          (assoc :type (if (= "pad" type) "fit" type)
+                 :contains "padding"))
+      :else autosize)))
+
+(defn- apply-window-autosize
+  "For raw Vega mode, normalize the spec's autosize against WINDOW, which itera
+   supplies as the plot rectangle size (see `window-autosize`)."
+  [spec mode window]
+  (if (and (= mode :vega)
+           window (:width window) (:height window))
+    (assoc spec :autosize (window-autosize (:autosize spec)))
+    spec))
+
 (defn- embed-options
   "Build the itera-vega-embed `options` map from DATA, MODE, CHART-SPEC and
    WINDOW.  DATA is rows/datasets only; the chart spec comes from the caller."
@@ -100,6 +129,8 @@
                     (select-keys window [:width :height]))
         base-embed (cond-> {}
                      (= mode :vega) (assoc :mode "vega"))
+        spec (cond-> spec
+               (= mode :vega) (apply-window-autosize :vega window))
         spec (if (= mode :vega) (inject-data spec data) spec)
         [spec embed-opts]
         (cond

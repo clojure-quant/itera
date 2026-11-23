@@ -13,7 +13,9 @@
 
    Old vector panes [[{:type ...} ...] ...] are still read and normalize to
    {:yAxisScale :linear :plots [...]}.  Bars carry no :color; normalize-spec
-   strips one if present.
+   strips one if present.  :point-drop uses a scalar :col plus an optional
+   :base-value number; absent means 0 at render time and a blank number input
+   removes the key rather than storing the default.
 
    `pixi-timeseries-format-edit-ui` renders the pane/plot editor over a code
    cursor; every edit resets that cursor to (pr-str charts) and the spec popup
@@ -268,6 +270,31 @@
                           :col (if (vector? col) (first col) col)
                           :color (or (:color plot) (first pal))))))
 
+(defn- parse-number
+  "Whole numbers become longs, other finite numbers doubles; nil when blank or
+   not numeric."
+  [s]
+  (when-not (str/blank? s)
+    (try
+      (let [d (parse-double s)]
+        (when (and d
+                   (not (Double/isNaN d))
+                   (not (Double/isInfinite d)))
+          (if (== d (Math/rint d)) (long d) d)))
+      (catch Exception _ nil))))
+
+(defn- set-base-value!
+  "Set a :point-drop plot's :base-value; blank removes the key (render default
+   0), invalid input leaves the spec unchanged."
+  [update* path i j s]
+  (update* path
+           (fn [cs]
+             (if (str/blank? s)
+               (update-in cs [i :plots j] dissoc :base-value)
+               (if-let [n (parse-number s)]
+                 (assoc-in cs [i :plots j :base-value] n)
+                 cs)))))
+
 (defn- plot-row
   "One plot's editor table row."
   [{:keys [path update* cols pal types i j plot]}]
@@ -276,6 +303,7 @@
         col    (:col plot)
         range? (= :range t)
         bar?   (= :bar t)
+        drop?  (= :point-drop t)
         ccol   (->col-pair col cols)
         bcol   (->col-4 col cols)]
     [:tr
@@ -386,29 +414,38 @@
             [:option {:value (name c) :selected (= c col)} (name c)])]])]
 
      [:td {:style td-style}
-      [:div {:style {:display "flex" :justify-content "flex-end"
-                     :align-items "center" :gap "0.3rem"}}
-       (when-not bar?
-         [:select {:style field-flex-style
+      [:div {:style {:display "flex" :flex-direction "column" :gap "0.25rem"}}
+       [:div {:style {:display "flex" :justify-content "flex-end"
+                      :align-items "center" :gap "0.3rem"}}
+        (when-not bar?
+          [:select {:style field-flex-style
+                    :data-on:change
+                    (h/action
+                     (update* path
+                              (fn [cs]
+                                (assoc-in cs [i :plots j :color] $value))))}
+           (for [c pal]
+             [:option {:value c :selected (= c (:color plot))} c])])
+        [:button {:type "button" :title "Remove plot" :aria-label "Remove plot"
+                  :style remove-plot-style
+                  :data-on:click
+                  (h/action
+                   (update* path
+                            (fn [cs]
+                              (update-in cs [i :plots]
+                                         (fn [p]
+                                           (let [p (vec (or p []))]
+                                             (vec (concat (subvec p 0 j)
+                                                          (subvec p (inc j))))))))))} 
+         "×"]]
+       (when drop?
+         [:div {:style select-row-style}
+          [:span {:style col-label-style} "Base:"]
+          [:input {:type "number" :step "any"
+                   :value (str (or (:base-value plot) 0))
+                   :style field-flex-style
                    :data-on:change
-                   (h/action
-                    (update* path
-                             (fn [cs]
-                               (assoc-in cs [i :plots j :color] $value))))}
-          (for [c pal]
-            [:option {:value c :selected (= c (:color plot))} c])])
-       [:button {:type "button" :title "Remove plot" :aria-label "Remove plot"
-                 :style remove-plot-style
-                 :data-on:click
-                 (h/action
-                  (update* path
-                           (fn [cs]
-                             (update-in cs [i :plots]
-                                        (fn [p]
-                                          (let [p (vec (or p []))]
-                                            (vec (concat (subvec p 0 j)
-                                                         (subvec p (inc j))))))))))} 
-        "×"]]]]))
+                   (h/action (set-base-value! update* path i j $value))}]])]]]))
 
 (defn- plot-table
   "The plots of pane I as a 3-column table: Type, Column(s), Opts."

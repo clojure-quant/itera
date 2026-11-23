@@ -11,7 +11,13 @@
               {:type one of itera.plot.pixi-timeseries.plot-type/types
                :col  <kw> or [<kw> <kw>] for :range
                      or [<open> <high> <low> <close>] for :bar
-               :color \"blue-5\" (name in itera.util.color/colors or a CSS color)}
+               :color \"blue-5\" (name in itera.util.color/colors or a CSS color)
+               :base-value <number>; :point-drop only, the value the drop
+                     line drops to (default 0)}
+               :point-drop draws a marker per row plus a vertical segment from
+               the point to :base-value; the pane's min/max include that base
+               (a log pane includes it only when positive and skips the
+               segments of a series whose base is not positive).
               Old vector panes [[<series> ...] ...] are still accepted and
               treated as :linear.  :log uses positive values only and falls
               back to :linear when a pane has no positive values.
@@ -173,9 +179,10 @@
    JSON-parsed viewer payload (`:data`, `:charts`, `:window`); :data holds
    only the server-side visible row slice.  Each pane draws a left-side
    y-axis whose ticks are auto-formatted from that pane's combined series
-   bounds; the plot area shrinks to make room for the labels.  The first
-   pane also draws a bottom date x-axis with adaptive date/datetime tick
-   labels taken from the rows' `\"date\"` column, when present."
+   bounds.  All panes share one y-label gutter sized for the widest pane's
+   labels, so their plot areas and x-axis geometry are pixel-identical.  The
+   first pane also draws a bottom date x-axis with adaptive date/datetime
+   tick labels taken from the rows' `\"date\"` column, when present."
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
@@ -283,10 +290,18 @@
                                                             (array (aget c 0) (aget c 1))
                                                             (array))
 
-                                                          (or (= t "line") (= t "point"))
+                                                          (or (= t "line") (= t "point")
+                                                              (= t "point-drop"))
                                                           (array c)
 
                                                           :else (array))))
+                                          series-base (fn [series]
+                                                        (let [b (aget series "base-value")]
+                                                          (if (and (number? b)
+                                                                   (not (js/isNaN b))
+                                                                   (js/isFinite b))
+                                                            b
+                                                            0)))
                                           pane-plots (fn [pane-obj]
                                                        (if (array? pane-obj)
                                                          pane-obj
@@ -301,14 +316,21 @@
                                                          "linear"))
                                           bounds-of (fn [rows series positive?]
                                                       (let [cols (plot-cols series)
-                                                            nc   (.-length cols)]
-                                                        (loop [j 0 mn js/Infinity mx (- js/Infinity)]
-                                                          (if (< j nc)
-                                                            (let [col (aget cols j)]
-                                                              (recur (inc j)
-                                                                     (js/Math.min mn (true-min rows col positive?))
-                                                                     (js/Math.max mx (true-max rows col positive?))))
-                                                            (array mn mx)))))
+                                                            nc   (.-length cols)
+                                                            b    (loop [j 0 mn js/Infinity mx (- js/Infinity)]
+                                                                   (if (< j nc)
+                                                                     (let [col (aget cols j)]
+                                                                       (recur (inc j)
+                                                                              (js/Math.min mn (true-min rows col positive?))
+                                                                              (js/Math.max mx (true-max rows col positive?))))
+                                                                     (array mn mx)))]
+                                                        (if (= "point-drop" (aget series "type"))
+                                                          (let [base (series-base series)]
+                                                            (if (or (not positive?) (> base 0))
+                                                              (array (js/Math.min (aget b 0) base)
+                                                                     (js/Math.max (aget b 1) base))
+                                                              b))
+                                                          b)))
                                           nice-step (fn [span intervals]
                                                       (let [raw (/ span (max 1 intervals))]
                                                         (if (and (number? raw) (js/isFinite raw)
@@ -404,7 +426,7 @@
                                                                       (.slice t 0 -1)
                                                                       t)]
                                                               (if (= t "-0") "0" t))
-                                                             s)))
+                                                            s)))
                                           format-log-tick (fn [v]
                                                             (if (or (>= v 1e6) (< v 1e-4))
                                                               (.toExponential v 2)
@@ -751,6 +773,27 @@
                                                                    (.circle graphics (get-x geom i) y 2))
                                                                  (recur (inc i)))))
                                                            (.fill graphics (js-obj "color" color)))))
+                                          add-point-drop (fn [graphics rows geom mn mx col base color]
+                                                           (let [n (.-length rows)]
+                                                             (when (and (js/isFinite mn) (js/isFinite mx))
+                                                               (let [ybase ((aget geom "sy") base mn mx)]
+                                                                 (loop [i 0]
+                                                                   (when (< i n)
+                                                                     (let [y (get-y geom mn mx rows col i)]
+                                                                       (when (and (not (nil? y))
+                                                                                  (not (nil? ybase)))
+                                                                         (.moveTo graphics (get-x geom i) y)
+                                                                         (.lineTo graphics (get-x geom i) ybase)))
+                                                                     (recur (inc i))))
+                                                                 (.stroke graphics
+                                                                          (js-obj "width" 1 "color" color)))
+                                                               (loop [i 0]
+                                                                 (when (< i n)
+                                                                   (let [y (get-y geom mn mx rows col i)]
+                                                                     (when (not (nil? y))
+                                                                       (.circle graphics (get-x geom i) y 2)))
+                                                                   (recur (inc i))))
+                                                               (.fill graphics (js-obj "color" color)))))
                                           add-range (fn [graphics rows geom mn mx col1 col2 color]
                                                       (let [n     (.-length rows)
                                                             xstep (aget geom "xstep")]
@@ -828,6 +871,10 @@
                                                               (= t "point")
                                                               (add-points g rows geom mn mx col color)
 
+                                                              (= t "point-drop")
+                                                              (add-point-drop g rows geom mn mx col
+                                                                              (series-base series) color)
+
                                                               (= t "range")
                                                               (add-range g rows geom mn mx
                                                                          (aget col 0) (aget col 1) color)
@@ -846,103 +893,137 @@
 
                                                               :else nil)
                                                             (.addChild pane g))))
-                                          draw-chart (fn [rows pane-obj y-offset height show-x-axis?]
-                                                       (let [pane     (new pixi/Container)
-                                                             bg       (new pixi/Graphics)
-                                                             w        (.-width state)
-                                                             pad      0
-                                                             inset    3
-                                                             bw       (max 1 (- w (* 2 pad)))
-                                                             bh       (max 1 (- height (* 2 pad)))
-                                                             y0       (+ pad inset)
-                                                             x-gutter (if show-x-axis? 20 0)
-                                                             ch       (max 1 (- bh (* 2 inset) x-gutter))
-                                                             series   (pane-plots pane-obj)
-                                                             scale    (pane-scale pane-obj)
-                                                             ns       (.-length series)
-                                                             bnds-fn  (fn [positive?]
-                                                                        (loop [i 0 mn js/Infinity mx (- js/Infinity)]
-                                                                          (if (< i ns)
-                                                                            (let [b (bounds-of rows (aget series i)
-                                                                                               positive?)]
-                                                                              (recur (inc i)
-                                                                                     (js/Math.min mn (aget b 0))
-                                                                                     (js/Math.max mx (aget b 1))))
-                                                                            (array mn mx))))
-                                                             pbnds    (if (= scale "log") (bnds-fn true) nil)
-                                                             log?     (and pbnds
-                                                                           (js/isFinite (aget pbnds 0))
-                                                                           (js/isFinite (aget pbnds 1))
-                                                                           (> (aget pbnds 0) 0))
-                                                             bnds     (if log? pbnds (bnds-fn false))
-                                                             mn       (aget bnds 0)
-                                                             mx       (aget bnds 1)
-                                                             finite?  (and (js/isFinite mn) (js/isFinite mx))
-                                                             sy       (fn [v mn mx]
-                                                                        (if (or (not (number? v))
-                                                                                (js/isNaN v))
-                                                                          nil
-                                                                          (if log?
-                                                                            (if (or (<= v 0)
-                                                                                    (not (js/isFinite v)))
-                                                                              nil
+                                          pane-metrics (fn [rows pane-obj y-offset height show-x-axis?]
+                                                         (let [pane     (new pixi/Container)
+                                                               bg       (new pixi/Graphics)
+                                                               w        (.-width state)
+                                                               pad      0
+                                                               inset    3
+                                                               bw       (max 1 (- w (* 2 pad)))
+                                                               bh       (max 1 (- height (* 2 pad)))
+                                                               y0       (+ pad inset)
+                                                               x-gutter (if show-x-axis? 20 0)
+                                                               ch       (max 1 (- bh (* 2 inset) x-gutter))
+                                                               series   (pane-plots pane-obj)
+                                                               scale    (pane-scale pane-obj)
+                                                               ns       (.-length series)
+                                                               bnds-fn  (fn [positive?]
+                                                                          (loop [i 0 mn js/Infinity mx (- js/Infinity)]
+                                                                            (if (< i ns)
+                                                                              (let [b (bounds-of rows (aget series i)
+                                                                                                 positive?)]
+                                                                                (recur (inc i)
+                                                                                       (js/Math.min mn (aget b 0))
+                                                                                       (js/Math.max mx (aget b 1))))
+                                                                              (array mn mx))))
+                                                               pbnds    (if (= scale "log") (bnds-fn true) nil)
+                                                               log?     (and pbnds
+                                                                             (js/isFinite (aget pbnds 0))
+                                                                             (js/isFinite (aget pbnds 1))
+                                                                             (> (aget pbnds 0) 0))
+                                                               bnds     (if log? pbnds (bnds-fn false))
+                                                               mn       (aget bnds 0)
+                                                               mx       (aget bnds 1)
+                                                               finite?  (and (js/isFinite mn) (js/isFinite mx))
+                                                               sy       (fn [v mn mx]
+                                                                          (if (or (not (number? v))
+                                                                                  (js/isNaN v))
+                                                                            nil
+                                                                            (if log?
+                                                                              (if (or (<= v 0)
+                                                                                      (not (js/isFinite v)))
+                                                                                nil
+                                                                                (if (= mx mn)
+                                                                                  (+ y0 (/ ch 2))
+                                                                                  (+ y0
+                                                                                     (* (- 1 (/ (- (js/Math.log v)
+                                                                                                   (js/Math.log mn))
+                                                                                                (- (js/Math.log mx)
+                                                                                                   (js/Math.log mn))))
+                                                                                        ch))))
                                                                               (if (= mx mn)
                                                                                 (+ y0 (/ ch 2))
-                                                                                (+ y0
-                                                                                   (* (- 1 (/ (- (js/Math.log v)
-                                                                                                 (js/Math.log mn))
-                                                                                              (- (js/Math.log mx)
-                                                                                                 (js/Math.log mn))))
-                                                                                      ch))))
-                                                                            (if (= mx mn)
-                                                                              (+ y0 (/ ch 2))
-                                                                              (+ y0 (* (- 1 (/ (- v mn)
-                                                                                               (- mx mn)))
-                                                                                       ch))))))
-                                                             ticks    (if finite?
-                                                                        (if log?
-                                                                          (log-tick-values mn mx sy)
-                                                                          (tick-values mn mx ch))
-                                                                        nil)
-                                                             labels   (if finite? (make-labels ticks log?) nil)
-                                                             widest   (if finite?
-                                                                        (loop [i 0 mw 0]
-                                                                          (if (< i (.-length labels))
-                                                                            (recur (inc i)
-                                                                                   (js/Math.max
-                                                                                    mw (.-width (aget labels i))))
-                                                                            mw))
-                                                                        0)
-                                                             gutter   (if finite?
-                                                                        (js/Math.min (* w 0.3)
-                                                                                     (max 24 (+ widest 10)))
-                                                                        0)
-                                                             axis-x   (+ pad gutter)
-                                                             x0       (+ axis-x inset)
-                                                             cw       (max 1 (- (- w pad inset) x0))
-                                                             n        (.-length rows)
-                                                             xstep    (/ cw (max 1 n))
-                                                             sx       (fn [i] (+ x0 (* (+ i 0.5) xstep)))
-                                                             geom     (js-obj "sx" sx "sy" sy
-                                                                              "x0" x0 "y0" y0
-                                                                              "cw" cw "ch" ch
-                                                                              "axis-x" axis-x
-                                                                              "xstep" xstep "n" n)]
-                                                         (set! (.-y pane) y-offset)
-                                                         (.rect bg pad pad bw bh)
-                                                         (.fill bg (js-obj "color" "#f5f5f5"))
-                                                         (.addChild pane bg)
-                                                         (add-y-axis pane geom mn mx ticks labels)
-                                                         (when show-x-axis?
-                                                           (add-x-axis rows pane geom))
-                                                         (when series
-                                                           (loop [i 0]
-                                                             (when (< i ns)
-                                                               (draw-series rows pane geom mn mx
-                                                                            (aget series i))
-                                                               (recur (inc i)))))
-                                                         (.addChild container pane)
-                                                         pane))
+                                                                                (+ y0 (* (- 1 (/ (- v mn)
+                                                                                                 (- mx mn)))
+                                                                                         ch))))))
+                                                               ticks    (if finite?
+                                                                          (if log?
+                                                                            (log-tick-values mn mx sy)
+                                                                            (tick-values mn mx ch))
+                                                                          nil)
+                                                               labels   (if finite? (make-labels ticks log?) nil)
+                                                               widest   (if finite?
+                                                                          (loop [i 0 mw 0]
+                                                                            (if (< i (.-length labels))
+                                                                              (recur (inc i)
+                                                                                     (js/Math.max
+                                                                                      mw (.-width (aget labels i))))
+                                                                              mw))
+                                                                          0)]
+                                                           (js-obj "pane" pane
+                                                                   "bg" bg
+                                                                   "pane-obj" pane-obj
+                                                                   "y-offset" y-offset
+                                                                   "height" height
+                                                                   "show-x-axis?" show-x-axis?
+                                                                   "w" w "pad" pad "inset" inset
+                                                                   "bw" bw "bh" bh
+                                                                   "y0" y0 "ch" ch
+                                                                   "series" series
+                                                                   "scale" scale
+                                                                   "mn" mn "mx" mx
+                                                                   "log?" log?
+                                                                   "finite?" finite?
+                                                                   "ticks" ticks
+                                                                   "labels" labels
+                                                                   "widest" widest
+                                                                   "sy" sy)))
+                                          draw-pane (fn [metrics gutter]
+                                                      (let [rows         (.-data state)
+                                                            pane         (aget metrics "pane")
+                                                            bg           (aget metrics "bg")
+                                                            w            (aget metrics "w")
+                                                            pad          (aget metrics "pad")
+                                                            inset        (aget metrics "inset")
+                                                            bw           (aget metrics "bw")
+                                                            bh           (aget metrics "bh")
+                                                            y0           (aget metrics "y0")
+                                                            y-offset     (aget metrics "y-offset")
+                                                            ch           (aget metrics "ch")
+                                                            show-x-axis? (aget metrics "show-x-axis?")
+                                                            series       (aget metrics "series")
+                                                            ns           (.-length series)
+                                                            mn           (aget metrics "mn")
+                                                            mx           (aget metrics "mx")
+                                                            ticks        (aget metrics "ticks")
+                                                            labels       (aget metrics "labels")
+                                                            sy           (aget metrics "sy")
+                                                            axis-x       (+ pad gutter)
+                                                            x0           (+ axis-x inset)
+                                                            cw           (max 1 (- (- w pad inset) x0))
+                                                            n            (.-length rows)
+                                                            xstep        (/ cw (max 1 n))
+                                                            sx           (fn [i] (+ x0 (* (+ i 0.5) xstep)))
+                                                            geom         (js-obj "sx" sx "sy" sy
+                                                                                 "x0" x0 "y0" y0
+                                                                                 "cw" cw "ch" ch
+                                                                                 "axis-x" axis-x
+                                                                                 "xstep" xstep "n" n)]
+                                                        (set! (.-y pane) y-offset)
+                                                        (.rect bg pad pad bw bh)
+                                                        (.fill bg (js-obj "color" "#f5f5f5"))
+                                                        (.addChild pane bg)
+                                                        (add-y-axis pane geom mn mx ticks labels)
+                                                        (when show-x-axis?
+                                                          (add-x-axis rows pane geom))
+                                                        (when series
+                                                          (loop [i 0]
+                                                            (when (< i ns)
+                                                              (draw-series rows pane geom mn mx
+                                                                           (aget series i))
+                                                              (recur (inc i)))))
+                                                        (.addChild container pane)
+                                                        pane))
                                           draw-date (fn [rows pane]
                                                       (let [n (.-length rows)]
                                                         (when (> n 0)
@@ -959,13 +1040,35 @@
                                                          h2        (/ h 4)
                                                          h3        (- h h1 h2)
                                                          charts    (.-charts state)
-                                                         container (.-container state)]
+                                                         container (.-container state)
+                                                         descs     (array (array (aget charts 0) 0 h1 true))]
+                                                     (when (> (.-length charts) 1)
+                                                       (.push descs (array (aget charts 1) h1 h2 false)))
+                                                     (when (> (.-length charts) 2)
+                                                       (.push descs (array (aget charts 2) (+ h1 h2) h3 false)))
                                                      (.removeChildren container)
-                                                     (let [pane1 (draw-chart rows (aget charts 0) 0 h1 true)]
-                                                       (when (> (.-length charts) 1)
-                                                         (draw-chart rows (aget charts 1) h1 h2 false))
-                                                       (when (> (.-length charts) 2)
-                                                         (draw-chart rows (aget charts 2) (+ h1 h2) h3 false))
+                                                     (let [models        (loop [i 0 acc (array)]
+                                                                           (if (< i (.-length descs))
+                                                                             (let [d (aget descs i)]
+                                                                               (.push acc (pane-metrics rows (aget d 0) (aget d 1)
+                                                                                                        (aget d 2) (aget d 3)))
+                                                                               (recur (inc i) acc))
+                                                                             acc))
+                                                           shared-gutter (loop [i 0 g 0]
+                                                                           (if (< i (.-length models))
+                                                                             (let [m   (aget models i)
+                                                                                   cap (js/Math.min (* (aget m "w") 0.3)
+                                                                                                    (max 24 (+ (aget m "widest") 10)))]
+                                                                               (recur (inc i)
+                                                                                      (if (aget m "finite?")
+                                                                                        (js/Math.max g cap)
+                                                                                        g)))
+                                                                             g))
+                                                           pane1         (draw-pane (aget models 0) shared-gutter)]
+                                                       (loop [i 1]
+                                                         (when (< i (.-length models))
+                                                           (draw-pane (aget models i) shared-gutter)
+                                                           (recur (inc i))))
                                                        (draw-date rows pane1))))]
                                       (.addChild stage container)
                                       (set! (.-display (.-style (.-canvas app))) "block")

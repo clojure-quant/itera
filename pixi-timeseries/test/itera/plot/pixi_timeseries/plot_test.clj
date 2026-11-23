@@ -4,6 +4,7 @@
    [clojure.test :refer [deftest is testing]]
    [itera.plot.pixi-timeseries.plot :as pixi]
    [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
+   [itera.plot.pixi-timeseries.plot-type :as plot-type]
    [itera.util.color :as colors]
    [itera.value.protocol :as protocol]
    [tech.v3.dataset :as ds]))
@@ -52,6 +53,13 @@
   (let [rows (ohlc-rows 3)]
     (is (= (fmt/default-spec* rows)
            (protocol/default-spec (pixi/pixi-timeseries rows))))))
+
+;; ---------------------------------------------------------------------------
+;; plot types
+;; ---------------------------------------------------------------------------
+
+(deftest point-drop-type-test
+  (is (some #{:point-drop} plot-type/types)))
 
 ;; ---------------------------------------------------------------------------
 ;; data-only record and rows-only constructor
@@ -158,6 +166,11 @@
            (fmt/normalize-spec [42]))))
   (testing "an empty vector is valid"
     (is (= [] (fmt/normalize-spec []))))
+  (testing ":point-drop keeps its :col, :color and :base-value"
+    (let [spec [{:yAxisScale :linear
+                 :plots [{:type :point-drop :col :close
+                          :color "red-3" :base-value 95}]}]]
+      (is (= spec (fmt/normalize-spec spec)))))
   (testing "maps, nil and scalars are invalid"
     (is (nil? (fmt/normalize-spec {:charts []})))
     (is (nil? (fmt/normalize-spec nil)))
@@ -183,6 +196,19 @@
     (is (= :itera-pixi-timeseries (first hiccup)))
     (is (str/includes? payload "yAxisScale"))
     (is (str/includes? payload "log"))))
+
+(deftest point-drop-payload-test
+  (let [v      (pixi/pixi-timeseries (ohlc-rows 3))
+        hiccup (protocol/to-formatted-hiccup
+                v [{:yAxisScale :linear
+                    :plots [{:type :point-drop :col :close
+                             :color "red-3" :base-value 87.5}]}]
+                window)
+        payload (:options (second hiccup))]
+    (is (= :itera-pixi-timeseries (first hiccup)))
+    (is (str/includes? payload "point-drop"))
+    (is (str/includes? payload "base-value"))
+    (is (str/includes? payload "87.5"))))
 
 ;; ---------------------------------------------------------------------------
 ;; page protocol

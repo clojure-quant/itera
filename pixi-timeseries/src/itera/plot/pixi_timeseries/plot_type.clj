@@ -8,8 +8,10 @@
 
    :bar renders OHLC candlesticks and uses a 4-element :col
    ([open high low close]); the other types use a single column (or a pair
-   for :range).")
+   for :range).  :point-drop uses a scalar :col plus an optional
+   :base-value number (default 0) and draws a vertical drop line from each
+   point to that base.")
 
 (def types
   "All plot types the pixi viewer can render."
-  [:line :point :range :signal :bar])
+  [:line :point :point-drop :range :signal :bar])
