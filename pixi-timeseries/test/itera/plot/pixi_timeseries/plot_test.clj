@@ -121,6 +121,25 @@
       (is (= :itera-pixi-timeseries
              (first (protocol/to-formatted-paged-hiccup v nil window nil)))))))
 
+(deftest select-rows-resize-test
+  (let [rows (ohlc-rows 240)]
+    (testing "a narrower window re-derives the slice, ignoring stale :rows-visible"
+      (let [page  {:display :nice :step 8 :end 240 :rows-all 240 :rows-visible 75}
+            slice (pixi/select-rows {:window {:width 300 :height 400}
+                                     :window-selector page} rows)]
+        (is (= 37 (count slice)))
+        (is (= "2024-07-22" (:date (first slice))))
+        (is (= "2024-08-27" (:date (last slice))))))
+    (testing "a wider window derives more rows than the stored value"
+      (let [page  {:display :nice :step 8 :end 240 :rows-all 240 :rows-visible 10}
+            slice (pixi/select-rows {:window {:width 800 :height 400}
+                                     :window-selector page} rows)]
+        (is (= 100 (count slice)))))
+    (testing "a missing/invalid width falls back to the stored :rows-visible"
+      (let [page  {:display :nice :step 8 :end 240 :rows-all 240 :rows-visible 50}]
+        (is (= 50 (count (pixi/select-rows {:window {:height 400}
+                                            :window-selector page} rows))))))))
+
 ;; ---------------------------------------------------------------------------
 ;; invalid spec
 ;; ---------------------------------------------------------------------------

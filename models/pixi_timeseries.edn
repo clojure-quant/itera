@@ -36,7 +36,7 @@
    :show? false,
    :position {:x 0, :y 324},
    :code
-   "(fn [_]\n  (let [rows (take 300 (drop 3200 ((requiring-resolve 'demo.data/bars))))]\n    (mapv (fn [idx row]\n            (assoc row\n                   :signal (= :long (:entry row))\n                   :pivot (case idx\n                            30 [95.0 100.0 110.0]\n                            80 [85.5 99.9 101.1]\n                            nil)))\n          (range)\n          rows)))"}
+   "(fn [_]\n  (let [rows (into [] ((requiring-resolve 'demo.data/bars)))]\n    (mapv (fn [idx row]\n            (assoc row\n                   :signal (= :long (:entry row))\n                   :pivot (case idx\n                            30 [95.0 100.0 110.0]\n                            80 [85.5 99.9 101.1]\n                            nil)))\n          (range)\n          rows)))"}
   {:id "Poc5hqxV5UgnV4GD",
    :label "pixi-timeseries",
    :type :formula,

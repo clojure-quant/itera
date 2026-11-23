@@ -12,21 +12,30 @@
    the first/prior/next/last buttons over that value.  :display defaults to
    :nice (windowed: slider + nav buttons + a \"Showing start–end of N\"
    summary); with :all the slider and nav buttons are hidden and an \"All N
-   rows\" summary is shown instead.  :step is still stored but has no effect on
-   row selection.
+   rows\" summary is shown instead.  :step has no effect
+   on row selection in :all, but in :nice it drives the derived
+   rows-per-viewport.
+
+   In :nice mode the rows per viewport are derived from the live `:window`
+   :width and :step on every render (so a container resize re-windows the
+   slice and updates the slider bounds, nav step, and summary); the passed
+   `rows-visible` is only a fallback for when no `:window` is supplied or its
+   :width is missing/invalid.
 
    `page-editor-view` binds `selector-ui` to a page cursor for the paged
    itera.value.protocol implementation; the page map supplies :rows-all and
    :rows-visible.  With no page cursor the controls render without actions.
 
    The legacy :window-selector option editor is kept as a thin adapter over
-   `selector-ui` so the demo algo page keeps working; :rows-all/:rows-visible
-   may also come from the option :spec there.
+   `selector-ui` so the demo algo page keeps working; it passes no `:window`
+   and relies on `init-window-selector!` having refreshed :rows-visible, so
+   :rows-all/:rows-visible may also come from the option :spec there.
 
    This namespace is loaded via :option-ui in a project's itera-plots.edn by
    `itera.hyper/start`; it deliberately does not depend on the plot namespace."
   (:require [hyper.core :as h]
             [itera.option.core :as options]
+            [itera.plot.pixi-timeseries.window :as plot-window]
             [itera.value.protocol :as spec-plot]))
 
 (def ^:private field-style
@@ -98,9 +107,12 @@
    step-options     :step choices (default [4 6 8 10 12 14])
    rows-all         total row count; nil renders a missing-row-count message
    rows-visible     rows per viewport fallback (default 1)
+   window           window map; when supplied with a positive :width, the rows
+                    per viewport are derived from it and :step (overriding
+                    rows-visible)
    actions?         when false the controls render disabled with no actions"
   [{:keys [value update* path class style display-options step-options
-           rows-all rows-visible actions?]
+           rows-all rows-visible window actions?]
     :or {display-options [:nice :all]
          step-options [4 6 8 10 12 14]
          actions? true}}]
@@ -127,9 +139,10 @@
        [:div {:style summary-style} (str "All " rows-all " rows")]]
 
       :else
-      (let [vraw    (or rows-visible 1)
+      (let [derived (when window (plot-window/rows-visible window value))
+            vraw    (or rows-visible 1)
             visible (clamp 1 rows-all
-                           (long (if (number? vraw) vraw 1)))
+                           (long (or derived (if (number? vraw) vraw 1))))
             eraw    (:end value)
             end     (clamp visible rows-all
                            (long (if (number? eraw) eraw rows-all)))
@@ -204,6 +217,7 @@
      {:value page
       :update* update*
       :path [:window-selector]
+      :window window
       :rows-all (:rows-all page)
       :rows-visible (:rows-visible page)
       :actions? (some? page-a)})))

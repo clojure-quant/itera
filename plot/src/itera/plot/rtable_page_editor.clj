@@ -47,11 +47,12 @@
                    (h/action {:as "last-page"}
                      (swap! page-a assoc :page/current total)))
         jump-a   (when page-a
-                   (h/action {:as "jump-to-page"
-                              :when "evt.key === 'Enter'"}
-                     (when-let [n (parse-long (str $value))]
-                       (swap! page-a assoc :page/current
-                              (clamp-current total n)))))
+                   (h/expr
+                    (when (= evt.key "Enter")
+                      (h/action {:as "jump-to-page"}
+                        (when-let [n (parse-long (str $value))]
+                          (swap! page-a assoc :page/current
+                                 (clamp-current total n)))))))
         reset-a  (when page-a
                    (h/expr (set! (.-value evt.target) ~(str current))))
         input?   (and page-a (> total 1))

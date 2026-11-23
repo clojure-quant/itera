@@ -26,10 +26,13 @@
               When present, rows are windowed server-side and the client
               receives only the visible slice; the default view is the last
               page.  :display defaults to :nice (windowed); with :all every
-              row is sent and nothing is windowed.  :step (default 8) is
-              server-side only and derives :rows-visible from :window :width
-              in :nice mode.  The plot-page-editor writes :end,
-              :display and :step, while `init-window-selector!` fills
+              row is sent and nothing is windowed (:step has no effect there).
+              :step (default 8) is server-side only: in :nice mode the rows per
+              viewport are derived from the live :window :width and :step on
+              every render, so a container resize re-windows the slice; the
+              stored :rows-visible is kept for display only and used as a
+              fallback when :width is missing.  The plot-page-editor writes
+              :end, :display and :step, while `init-window-selector!` fills
               :rows-all and :rows-visible from the result and the window
               width.  Without this key all rows are sent to the client.
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
@@ -57,6 +60,7 @@
   (:require [hyper.core :as h]
             [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
             [itera.plot.pixi-timeseries.plot-page-editor :as page-editor]
+            [itera.plot.pixi-timeseries.window :as plot-window]
             [itera.util.color :as colors]
             [itera.value.protocol :as protocol]))
 
@@ -84,27 +88,14 @@
         :else            (throw (ex-info "Unsupported dataset value"
                                          {:type (type ds)})))))
 
-(defn- window-width
-  "The window width in pixels, when it is a positive number."
-  [opts]
-  (let [w (get-in opts [:window :width])]
-    (when (and (number? w) (pos? w)) w)))
-
-(defn- row-step
-  "Pixels per row from :window-selector :step, defaulting to 8 for a
-   missing/invalid step."
-  [opts]
-  (let [s (get-in opts [:window-selector :step])]
-    (if (and (number? s) (pos? s)) s 8)))
-
 (defn- visible-rows
-  "Rows per viewport from :window :width and :step, clamped to [1 row-count]
-   (0 for an empty result).  A missing/invalid width falls back to row-count."
+  "Rows per viewport derived from the live :window :width and :step, clamped
+   to [1 row-count] (0 for an empty result).  A missing/invalid width falls
+   back to row-count."
   [opts row-count]
   (if (pos? row-count)
-    (if-let [w (window-width opts)]
-      (max 1 (min row-count
-                  (long (Math/floor (/ (double w) (row-step opts))))))
+    (if-let [w (plot-window/rows-visible (:window opts) (:window-selector opts))]
+      (max 1 (min row-count w))
       row-count)
     0))
 
@@ -115,9 +106,12 @@
    from :window-selector {:display :nice|:all, :step <pixels per row>,
    :end <exclusive end row>, :rows-all <total rows>, :rows-visible <rows per
    page>}.  :display defaults to :nice; :all returns every row with no
-   windowing.  In :nice mode :rows-visible falls back to :window :width /
-   :step, and :end defaults to the row count (the last page).  Both are
-   clamped against the rows actually passed in, not :rows-all.
+   windowing.  In :nice mode the row count per viewport is derived from the
+   live :window :width and :step on every call (so a container resize
+   re-windows the slice), falling back to the stored :rows-visible and then
+   the row count only when :width is missing/invalid; :end defaults to the
+   row count (the last page).  Both are clamped against the rows actually
+   passed in, not :rows-all.
 
    Without a :window-selector, or for non-sequential/empty rows, all rows are
    returned unchanged.
@@ -134,10 +128,12 @@
             display (or (:display sel) :nice)]
         (if (= display :all)
           rows
-          (let [visible (let [v (:rows-visible sel)]
-                          (max 1 (min n (if (and (number? v) (pos? v))
-                                          (long v)
-                                          (visible-rows opts n)))))
+          (let [derived (plot-window/rows-visible (:window opts) sel)
+                stored  (:rows-visible sel)
+                visible (max 1 (min n (or derived
+                                          (when (and (number? stored) (pos? stored))
+                                            (long stored))
+                                          (visible-rows opts n))))
                 end     (let [e (:end sel)]
                           (if (number? e) (long e) n))
                 end     (max visible (min n end))]
