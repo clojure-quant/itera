@@ -28,8 +28,9 @@
    :position {:x 420, :y 180},
    :code "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
    :spec
-   [[{:type :bar, :col [:open :high :low :close]} {:type :line, :col :close, :color "blue-5"}]
-    [{:type :line, :col :close, :color "green-5"}]]}
+   [{:yAxisScale :linear,
+     :plots [{:type :bar, :col [:open :high :low :close]} {:type :line, :col :close, :color "blue-5"}]}
+    {:yAxisScale :linear, :plots [{:type :line, :col :close, :color "green-5"}]}]}
   {:id "cT_V-7o_j1jttN7C",
    :label "bar-generated",
    :type :formula,
@@ -43,7 +44,9 @@
    :show? true,
    :position {:x 312, :y 396},
    :code "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
-   :spec [[{:type :bar, :col [:open :high :low :close]}]]}],
+   :spec
+   [{:yAxisScale :linear, :plots [{:type :bar, :col [:open :high :low :close]}]}
+    {:yAxisScale :linear, :plots [{:type :point, :col :volume, :color "emerald-8"}]}]}],
  :edges
  [{:id "e1", :source-node "01-rows", :source-port "out", :target-node "03-plot", :target-port "rows"}
   {:id "37498a13-b0a2-40c1-86b7-51b3a7041526",

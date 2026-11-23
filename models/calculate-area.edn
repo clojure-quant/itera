@@ -1,0 +1,33 @@
+{:graph/name "calculate-area",
+ :nodes
+ [{:id "area-inputs",
+   :type :value,
+   :value/editor :option-ui,
+   :show? false,
+   :position {:x 60, :y 120},
+   :value {:a 1, :b 2},
+   :option-ui
+   [{:path [:a], :type :select, :name "a", :spec "[1 2 3 4 5 6 7 8 9 10]"}
+    {:path [:b], :type :select, :name "b", :spec "[1 2 3 4 5 6 7 8 9 10]"}]}
+  {:id "area-calc",
+   :type :formula,
+   :show? false,
+   :position {:x 360, :y 120},
+   :code "(fn [ctx ab] (let [{:keys [a b]} ab] {:a a :b b :c (* a b)}))"}
+  {:id "area-plot",
+   :type :formula,
+   :show? true,
+   :position {:x 660, :y 120},
+   :code
+   "(fn [ctx result] (let [{:keys [a b c]} result] (hiccup [:div [:div [:h1 \"Area Demo\"]] [:p \"a:\" (str a)] [:p \"b:\" (str b)] [:p \"area:\" (str c)]])))"}],
+ :edges
+ [{:id "e-area-inputs-calc",
+   :source-node "area-inputs",
+   :source-port "out",
+   :target-node "area-calc",
+   :target-port "ab"}
+  {:id "e-area-calc-plot",
+   :source-node "area-calc",
+   :source-port "out",
+   :target-node "area-plot",
+   :target-port "result"}]}

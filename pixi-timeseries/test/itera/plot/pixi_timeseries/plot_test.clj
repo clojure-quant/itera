@@ -4,6 +4,7 @@
    [clojure.test :refer [deftest is testing]]
    [itera.plot.pixi-timeseries.plot :as pixi]
    [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
+   [itera.util.color :as colors]
    [itera.value.protocol :as protocol]
    [tech.v3.dataset :as ds]))
 
@@ -25,15 +26,18 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest default-spec-ohlc-test
-  (is (= [[{:type :bar :col [:open :high :low :close]}]]
+  (is (= [{:yAxisScale :linear
+           :plots [{:type :bar :col [:open :high :low :close]}]}]
          (fmt/default-spec* (ohlc-rows 3)))))
 
 (deftest default-spec-line-test
   (testing ":close is preferred for non-OHLC data"
-    (is (= [[{:type :line :col :close}]]
+    (is (= [{:yAxisScale :linear
+             :plots [{:type :line :col :close}]}]
            (fmt/default-spec* [{:date "2024-01-01" :close 1.5}]))))
   (testing "the first numeric non-time column is used"
-    (is (= [[{:type :line :col :volume}]]
+    (is (= [{:yAxisScale :linear
+             :plots [{:type :line :col :volume}]}]
            (fmt/default-spec* [{:date "2024-01-01" :asset "a" :volume 3}]))))
   (testing "time and non-numeric columns are skipped"
     (is (= []
@@ -80,7 +84,8 @@
       (is (= rows (:data v)))
       (is (instance? clojure.lang.LazySeq (:data v))))
     (testing "the default spec works from seq data"
-      (is (= [[{:type :bar :col [:open :high :low :close]}]]
+      (is (= [{:yAxisScale :linear
+               :plots [{:type :bar :col [:open :high :low :close]}]}]
              (protocol/default-spec v))))
     (testing "the preformatted path works from seq data"
       (is (= :itera-pixi-timeseries
@@ -111,7 +116,8 @@
       (is (= :number (:close (protocol/column-info (:data v)))))
       (is (= :string (:date (protocol/column-info (:data v))))))
     (testing "the default spec and paged path work from dataset data"
-      (is (= [[{:type :bar :col [:open :high :low :close]}]]
+      (is (= [{:yAxisScale :linear
+               :plots [{:type :bar :col [:open :high :low :close]}]}]
              (protocol/default-spec v)))
       (let [hiccup (protocol/to-formatted-paged-hiccup v nil window nil)]
         (is (= :itera-pixi-timeseries (first hiccup)))
@@ -122,19 +128,61 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest normalize-spec-test
-  (testing "a charts vector is accepted and its keys preserved"
-    (let [spec [[{:type :bar :col [:open :high :low :close] :extra true}]
-                [{:type :line :col :close}]]]
+  (testing "canonical pane maps are preserved, including :yAxisScale :log"
+    (let [spec [{:yAxisScale :log
+                 :plots [{:type :line :col :close}]}
+                {:yAxisScale :linear
+                 :plots [{:type :range :col [:low :high] :color "red-3"}]}]]
       (is (= spec (fmt/normalize-spec spec)))))
-  (testing "a non-vector pane becomes an empty pane"
-    (is (= [[{:type :line :col :close}] []]
-           (fmt/normalize-spec [[{:type :line :col :close}] {:oops 1}]))))
+  (testing "old vector panes upgrade to :linear panes"
+    (is (= [{:yAxisScale :linear :plots [{:type :line :col :close}]}]
+           (fmt/normalize-spec [[{:type :line :col :close}]]))))
+  (testing "an invalid/missing :yAxisScale becomes :linear"
+    (is (= [{:yAxisScale :linear :plots []}]
+           (fmt/normalize-spec [{:yAxisScale :bogus :plots []}])))
+    (is (= [{:yAxisScale :linear :plots []}]
+           (fmt/normalize-spec [{:plots []}]))))
+  (testing "bar plots lose :color"
+    (is (= [{:yAxisScale :linear
+             :plots [{:type :bar :col [:open :high :low :close]}]}]
+           (fmt/normalize-spec [[{:type :bar :col [:open :high :low :close]
+                                  :color "red-3"}]]))))
+  (testing "map panes gain :plots []/:yAxisScale and keep unknown keys"
+    (is (= [{:yAxisScale :linear :plots [] :extra 1}]
+           (fmt/normalize-spec [{:extra 1}]))))
+  (testing "a non-map plot becomes an empty plot map"
+    (is (= [{:yAxisScale :linear :plots [{}]}]
+           (fmt/normalize-spec [["nope"]]))))
+  (testing "scalar panes become empty :linear panes"
+    (is (= [{:yAxisScale :linear :plots []}]
+           (fmt/normalize-spec [42]))))
   (testing "an empty vector is valid"
     (is (= [] (fmt/normalize-spec []))))
   (testing "maps, nil and scalars are invalid"
     (is (nil? (fmt/normalize-spec {:charts []})))
     (is (nil? (fmt/normalize-spec nil)))
     (is (nil? (fmt/normalize-spec 42)))))
+
+(deftest palette-test
+  (testing "the palette is the sorted distinct named colors"
+    (is (= (vec (sort (keys colors/colors)))
+           (fmt/palette* nil))))
+  (testing "used colors outside the named table are added in name order"
+    (let [spec [{:yAxisScale :linear
+                 :plots [{:type :line :col :close :color "custom-1"}]}]]
+      (is (= (vec (sort (conj (set (keys colors/colors)) "custom-1")))
+             (fmt/palette* spec))))))
+
+(deftest log-pane-payload-test
+  (let [v       (pixi/pixi-timeseries (ohlc-rows 3))
+        hiccup  (protocol/to-formatted-hiccup
+                 v [{:yAxisScale :log
+                     :plots [{:type :line :col :close}]}]
+                 window)
+        payload (:options (second hiccup))]
+    (is (= :itera-pixi-timeseries (first hiccup)))
+    (is (str/includes? payload "yAxisScale"))
+    (is (str/includes? payload "log"))))
 
 ;; ---------------------------------------------------------------------------
 ;; page protocol

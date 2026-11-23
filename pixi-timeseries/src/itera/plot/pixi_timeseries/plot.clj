@@ -4,11 +4,17 @@
    opts:
      :data    a table value implementing itera-table-info (a vector/seq of
               row maps or a tech.ml/tablecloth dataset); required
-     :charts  vector of panes, each a vector of series maps:
+     :charts  vector of panes; each pane is a map:
+              {:yAxisScale :linear|:log   ; default :linear
+               :plots [<series> ...]}
+              where each series map is:
               {:type one of itera.plot.pixi-timeseries.plot-type/types
                :col  <kw> or [<kw> <kw>] for :range
                      or [<open> <high> <low> <close>] for :bar
                :color \"blue-5\" (name in itera.util.color/colors or a CSS color)}
+              Old vector panes [[<series> ...] ...] are still accepted and
+              treated as :linear.  :log uses positive values only and falls
+              back to :linear when a pane has no positive values.
      :window  plot size, a map:
               {:mode :container|:fixed :width <px> :height <px>}
               :width and :height must be positive integers in both modes;
@@ -228,25 +234,31 @@
                                           state     (js-obj "width" w "height" h
                                                             "data" data "charts" charts
                                                             "container" container)
-                                          true-min (fn [rows col]
+                                          true-min (fn [rows col positive?]
                                                      (let [n (.-length rows)]
                                                        (loop [i 0 m js/Infinity]
                                                          (if (< i n)
                                                            (let [v (aget (aget rows i) col)]
                                                              (recur (inc i)
                                                                     (if (and (number? v)
-                                                                             (not (js/isNaN v)))
+                                                                             (not (js/isNaN v))
+                                                                             (or (not positive?)
+                                                                                 (and (> v 0)
+                                                                                      (js/isFinite v))))
                                                                       (js/Math.min m v)
                                                                       m)))
                                                            m))))
-                                          true-max (fn [rows col]
+                                          true-max (fn [rows col positive?]
                                                      (let [n (.-length rows)]
                                                        (loop [i 0 m (- js/Infinity)]
                                                          (if (< i n)
                                                            (let [v (aget (aget rows i) col)]
                                                              (recur (inc i)
                                                                     (if (and (number? v)
-                                                                             (not (js/isNaN v)))
+                                                                             (not (js/isNaN v))
+                                                                             (or (not positive?)
+                                                                                 (and (> v 0)
+                                                                                      (js/isFinite v))))
                                                                       (js/Math.max m v)
                                                                       m)))
                                                            m))))
@@ -275,15 +287,27 @@
                                                           (array c)
 
                                                           :else (array))))
-                                          bounds-of (fn [rows series]
+                                          pane-plots (fn [pane-obj]
+                                                       (if (array? pane-obj)
+                                                         pane-obj
+                                                         (if pane-obj
+                                                           (or (aget pane-obj "plots") (array))
+                                                           (array))))
+                                          pane-scale (fn [pane-obj]
+                                                       (if (and pane-obj
+                                                                (not (array? pane-obj))
+                                                                (= "log" (aget pane-obj "yAxisScale")))
+                                                         "log"
+                                                         "linear"))
+                                          bounds-of (fn [rows series positive?]
                                                       (let [cols (plot-cols series)
                                                             nc   (.-length cols)]
                                                         (loop [j 0 mn js/Infinity mx (- js/Infinity)]
                                                           (if (< j nc)
                                                             (let [col (aget cols j)]
                                                               (recur (inc j)
-                                                                     (js/Math.min mn (true-min rows col))
-                                                                     (js/Math.max mx (true-max rows col))))
+                                                                     (js/Math.min mn (true-min rows col positive?))
+                                                                     (js/Math.max mx (true-max rows col positive?))))
                                                             (array mn mx)))))
                                           nice-step (fn [span intervals]
                                                       (let [raw (/ span (max 1 intervals))]
@@ -319,6 +343,48 @@
                                                                       (array (array (/ (+ mn mx) 2) step))
                                                                       acc))))
                                                               (array (array mn 0))))))
+                                          log-tick-values (fn [mn mx sy]
+                                                            (if (<= mx mn)
+                                                              (array (array mn 0))
+                                                              (let [l10     (js/Math.log 10)
+                                                                    lmn     (js/Math.log mn)
+                                                                    lmx     (js/Math.log mx)
+                                                                    decades (/ (- lmx lmn) l10)
+                                                                    lo      (dec (js/Math.ceil (/ lmn l10)))
+                                                                    hi      (inc (js/Math.floor (/ lmx l10)))
+                                                                    mults   (if (< decades 2)
+                                                                              (array 1 2 5)
+                                                                              (array 1))
+                                                                    cands   (array)]
+                                                                (loop [e lo]
+                                                                  (when (<= e hi)
+                                                                    (let [base (js/Math.pow 10 e)]
+                                                                      (loop [k 0]
+                                                                        (when (< k (.-length mults))
+                                                                          (let [v (* base (aget mults k))]
+                                                                            (when (and (>= v mn) (<= v mx))
+                                                                              (.push cands v)))
+                                                                          (recur (inc k)))))
+                                                                    (recur (inc e))))
+                                                                (let [n    (.-length cands)
+                                                                      kept (array)]
+                                                                  (loop [i 0 prev nil]
+                                                                    (if (< i n)
+                                                                      (let [v (aget cands i)
+                                                                            y (sy v mn mx)]
+                                                                        (if (and (not (nil? y))
+                                                                                 (or (nil? prev)
+                                                                                     (>= (js/Math.abs
+                                                                                          (- prev y))
+                                                                                         30)))
+                                                                          (do (.push kept (array v 0))
+                                                                              (recur (inc i) y))
+                                                                          (recur (inc i) prev)))
+                                                                      (if (< (.-length kept) 2)
+                                                                        (if (= mn mx)
+                                                                          (array (array mn 0))
+                                                                          (array (array mn 0) (array mx 0)))
+                                                                        kept)))))))
                                           format-tick (fn [v step]
                                                         (let [decimals (if (and (number? step)
                                                                                 (> step 0))
@@ -338,7 +404,21 @@
                                                                       (.slice t 0 -1)
                                                                       t)]
                                                               (if (= t "-0") "0" t))
-                                                            s)))
+                                                             s)))
+                                          format-log-tick (fn [v]
+                                                            (if (or (>= v 1e6) (< v 1e-4))
+                                                              (.toExponential v 2)
+                                                              (let [s (.toPrecision v 6)
+                                                                    t (loop [t s]
+                                                                        (if (and (> (.-length t) 1)
+                                                                                 (.endsWith t "0")
+                                                                                 (.includes t "."))
+                                                                          (recur (.slice t 0 -1))
+                                                                          t))
+                                                                    t (if (.endsWith t ".")
+                                                                        (.slice t 0 -1)
+                                                                        t)]
+                                                                t)))
                                           label-font (fn []
                                                        (array "system-ui" "-apple-system" "Segoe UI" "Roboto"
                                                               "Helvetica Neue" "Arial" "sans-serif"))
@@ -350,16 +430,19 @@
                                                                                    "fontSize" size
                                                                                    "padding" 2
                                                                                    "fill" fill))))
-                                          make-labels (fn [ticks]
+                                          make-labels (fn [ticks log?]
                                                         (let [n      (.-length ticks)
                                                               labels (array)]
                                                           (loop [i 0]
                                                             (when (< i n)
                                                               (let [tick (aget ticks i)
                                                                     text (make-text
-                                                                          (format-tick
-                                                                           (aget tick 0)
-                                                                           (aget tick 1))
+                                                                          (if log?
+                                                                            (format-log-tick
+                                                                             (aget tick 0))
+                                                                            (format-tick
+                                                                             (aget tick 0)
+                                                                             (aget tick 1)))
                                                                           11 "#374151")]
                                                                 (.set (.-anchor text) 1 0.5)
                                                                 (.push labels text))
@@ -763,7 +846,7 @@
 
                                                               :else nil)
                                                             (.addChild pane g))))
-                                          draw-chart (fn [rows series y-offset height show-x-axis?]
+                                          draw-chart (fn [rows pane-obj y-offset height show-x-axis?]
                                                        (let [pane     (new pixi/Container)
                                                              bg       (new pixi/Graphics)
                                                              w        (.-width state)
@@ -774,19 +857,54 @@
                                                              y0       (+ pad inset)
                                                              x-gutter (if show-x-axis? 20 0)
                                                              ch       (max 1 (- bh (* 2 inset) x-gutter))
-                                                             ns       (if series (.-length series) 0)
-                                                             bnds     (loop [i 0 mn js/Infinity mx (- js/Infinity)]
-                                                                        (if (< i ns)
-                                                                          (let [b (bounds-of rows (aget series i))]
-                                                                            (recur (inc i)
-                                                                                   (js/Math.min mn (aget b 0))
-                                                                                   (js/Math.max mx (aget b 1))))
-                                                                          (array mn mx)))
+                                                             series   (pane-plots pane-obj)
+                                                             scale    (pane-scale pane-obj)
+                                                             ns       (.-length series)
+                                                             bnds-fn  (fn [positive?]
+                                                                        (loop [i 0 mn js/Infinity mx (- js/Infinity)]
+                                                                          (if (< i ns)
+                                                                            (let [b (bounds-of rows (aget series i)
+                                                                                               positive?)]
+                                                                              (recur (inc i)
+                                                                                     (js/Math.min mn (aget b 0))
+                                                                                     (js/Math.max mx (aget b 1))))
+                                                                            (array mn mx))))
+                                                             pbnds    (if (= scale "log") (bnds-fn true) nil)
+                                                             log?     (and pbnds
+                                                                           (js/isFinite (aget pbnds 0))
+                                                                           (js/isFinite (aget pbnds 1))
+                                                                           (> (aget pbnds 0) 0))
+                                                             bnds     (if log? pbnds (bnds-fn false))
                                                              mn       (aget bnds 0)
                                                              mx       (aget bnds 1)
                                                              finite?  (and (js/isFinite mn) (js/isFinite mx))
-                                                             ticks    (if finite? (tick-values mn mx ch) nil)
-                                                             labels   (if finite? (make-labels ticks) nil)
+                                                             sy       (fn [v mn mx]
+                                                                        (if (or (not (number? v))
+                                                                                (js/isNaN v))
+                                                                          nil
+                                                                          (if log?
+                                                                            (if (or (<= v 0)
+                                                                                    (not (js/isFinite v)))
+                                                                              nil
+                                                                              (if (= mx mn)
+                                                                                (+ y0 (/ ch 2))
+                                                                                (+ y0
+                                                                                   (* (- 1 (/ (- (js/Math.log v)
+                                                                                                 (js/Math.log mn))
+                                                                                              (- (js/Math.log mx)
+                                                                                                 (js/Math.log mn))))
+                                                                                      ch))))
+                                                                            (if (= mx mn)
+                                                                              (+ y0 (/ ch 2))
+                                                                              (+ y0 (* (- 1 (/ (- v mn)
+                                                                                               (- mx mn)))
+                                                                                       ch))))))
+                                                             ticks    (if finite?
+                                                                        (if log?
+                                                                          (log-tick-values mn mx sy)
+                                                                          (tick-values mn mx ch))
+                                                                        nil)
+                                                             labels   (if finite? (make-labels ticks log?) nil)
                                                              widest   (if finite?
                                                                         (loop [i 0 mw 0]
                                                                           (if (< i (.-length labels))
@@ -805,15 +923,6 @@
                                                              n        (.-length rows)
                                                              xstep    (/ cw (max 1 n))
                                                              sx       (fn [i] (+ x0 (* (+ i 0.5) xstep)))
-                                                             sy       (fn [v mn mx]
-                                                                        (if (or (not (number? v))
-                                                                                (js/isNaN v))
-                                                                          nil
-                                                                          (if (= mx mn)
-                                                                            (+ y0 (/ ch 2))
-                                                                            (+ y0 (* (- 1 (/ (- v mn)
-                                                                                             (- mx mn)))
-                                                                                     ch)))))
                                                              geom     (js-obj "sx" sx "sy" sy
                                                                               "x0" x0 "y0" y0
                                                                               "cw" cw "ch" ch
@@ -884,16 +993,22 @@
   (or (colors/set-color (or c "blue-5")) "#3b82f6"))
 
 (defn- resolve-charts
-  "Resolve every plot's :color name to a concrete CSS color, server-side, so
-   the client component needs no color table."
+  "Resolve every non-bar plot's :color name to a concrete CSS color,
+   server-side, so the client component needs no color table.  Bars are left
+   without a color; the viewer colors them by close-vs-open."
   [charts]
   (when charts
     (mapv (fn [pane]
-            (mapv (fn [series]
-                    (if (map? series)
-                      (update series :color resolve-color)
-                      series))
-                  pane))
+            (if (map? pane)
+              (update pane :plots
+                      (fn [plots]
+                        (mapv (fn [series]
+                                (if (and (map? series)
+                                         (not= :bar (:type series)))
+                                  (update series :color resolve-color)
+                                  series))
+                              (or plots []))))
+              pane))
           charts)))
 
 (defn- normalize-date-value

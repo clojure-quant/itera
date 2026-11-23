@@ -1,0 +1,43 @@
+{:graph/name "saying"
+ :nodes
+ [{:id "01-sayings"
+   :label "sayings"
+   :type :value
+   :value/editor :edn
+   :show? false
+   :position {:x 24 :y 60}
+   :value
+   ["Peace to the world"
+    "The hottentotten are here"
+    "The sky is always blue"
+    "Biene Maya and Willy"
+    "Quot erum demunstrandum"
+    "The early bird catches the worm"
+    "Six Six Six"
+    "Seven Angles are here"
+    "8 means infinity "
+    "what is the secret of nine?"]}
+  {:id "02-random-saying"
+   :label "random saying"
+   :type :formula
+   :show? false
+   :position {:x 384 :y 60}
+   :code "(fn [ctx sayings]\n  (rand-nth sayings))"}
+  {:id "03-saying"
+   :label "saying"
+   :type :formula
+   :show? true
+   :position {:x 744 :y 60}
+   :code
+   "(fn [ctx saying]\n  (hiccup\n   [:blockquote\n    {:style {:fontSize \"1.4rem\"\n             :fontFamily \"cursive, Georgia, serif\"\n             :margin \"0.75rem 0 0 0\"\n             :padding \"1rem 1.25rem\"\n             :borderLeft \"4px solid #6b9bd1\"\n             :backgroundColor \"#eef6fc\"\n             :borderRadius \"0 0.375rem 0.375rem 0\"\n             :lineHeight 1.5}}\n    saying]))"}]
+ :edges
+ [{:id "e-1"
+   :source-node "01-sayings"
+   :source-port "out"
+   :target-node "02-random-saying"
+   :target-port "sayings"}
+  {:id "e-2"
+   :source-node "02-random-saying"
+   :source-port "out"
+   :target-node "03-saying"
+   :target-port "saying"}]}

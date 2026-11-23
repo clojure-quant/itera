@@ -49,3 +49,38 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
 
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
 
+
+
+pixi-timeseries-format-edit-ui
+should get a nicer ui.
+
+PANES:
+
+1. "Pane 1 (2 plots)" is the pane header.
+ in the very right of the pane header should be a X in red color
+ with borders. this will remove a pane. remove the button "Remove Pane"
+2. The "+ Pane" button should be after all panes.
+3. "+ Plot" button should be below all the plots within a pane
+4. the pane should have a xAxisScale option that can be either :linear
+   or :log (this needs an adjustment in the plot function)
+
+PLOT
+ All Plots should be in a Table with 3 columns:
+ - Type
+ - Column(s)
+ - Opts
+
+ The type column should be 20em wide
+ The columns column should be 20 em wide
+ The opts column should fill the remaining space
+
+ For type BAR the columns columns will have 4 rows.
+  Open: xxx
+  High: xxx
+  Low: xxx
+  Close: xxx
+A bar plot does not have a color.
+
+The color picker should have all colors sorted by name
+
+
