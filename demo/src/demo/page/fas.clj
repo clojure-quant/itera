@@ -2,7 +2,7 @@
   "Font Awesome reference page: every free solid icon in the Font Awesome
    6.5.1 snapshot, grouped A-Z with labels, aliases, and a server-side filter.
 
-   The icon list in `data/fontawesome-solid.edn` and the stylesheet pin in
+   The icon list in `public/data/fontawesome-solid.edn` and the stylesheet pin in
    itera.util.fas must be regenerated together when the Font Awesome version
    changes."
   (:require [clojure.edn :as edn]
@@ -12,7 +12,7 @@
             [itera.util.fas :as fas]))
 
 (def ^:private icons*
-  (delay (edn/read-string (slurp (io/resource "data/fontawesome-solid.edn")))))
+  (delay (edn/read-string (slurp (io/resource "public/data/fontawesome-solid.edn")))))
 
 (def ^:private page-css
   ".fas-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.5rem;}

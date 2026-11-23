@@ -93,13 +93,13 @@
    :price  :double})
 
 (def ^:private bars*
-  (delay (read-csv "data/bars-1m-full.csv" bars-schema)))
+  (delay (read-csv "public/data/bars-1m-full.csv" bars-schema)))
 
 (def ^:private roundtrips*
-  (delay (read-csv "data/roundtrips.csv" roundtrips-schema)))
+  (delay (read-csv "public/data/roundtrips.csv" roundtrips-schema)))
 
 (def ^:private stocks*
-  (delay (read-csv "data/stocks.csv" stocks-schema)))
+  (delay (read-csv "public/data/stocks.csv" stocks-schema)))
 
 (defn bars
   "Bars dataset: numeric columns as doubles, :epoch long, :entry keyword."

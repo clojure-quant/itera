@@ -1,6 +1,6 @@
 (ns demo.convert
   "Dev-only converter: reads the Dali transit-json demo datasets and writes
-   committed CSV resources under demo/resources/data.
+   committed CSV resources under demo/resources/public/data.
 
    Run from demo/:
 
@@ -18,9 +18,9 @@
    :stocks     "/home/florian/repo/pink-gorilla/dali-table/demo/resources/public/stocks.transit-json"})
 
 (def ^:private outputs
-  {:bars       "resources/data/bars-1m-full.csv"
-   :roundtrips "resources/data/roundtrips.csv"
-   :stocks     "resources/data/stocks.csv"})
+  {:bars       "resources/public/data/bars-1m-full.csv"
+   :roundtrips "resources/public/data/roundtrips.csv"
+   :stocks     "resources/public/data/stocks.csv"})
 
 (def ^:private roundtrip-date-format
   (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm"))

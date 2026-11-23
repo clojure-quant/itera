@@ -31,9 +31,12 @@
    spec).
 
    It also implements itera-page-plot: the interact-tab cell UI renders one
-   page of 10 rows at a time and shows a page editor below the table with
-   first/previous/next/last buttons and an editable page number.
-   `to-hiccup` still renders the full table."
+   page at a time and shows a page editor below the table with first/previous/
+   next/last buttons and an editable page number.  Rows per page come from the
+   window height, the fixed header height and the spec's :row-height (not a
+   constant).  With no positive window height the table is not paginated.  All
+   page controls are always rendered and are disabled at the ends (or when
+   there is only one page).  `to-hiccup` still renders the full table."
   (:require [clojure.string :as str]
             [itera.plot.rtable-default-column-formatter :as rtable-default-fmt]
             [itera.plot.rtable-format-ui :as rtable-fmt]
@@ -147,26 +150,59 @@
                                    row-height (assoc :style {:height row-height}))]
                             (map (fn [c] (cell-td rc c row)) columns))))])))))
 
-(def page-row-size
-  "Rows shown per page by the itera-page-plot implementation."
-  10)
+(def header-height
+  "Pixels reserved for the sticky table header when computing rows per page."
+  32)
 
-(defn- page-count
-  "Number of pages: ceil(row-count / page-row-size), at least 1."
-  [row-count]
-  (max 1 (quot (+ row-count (dec page-row-size)) page-row-size)))
+(def ^:private px-per-unit
+  {"px" 1.0, "rem" 16.0, "em" 16.0})
+
+(defn css-length->px
+  "Parse a CSS length (px/rem/em, unitless = px) to px.  rem/em use a 16px
+   base.  nil when S is not a length."
+  [s]
+  (when-let [[_ n unit] (re-matches #"(?i)\s*(\d+(?:\.\d+)?)\s*(px|rem|em)?\s*"
+                                    (str s))]
+    (* (parse-double n) (px-per-unit (some-> unit str/lower-case) 1.0))))
+
+(defn row-height-px
+  "Pixel body row height for SPEC, falling back to default-row-height when
+   :row-height is missing or not a CSS length."
+  [spec]
+  (or (some-> (:row-height (rtable-fmt/normalize-spec spec)) css-length->px)
+      (css-length->px rtable-fmt/default-row-height)))
+
+(defn rows-per-page
+  "Rows that fit in WINDOW: floor((height - header-height) / row-height), at
+   least 1.  nil when WINDOW has no positive :height (do not paginate)."
+  [spec window]
+  (let [height (:height window)
+        row-px (row-height-px spec)]
+    (when (and (number? height) (pos? height) row-px (pos? row-px))
+      (max 1 (long (Math/floor (/ (- height header-height) (double row-px))))))))
+
+(defn page-count
+  "Pages needed for ROW-COUNT at ROW-SIZE; 1 when ROW-SIZE is nil."
+  [row-count row-size]
+  (if (and row-size (pos? row-size))
+    (max 1 (quot (+ row-count (dec row-size)) row-size))
+    1))
+
+(defn- page-geometry [row-count spec window]
+  (let [row-size (rows-per-page spec window)]
+    {:row-size row-size
+     :total    (page-count row-count row-size)}))
 
 (defn- clamp-current [total current]
   (max 1 (min (or current 1) total)))
 
 (defn- page-rows
-  "The rows of PAGE, using drop/take so seq and vector data both work."
-  [rows page]
-  (let [row-size (or (:page/row-size page) page-row-size)
-        start    (* (dec (clamp-current (:page/total page 1)
-                                        (:page/current page 1)))
-                    row-size)]
-    (into [] (take row-size (drop start rows)))))
+  "Rows of the 1-based CURRENT page, at ROW-SIZE.  All rows when ROW-SIZE nil."
+  [rows row-size current]
+  (if (and row-size (pos? row-size))
+    (let [start (* (dec current) row-size)]
+      (into [] (take row-size (drop start rows))))
+    (vec rows)))
 
 (defrecord Rtable [data]
   itera.value.protocol/itera-convertable
@@ -190,19 +226,22 @@
     (rtable-fmt/rtable-format-edit-ui (:data v) {:spec spec :code-a code-a}))
   spec-plot/itera-page-plot
   (to-formatted-paged-hiccup [v spec window page]
-    (let [page (or page (spec-plot/init-page v spec window))]
+    (let [{:keys [row-size total]} (page-geometry (count (:data v)) spec window)
+          current (clamp-current total (:page/current page 1))]
       (spec-plot/to-formatted-hiccup
-       (assoc v :data (page-rows (:data v) page))
+       (assoc v :data (page-rows (:data v) row-size current))
        spec
        window)))
 
-  (init-page [v _spec _window]
-    {:page/row-size page-row-size
-     :page/total    (page-count (count (:data v)))
-     :page/current  1})
+  (init-page [v spec window]
+    (let [{:keys [row-size total]} (page-geometry (count (:data v)) spec window)]
+      {:page/row-size row-size
+       :page/total    total
+       :page/current  1}))
 
-  (page-editor [v _spec _window page-a]
-    (page-editor/page-editor-view v page-a)))
+  (page-editor [v spec window page-a]
+    (let [{:keys [total]} (page-geometry (count (:data v)) spec window)]
+      (page-editor/page-editor-view total page-a))))
 
 (defn rtable
   [data]

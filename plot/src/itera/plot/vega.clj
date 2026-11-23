@@ -18,11 +18,19 @@
    the host element is sized from it.
 
    Data attachment:
-     - a map name -> rows is attached as embed `datasets`
+     - a map name -> raw value is injected into a raw Vega spec's matching
+       `:data` entries as `:values` (the entry's `:url` is removed, `:format`
+       is kept so Vega still parses the value);
+     - for `:vegalite` a map name -> rows becomes the spec's `:datasets`
        (the spec then references it with {:data {:name ...}});
      - sequential rows are attached as the spec's `:data.values` for
        `:vegalite` only; raw Vega data should be inline in the spec or a
        named-dataset map.
+
+   Data may also come from the spec's own `:url` entries.  The client embed is
+   given an HTTP loader with file access disabled, so the esm.sh vega-loader
+   build fetches relative URLs such as `/data/x.json` over HTTP instead of
+   trying to read them from the filesystem.
 
    `vegalite` renders a Vega-Lite spec; `vega` forces vega-embed's \"vega\" mode
    for a raw Vega spec.
@@ -37,13 +45,18 @@
 (def head [])
 
 (h/defc itera-vega-embed
-  {:require [["https://esm.sh/vega-embed@6.26.0" :as vega-embed]]}
+  {:require [["https://esm.sh/vega-embed@6.26.0" :as vega-embed]
+             ["https://esm.sh/vega-loader@4.5.4" :as vega-loader]]}
   [{:keys [options]}]
   (render
    [:div {:style "width:100%;height:100%"}])
   (mount [root]
-    (let [el (.querySelector root "div")]
-      (-> (vega-embed/default el (.-spec options) (.-embedOpts options))
+    (let [el (.querySelector root "div")
+          loader (vega-loader/loader)
+          embed-opts (.-embedOpts options)]
+      (set! (.-fileAccess loader) false)
+      (set! (.-loader embed-opts) loader)
+      (-> (vega-embed/default el (.-spec options) embed-opts)
           (.then (fn [res] (set! (.-result ctx) res)))
           (.catch (fn [err] (js/console.error "vega-embed error" err))))))
   (update [root]
@@ -51,14 +64,33 @@
       (let [v (.-view r)]
         (when v (.finalize v))))
     (set! (.-result ctx) nil)
-    (let [el (.querySelector root "div")]
-      (-> (vega-embed/default el (.-spec options) (.-embedOpts options))
+    (let [el (.querySelector root "div")
+          loader (vega-loader/loader)
+          embed-opts (.-embedOpts options)]
+      (set! (.-fileAccess loader) false)
+      (set! (.-loader embed-opts) loader)
+      (-> (vega-embed/default el (.-spec options) embed-opts)
           (.then (fn [res] (set! (.-result ctx) res)))
           (.catch (fn [err] (js/console.error "vega-embed error" err))))))
   (unmount [_]
     (when-let [r (.-result ctx)]
       (let [v (.-view r)]
         (when v (.finalize v))))))
+
+(defn- inject-data
+  "For raw Vega specs, replace :url with :values on each :data entry whose
+   :name matches a key in DATA (a map of keyword -> raw value)."
+  [spec data]
+  (if (and (map? data) (sequential? (:data spec)))
+    (update spec :data
+            (fn [entries]
+              (mapv (fn [entry]
+                      (let [k (keyword (:name entry))]
+                        (if (contains? data k)
+                          (-> entry (dissoc :url) (assoc :values (get data k)))
+                          entry)))
+                    entries)))
+    spec))
 
 (defn- embed-options
   "Build the itera-vega-embed `options` map from DATA, MODE, CHART-SPEC and
@@ -68,10 +100,11 @@
                     (select-keys window [:width :height]))
         base-embed (cond-> {}
                      (= mode :vega) (assoc :mode "vega"))
+        spec (if (= mode :vega) (inject-data spec data) spec)
         [spec embed-opts]
         (cond
-          (map? data)
-          [spec (assoc base-embed :datasets data)]
+          (and (= mode :vegalite) (map? data))
+          [(assoc spec :datasets data) base-embed]
 
           (and (= mode :vegalite) (sequential? data))
           [(assoc spec :data {:values (vec data)}) base-embed]

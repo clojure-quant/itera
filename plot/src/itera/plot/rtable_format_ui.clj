@@ -252,6 +252,8 @@
    opts  {:spec <current spec> :code-a <hyper cursor holding EDN text>}
 
    A row-height input sets the body row height (blank restores the default).
+   The row height also drives the paged table's rows per page: rows per page is
+   computed from the plot window height, the header height and this value.
    The table below has one row per :columns entry: delete, column, width,
    format, format-opts, style.  The footer + button appends an entry seeded
    with the first data column.  Every edit resets code-a to (pr-str spec);
@@ -271,7 +273,7 @@
       [:input {:type "text"
                :value (or (:row-height spec) "")
                :placeholder default-row-height
-               :title "CSS length in rem, px or em, e.g. 1.8rem"
+               :title "Body row height; CSS length in rem, px or em. Controls rows per page."
                :aria-label "Row height"
                :style (assoc input-style :width "8rem")
                :data-on:change (h/action (set-row-height! opts $value))}]]

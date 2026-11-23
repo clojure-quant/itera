@@ -26,11 +26,15 @@
     (is (= {} embedOpts))))
 
 (deftest embed-options-datasets-test
-  (testing "both modes attach a name -> rows map as embed datasets"
-    (is (= {:datasets datasets}
-           (:embedOpts (#'vega/embed-options datasets :vegalite nil nil))))
-    (is (= {:mode "vega" :datasets datasets}
-           (:embedOpts (#'vega/embed-options datasets :vega nil nil))))))
+  (testing "vegalite map data goes into the spec's :datasets"
+    (let [{:keys [spec embedOpts]} (#'vega/embed-options datasets :vegalite nil nil)]
+      (is (= datasets (:datasets spec)))
+      (is (= {} embedOpts))))
+  (testing "vega map data fills matching :data entries with :values"
+    (let [chart-spec {:data [{:name "table" :url "/r/data/foo"}]}
+          {:keys [spec embedOpts]} (#'vega/embed-options datasets :vega chart-spec nil)]
+      (is (= [{:name "table" :values rows}] (:data spec)))
+      (is (= {:mode "vega"} embedOpts)))))
 
 (deftest embed-options-vega-mode-test
   (is (= {:mode "vega"}

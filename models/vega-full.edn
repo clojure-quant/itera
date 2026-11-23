@@ -1,0 +1,979 @@
+{:graph/name "vega-full",
+ :ns-data
+ "(ns itera.user.vega-full (:require [itera.plot.hiccup :refer [hiccup]]\n  [itera.plot.text :refer [text]]\n  [itera.plot.image :refer [image image-inline]]\n  [itera.util.fas :refer [fas]]\n  [itera.plot.pixi-timeseries.plot :refer [pixi-timeseries pixi-timeseries-ds]]\n  [itera.plot.aggrid :refer [aggrid]]\n  [itera.plot.cheetah :refer [cheetah]]\n  [itera.plot.rtable :refer [rtable]]\n  [itera.plot.highcharts :refer [highchart highstock]]\n  [itera.plot.highcharts-timeseries :refer [highcharts-timeseries]]\n  [itera.plot.vega :refer [vega vegalite]]\n  [itera.plot.plotly :refer [plotly]]\n  [itera.plot.echarts :refer [echarts]]\n  [itera.plot.cytoscape :refer [cytoscape]]\n  [itera.plot.fipp :refer [fipp]]\n  [itera.plot.md :refer [md md-resource]]\n  [clojure.string :as string]\n  [clojure.edn :as edn]\n  [demo.flow :as df]))",
+ :nodes
+ [{:id "bar-chart",
+   :label "bar chart",
+   :type :formula,
+   :show? true,
+   :position {:x 60, :y 60},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "A basic bar chart example, with value labels shown upon mouse hover.",
+    :axes [{:orient "bottom", :scale "xscale"} {:orient "left", :scale "yscale"}],
+    :width 400,
+    :scales
+    [{:name "xscale",
+      :type "band",
+      :domain {:data "table", :field "category"},
+      :range "width",
+      :padding 0.05,
+      :round true}
+     {:name "yscale", :domain {:data "table", :field "amount"}, :nice true, :range "height"}],
+    :padding 5,
+    :marks
+    [{:type "rect",
+      :from {:data "table"},
+      :encode
+      {:enter
+       {:x {:scale "xscale", :field "category"},
+        :width {:scale "xscale", :band 1},
+        :y {:scale "yscale", :field "amount"},
+        :y2 {:scale "yscale", :value 0}},
+       :update {:fill {:value "steelblue"}},
+       :hover {:fill {:value "red"}}}}
+     {:type "text",
+      :encode
+      {:enter {:align {:value "center"}, :baseline {:value "bottom"}, :fill {:value "#333"}},
+       :update
+       {:x {:scale "xscale", :signal "tooltip.category", :band 0.5},
+        :y {:scale "yscale", :signal "tooltip.amount", :offset -2},
+        :text {:signal "tooltip.amount"},
+        :fillOpacity [{:test "datum === tooltip", :value 0} {:value 1}]}}}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "tooltip",
+      :value {},
+      :on [{:events "rect:mouseover", :update "datum"} {:events "rect:mouseout", :update "{}"}]}],
+    :height 200,
+    :data
+    [{:name "table",
+      :values
+      [{:category "A", :amount 28}
+       {:category "B", :amount 55}
+       {:category "C", :amount 43}
+       {:category "D", :amount 91}
+       {:category "E", :amount 81}
+       {:category "F", :amount 53}
+       {:category "G", :amount 19}
+       {:category "H", :amount 87}]}]}}
+ {:id "box-chart",
+   :label "box plot",
+   :type :formula,
+   :show? true,
+   :position {:x 320, :y 60},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "A box plot example showing aggregate statistics for penguin body mass.",
+    :config {:axisBand {:bandPosition 1, :tickExtra true, :tickOffset 0}},
+    :axes
+    [{:orient "bottom", :scale "xscale", :zindex 1}
+     {:orient "left", :scale "layout", :tickCount 5, :zindex 1}],
+    :width 500,
+    :scales
+    [{:name "layout", :type "band", :range "height", :domain {:data "penguins", :field "Species"}}
+     {:name "xscale",
+      :type "linear",
+      :range "width",
+      :round true,
+      :domain {:data "penguins", :field "Body Mass (g)"},
+      :domainMin 2000,
+      :zero false,
+      :nice true}],
+    :padding 5,
+    :marks
+    [{:type "group",
+      :from {:facet {:data "penguins", :name "species", :groupby "Species"}},
+      :encode
+      {:enter
+       {:yc {:scale "layout", :field "Species", :band 0.5},
+        :height {:signal "plotWidth"},
+        :width {:signal "width"}}},
+      :data
+      [{:name "summary",
+        :source "species",
+        :transform
+        [{:type "aggregate",
+          :fields ["Body Mass (g)" "Body Mass (g)" "Body Mass (g)" "Body Mass (g)" "Body Mass (g)"],
+          :ops ["min" "q1" "median" "q3" "max"],
+          :as ["min" "q1" "median" "q3" "max"]}]}],
+      :marks
+      [{:type "rect",
+        :from {:data "summary"},
+        :encode
+        {:enter {:fill {:value "black"}, :height {:value 1}},
+         :update
+         {:yc {:signal "plotWidth / 2", :offset -0.5},
+          :x {:scale "xscale", :field "min"},
+          :x2 {:scale "xscale", :field "max"}}}}
+       {:type "rect",
+        :from {:data "summary"},
+        :encode
+        {:enter {:fill {:value "steelblue"}, :cornerRadius {:value 4}},
+         :update
+         {:yc {:signal "plotWidth / 2"},
+          :height {:signal "plotWidth / 2"},
+          :x {:scale "xscale", :field "q1"},
+          :x2 {:scale "xscale", :field "q3"}}}}
+       {:type "rect",
+        :from {:data "summary"},
+        :encode
+        {:enter {:fill {:value "aliceblue"}, :width {:value 2}},
+         :update
+         {:yc {:signal "plotWidth / 2"},
+          :height {:signal "plotWidth / 2"},
+          :x {:scale "xscale", :field "median"}}}}]}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals [{:name "plotWidth", :value 60} {:name "height", :update "(plotWidth + 10) * 3"}],
+    :data
+    [{:name "penguins",
+      :url "/data/penguins.json",
+      :transform [{:type "filter", :expr "datum.Species != null && datum['Body Mass (g)'] != null"}]}]}}
+ {:id "brush-chart",
+   :label "brushing scatter",
+   :type :formula,
+   :show? true,
+   :position {:x 580, :y 60},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "A scatter plot matrix of penguin data with interactive linked selections.",
+    :legends
+    [{:fill "color",
+      :title "Species",
+      :offset 0,
+      :encode {:symbols {:update {:fillOpacity {:value 0.5}, :stroke {:value "transparent"}}}}}],
+    :config {:axis {:tickColor "#ccc"}},
+    :axes
+    [{:orient "left",
+      :scale "Beak Length (mm)Y",
+      :minExtent 25,
+      :title "Beak Length (mm)",
+      :tickCount 5,
+      :domain false,
+      :position {:signal "3 * chartStep"}}
+     {:orient "left",
+      :scale "Beak Depth (mm)Y",
+      :minExtent 25,
+      :title "Beak Depth (mm)",
+      :tickCount 5,
+      :domain false,
+      :position {:signal "2 * chartStep"}}
+     {:orient "left",
+      :scale "Flipper Length (mm)Y",
+      :minExtent 25,
+      :title "Flipper Length (mm)",
+      :tickCount 5,
+      :domain false,
+      :position {:signal "1 * chartStep"}}
+     {:orient "left",
+      :scale "Body Mass (g)Y",
+      :minExtent 25,
+      :title "Body Mass (g)",
+      :tickCount 5,
+      :domain false}
+     {:orient "bottom",
+      :scale "Beak Length (mm)X",
+      :title "Beak Length (mm)",
+      :tickCount 5,
+      :domain false,
+      :offset {:signal "-chartPad"}}
+     {:orient "bottom",
+      :scale "Beak Depth (mm)X",
+      :title "Beak Depth (mm)",
+      :tickCount 5,
+      :domain false,
+      :offset {:signal "-chartPad"},
+      :position {:signal "1 * chartStep"}}
+     {:orient "bottom",
+      :scale "Flipper Length (mm)X",
+      :title "Flipper Length (mm)",
+      :tickCount 5,
+      :domain false,
+      :offset {:signal "-chartPad"},
+      :position {:signal "2 * chartStep"}}
+     {:orient "bottom",
+      :scale "Body Mass (g)X",
+      :title "Body Mass (g)",
+      :tickCount 5,
+      :domain false,
+      :offset {:signal "-chartPad"},
+      :position {:signal "3 * chartStep"}}],
+    :scales
+    [{:name "groupx", :type "band", :range "width", :domain {:data "fields", :field "data"}}
+     {:name "groupy", :type "band", :range [{:signal "height"} 0], :domain {:data "fields", :field "data"}}
+     {:name "color", :type "ordinal", :domain {:data "penguins", :field "Species"}, :range "category"}
+     {:name "Beak Length (mm)X",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Beak Length (mm)"},
+      :range [0 {:signal "chartSize"}]}
+     {:name "Beak Depth (mm)X",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Beak Depth (mm)"},
+      :range [0 {:signal "chartSize"}]}
+     {:name "Flipper Length (mm)X",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Flipper Length (mm)"},
+      :range [0 {:signal "chartSize"}]}
+     {:name "Body Mass (g)X",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Body Mass (g)"},
+      :range [0 {:signal "chartSize"}]}
+     {:name "Beak Length (mm)Y",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Beak Length (mm)"},
+      :range [{:signal "chartSize"} 0]}
+     {:name "Beak Depth (mm)Y",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Beak Depth (mm)"},
+      :range [{:signal "chartSize"} 0]}
+     {:name "Flipper Length (mm)Y",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Flipper Length (mm)"},
+      :range [{:signal "chartSize"} 0]}
+     {:name "Body Mass (g)Y",
+      :zero false,
+      :nice true,
+      :domain {:data "penguins", :field "Body Mass (g)"},
+      :range [{:signal "chartSize"} 0]}],
+    :padding 10,
+    :marks
+    [{:type "rect",
+      :encode
+      {:enter {:fill {:value "#eee"}},
+       :update
+       {:opacity {:signal "cell ? 1 : 0"},
+        :x {:signal "cell ? cell.x + brushX[0] : 0"},
+        :x2 {:signal "cell ? cell.x + brushX[1] : 0"},
+        :y {:signal "cell ? cell.y + brushY[0] : 0"},
+        :y2 {:signal "cell ? cell.y + brushY[1] : 0"}}}}
+     {:name "cell",
+      :type "group",
+      :from {:data "cross"},
+      :encode
+      {:enter
+       {:x {:scale "groupx", :field "x.data"},
+        :y {:scale "groupy", :field "y.data"},
+        :width {:signal "chartSize"},
+        :height {:signal "chartSize"},
+        :fill {:value "transparent"},
+        :stroke {:value "#ddd"}}},
+      :marks
+      [{:type "symbol",
+        :from {:data "penguins"},
+        :interactive false,
+        :encode
+        {:enter
+         {:x {:scale {:parent "xscale"}, :field {:datum {:parent "x.data"}}},
+          :y {:scale {:parent "yscale"}, :field {:datum {:parent "y.data"}}},
+          :fillOpacity {:value 0.5},
+          :size {:value 36}},
+         :update
+         {:fill
+          [{:test
+            "!cell || inrange(datum[cell.datum.x.data], rangeX) && inrange(datum[cell.datum.y.data], rangeY)",
+            :scale "color",
+            :field "Species"}
+           {:value "#ddd"}]}}}]}
+     {:type "rect",
+      :name "brush",
+      :encode
+      {:enter {:fill {:value "transparent"}},
+       :update
+       {:x {:signal "cell ? cell.x + brushX[0] : 0"},
+        :x2 {:signal "cell ? cell.x + brushX[1] : 0"},
+        :y {:signal "cell ? cell.y + brushY[0] : 0"},
+        :y2 {:signal "cell ? cell.y + brushY[1] : 0"}}}}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "chartSize", :value 120}
+     {:name "chartPad", :value 20}
+     {:name "chartStep", :update "chartSize + chartPad"}
+     {:name "width", :update "chartStep * 4"}
+     {:name "height", :update "chartStep * 4"}
+     {:name "cell",
+      :value nil,
+      :on
+      [{:events "@cell:mousedown", :update "group()"}
+       {:events "@cell:mouseup", :update "!span(brushX) && !span(brushY) ? null : cell"}]}
+     {:name "brushX",
+      :value 0,
+      :on
+      [{:events "@cell:mousedown", :update "[x(cell), x(cell)]"}
+       {:events "[@cell:mousedown, window:mouseup] > window:mousemove",
+        :update "[brushX[0], clamp(x(cell), 0, chartSize)]"}
+       {:events {:signal "delta"},
+        :update "clampRange([anchorX[0] + delta[0], anchorX[1] + delta[0]], 0, chartSize)"}]}
+     {:name "brushY",
+      :value 0,
+      :on
+      [{:events "@cell:mousedown", :update "[y(cell), y(cell)]"}
+       {:events "[@cell:mousedown, window:mouseup] > window:mousemove",
+        :update "[brushY[0], clamp(y(cell), 0, chartSize)]"}
+       {:events {:signal "delta"},
+        :update "clampRange([anchorY[0] + delta[1], anchorY[1] + delta[1]], 0, chartSize)"}]}
+     {:name "down", :value [0 0], :on [{:events "@brush:mousedown", :update "[x(cell), y(cell)]"}]}
+     {:name "anchorX", :value nil, :on [{:events "@brush:mousedown", :update "slice(brushX)"}]}
+     {:name "anchorY", :value nil, :on [{:events "@brush:mousedown", :update "slice(brushY)"}]}
+     {:name "delta",
+      :value [0 0],
+      :on
+      [{:events "[@brush:mousedown, window:mouseup] > window:mousemove",
+        :update "[x(cell) - down[0], y(cell) - down[1]]"}]}
+     {:name "rangeX",
+      :value [0 0],
+      :on [{:events {:signal "brushX"}, :update "invert(cell.datum.x.data + 'X', brushX)"}]}
+     {:name "rangeY",
+      :value [0 0],
+      :on [{:events {:signal "brushY"}, :update "invert(cell.datum.y.data + 'Y', brushY)"}]}
+     {:name "cursor",
+      :value "'default'",
+      :on
+      [{:events "[@cell:mousedown, window:mouseup] > window:mousemove!", :update "'nwse-resize'"}
+       {:events "@brush:mousemove, [@brush:mousedown, window:mouseup] > window:mousemove!", :update "'move'"}
+       {:events "@brush:mouseout, window:mouseup", :update "'default'"}]}],
+    :data
+    [{:name "penguins",
+      :url "/data/penguins.json",
+      :transform [{:type "filter", :expr "datum['Beak Length (mm)'] != null"}]}
+     {:name "fields", :values ["Beak Length (mm)" "Beak Depth (mm)" "Flipper Length (mm)" "Body Mass (g)"]}
+     {:name "cross",
+      :source "fields",
+      :transform
+      [{:type "cross", :as ["x" "y"]}
+       {:type "formula", :as "xscale", :expr "datum.x.data + 'X'"}
+       {:type "formula", :as "yscale", :expr "datum.y.data + 'Y'"}]}]}}
+ {:id "contour-chart",
+   :label "contour plot",
+   :type :formula,
+   :show? true,
+   :position {:x 840, :y 60},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "A contour plot example, overlaying a density estimate on scatter plot points.",
+    :autosize "pad",
+    :legends [{:stroke "color", :symbolType "stroke"}],
+    :axes
+    [{:scale "x", :grid true, :domain false, :orient "bottom", :tickCount 5, :title "Horsepower"}
+     {:scale "y", :grid true, :domain false, :orient "left", :titlePadding 5, :title "Miles_per_Gallon"}],
+    :width 500,
+    :scales
+    [{:name "x",
+      :type "linear",
+      :round true,
+      :nice true,
+      :zero true,
+      :domain {:data "source", :field "Horsepower"},
+      :range "width"}
+     {:name "y",
+      :type "linear",
+      :round true,
+      :nice true,
+      :zero true,
+      :domain {:data "source", :field "Miles_per_Gallon"},
+      :range "height"}
+     {:name "color",
+      :type "ordinal",
+      :domain {:data "source", :field "Origin", :sort {:order "descending"}},
+      :range "category"}],
+    :padding 5,
+    :marks
+    [{:name "marks",
+      :type "symbol",
+      :from {:data "source"},
+      :encode
+      {:update
+       {:x {:scale "x", :field "Horsepower"},
+        :y {:scale "y", :field "Miles_per_Gallon"},
+        :size {:value 4},
+        :fill {:value "#ccc"}}}}
+     {:type "image",
+      :from {:data "density"},
+      :encode
+      {:update
+       {:x {:value 0},
+        :y {:value 0},
+        :width {:signal "width"},
+        :height {:signal "height"},
+        :aspect {:value false}}},
+      :transform
+      [{:type "heatmap",
+        :field "datum.grid",
+        :resolve {:signal "resolve"},
+        :color {:expr "scale('color', datum.datum.Origin)"}}]}
+     {:type "path",
+      :clip true,
+      :from {:data "contours"},
+      :encode
+      {:enter
+       {:strokeWidth {:value 1}, :strokeOpacity {:value 1}, :stroke {:scale "color", :field "Origin"}}},
+      :transform [{:type "geopath", :field "datum.contour"}]}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "bandwidth", :value -1, :bind {:input "range", :min -1, :max 100, :step 1}}
+     {:name "resolve", :value "shared", :bind {:input "select", :options ["independent" "shared"]}}
+     {:name "counts", :value true, :bind {:input "checkbox"}}],
+    :height 400,
+    :data
+    [{:name "source",
+      :url "/data/cars.json",
+      :transform [{:type "filter", :expr "datum.Horsepower != null && datum.Miles_per_Gallon != null"}]}
+     {:name "density",
+      :source "source",
+      :transform
+      [{:type "kde2d",
+        :groupby ["Origin"],
+        :size [{:signal "width"} {:signal "height"}],
+        :x {:expr "scale('x', datum.Horsepower)"},
+        :y {:expr "scale('y', datum.Miles_per_Gallon)"},
+        :bandwidth {:signal "[bandwidth, bandwidth]"},
+        :counts {:signal "counts"}}]}
+     {:name "contours",
+      :source "density",
+      :transform [{:type "isocontour", :field "grid", :resolve {:signal "resolve"}, :levels 3}]}]}}
+ {:id "county-chart",
+   :label "county unemployment",
+   :type :formula,
+   :show? true,
+   :position {:x 60, :y 220},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "A choropleth map depicting U.S. unemployment rates by county in 2009.",
+    :autosize "none",
+    :legends [{:fill "color", :orient "bottom-right", :title "Unemployment", :format "0.1%"}],
+    :width 960,
+    :scales [{:name "color", :type "quantize", :domain [0 0.15], :range {:scheme "blues", :count 7}}],
+    :marks
+    [{:type "shape",
+      :from {:data "counties"},
+      :encode
+      {:enter {:tooltip {:signal "format(datum.rate, '0.1%')"}},
+       :update {:fill {:scale "color", :field "rate"}},
+       :hover {:fill {:value "red"}}},
+      :transform [{:type "geoshape", :projection "projection"}]}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :projections [{:name "projection", :type "albersUsa"}],
+    :height 500,
+    :data
+    [{:name "unemp", :url "/data/unemployment.tsv", :format {:type "tsv", :parse "auto"}}
+     {:name "counties",
+      :url "/data/us-10m.json",
+      :format {:type "topojson", :feature "counties"},
+      :transform
+      [{:type "lookup", :from "unemp", :key "id", :fields ["id"], :values ["rate"]}
+       {:type "filter", :expr "datum.rate != null"}]}]}}
+ {:id "force-chart",
+   :label "force directed",
+   :type :formula,
+   :show? true,
+   :position {:x 320, :y 220},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description
+    "A node-link diagram with force-directed layout, depicting character co-occurrence in the novel Les Misérables.",
+    :autosize "none",
+    :width 700,
+    :scales
+    [{:name "color",
+      :type "ordinal",
+      :domain {:data "node-data", :field "group"},
+      :range {:scheme "category20c"}}],
+    :padding 0,
+    :marks
+    [{:name "nodes",
+      :type "symbol",
+      :zindex 1,
+      :from {:data "node-data"},
+      :on
+      [{:trigger "fix",
+        :modify "node",
+        :values "fix === true ? {fx: node.x, fy: node.y} : {fx: fix[0], fy: fix[1]}"}
+       {:trigger "!fix", :modify "node", :values "{fx: null, fy: null}"}],
+      :encode
+      {:enter {:fill {:scale "color", :field "group"}, :stroke {:value "white"}},
+       :update {:size {:signal "2 * nodeRadius * nodeRadius"}, :cursor {:value "pointer"}}},
+      :transform
+      [{:type "force",
+        :iterations 300,
+        :restart {:signal "restart"},
+        :static {:signal "static"},
+        :signal "force",
+        :forces
+        [{:force "center", :x {:signal "cx"}, :y {:signal "cy"}}
+         {:force "collide", :radius {:signal "nodeRadius"}}
+         {:force "nbody", :strength {:signal "nodeCharge"}}
+         {:force "link", :links "link-data", :distance {:signal "linkDistance"}}]}]}
+     {:type "path",
+      :from {:data "link-data"},
+      :interactive false,
+      :encode {:update {:stroke {:value "#ccc"}, :strokeWidth {:value 0.5}}},
+      :transform
+      [{:type "linkpath",
+        :require {:signal "force"},
+        :shape "line",
+        :sourceX "datum.source.x",
+        :sourceY "datum.source.y",
+        :targetX "datum.target.x",
+        :targetY "datum.target.y"}]}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "cx", :update "width / 2"}
+     {:name "cy", :update "height / 2"}
+     {:name "nodeRadius", :value 8, :bind {:input "range", :min 1, :max 50, :step 1}}
+     {:name "nodeCharge", :value -30, :bind {:input "range", :min -100, :max 10, :step 1}}
+     {:name "linkDistance", :value 30, :bind {:input "range", :min 5, :max 100, :step 1}}
+     {:name "static", :value true, :bind {:input "checkbox"}}
+     {:description "State variable for active node fix status.",
+      :name "fix",
+      :value false,
+      :on
+      [{:events "symbol:mouseout[!event.buttons], window:mouseup", :update "false"}
+       {:events "symbol:mouseover", :update "fix || true"}
+       {:events "[symbol:mousedown, window:mouseup] > window:mousemove!", :update "xy()", :force true}]}
+     {:description "Graph node most recently interacted with.",
+      :name "node",
+      :value nil,
+      :on [{:events "symbol:mouseover", :update "fix === true ? item() : node"}]}
+     {:description "Flag to restart Force simulation upon data changes.",
+      :name "restart",
+      :value false,
+      :on [{:events {:signal "fix"}, :update "fix && fix.length"}]}],
+    :height 500,
+    :data
+    [{:name "node-data", :url "/data/miserables.json", :format {:type "json", :property "nodes"}}
+     {:name "link-data", :url "/data/miserables.json", :format {:type "json", :property "links"}}]}}
+ {:id "overview-chart",
+   :label "overview plus detail",
+   :type :formula,
+   :show? true,
+   :position {:x 580, :y 220},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:$schema "https://vega.github.io/schema/vega/v5.json",
+    :description "Area charts of stock prices, with an interactive overview and filtered detail views.",
+    :width 720,
+    :height 480,
+    :padding 5,
+    :data
+    [{:name "sp500",
+      :url "/data/sp500.csv",
+      :format {:type "csv", :parse {:price "number", :date "date"}}}],
+    :signals [{:name "detailDomain"}],
+    :marks
+    [{:type "group",
+      :name "detail",
+      :encode {:enter {:height {:value 390}, :width {:value 720}}},
+      :scales
+      [{:name "xDetail",
+        :type "time",
+        :range "width",
+        :domain {:data "sp500", :field "date"},
+        :domainRaw {:signal "detailDomain"}}
+       {:name "yDetail",
+        :type "linear",
+        :range [390 0],
+        :domain {:data "sp500", :field "price"},
+        :nice true,
+        :zero true}],
+      :axes [{:orient "bottom", :scale "xDetail"} {:orient "left", :scale "yDetail"}],
+      :marks
+      [{:type "group",
+        :encode
+        {:enter {:height {:field {:group "height"}}, :width {:field {:group "width"}}, :clip {:value true}}},
+        :marks
+        [{:type "area",
+          :from {:data "sp500"},
+          :encode
+          {:update
+           {:x {:scale "xDetail", :field "date"},
+            :y {:scale "yDetail", :field "price"},
+            :y2 {:scale "yDetail", :value 0},
+            :fill {:value "steelblue"}}}}]}]}
+     {:type "group",
+      :name "overview",
+      :encode
+      {:enter
+       {:x {:value 0},
+        :y {:value 430},
+        :height {:value 70},
+        :width {:value 720},
+        :fill {:value "transparent"}}},
+      :signals
+      [{:name "brush",
+        :value 0,
+        :on
+        [{:events "@overview:mousedown", :update "[x(), x()]"}
+         {:events "[@overview:mousedown, window:mouseup] > window:mousemove!",
+          :update "[brush[0], clamp(x(), 0, width)]"}
+         {:events {:signal "delta"},
+          :update "clampRange([anchor[0] + delta, anchor[1] + delta], 0, width)"}]}
+       {:name "anchor", :value nil, :on [{:events "@brush:mousedown", :update "slice(brush)"}]}
+       {:name "xdown", :value 0, :on [{:events "@brush:mousedown", :update "x()"}]}
+       {:name "delta",
+        :value 0,
+        :on [{:events "[@brush:mousedown, window:mouseup] > window:mousemove!", :update "x() - xdown"}]}
+       {:name "detailDomain",
+        :push "outer",
+        :on [{:events {:signal "brush"}, :update "span(brush) ? invert('xOverview', brush) : null"}]}],
+      :scales
+      [{:name "xOverview", :type "time", :range "width", :domain {:data "sp500", :field "date"}}
+       {:name "yOverview",
+        :type "linear",
+        :range [70 0],
+        :domain {:data "sp500", :field "price"},
+        :nice true,
+        :zero true}],
+      :axes [{:orient "bottom", :scale "xOverview"}],
+      :marks
+      [{:type "area",
+        :interactive false,
+        :from {:data "sp500"},
+        :encode
+        {:update
+         {:x {:scale "xOverview", :field "date"},
+          :y {:scale "yOverview", :field "price"},
+          :y2 {:scale "yOverview", :value 0},
+          :fill {:value "steelblue"}}}}
+       {:type "rect",
+        :name "brush",
+        :encode
+        {:enter {:y {:value 0}, :height {:value 70}, :fill {:value "#333"}, :fillOpacity {:value 0.2}},
+         :update {:x {:signal "brush[0]"}, :x2 {:signal "brush[1]"}}}}
+       {:type "rect",
+        :interactive false,
+        :encode
+        {:enter {:y {:value 0}, :height {:value 70}, :width {:value 1}, :fill {:value "firebrick"}},
+         :update {:x {:signal "brush[0]"}}}}
+       {:type "rect",
+        :interactive false,
+        :encode
+        {:enter {:y {:value 0}, :height {:value 70}, :width {:value 1}, :fill {:value "firebrick"}},
+         :update {:x {:signal "brush[1]"}}}}]}]}}
+ {:id "pop-chart",
+   :label "population pyramid",
+   :type :formula,
+   :show? true,
+   :position {:x 840, :y 220},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:$schema "https://vega.github.io/schema/vega/v5.json",
+    :description "A population pyramid showing U.S. demographics from 1850 to 2000.",
+    :height 400,
+    :padding 5,
+    :signals
+    [{:name "chartWidth", :value 300}
+     {:name "chartPad", :value 20}
+     {:name "width", :update "2 * chartWidth + chartPad"}
+     {:name "year", :value 2000, :bind {:input "range", :min 1850, :max 2000, :step 10}}],
+    :data
+    [{:name "population", :url "/data/population.json"}
+     {:name "popYear", :source "population", :transform [{:type "filter", :expr "datum.year == year"}]}
+     {:name "males", :source "popYear", :transform [{:type "filter", :expr "datum.sex == 1"}]}
+     {:name "females", :source "popYear", :transform [{:type "filter", :expr "datum.sex == 2"}]}
+     {:name "ageGroups", :source "population", :transform [{:type "aggregate", :groupby ["age"]}]}],
+    :scales
+    [{:name "y",
+      :type "band",
+      :range [{:signal "height"} 0],
+      :round true,
+      :domain {:data "ageGroups", :field "age"}}
+     {:name "c", :type "ordinal", :domain [1 2], :range ["#d5855a" "#6c4e97"]}],
+    :marks
+    [{:type "text",
+      :interactive false,
+      :from {:data "ageGroups"},
+      :encode
+      {:enter
+       {:x {:signal "chartWidth + chartPad / 2"},
+        :y {:scale "y", :field "age", :band 0.5},
+        :text {:field "age"},
+        :baseline {:value "middle"},
+        :align {:value "center"},
+        :fill {:value "#000"}}}}
+     {:type "group",
+      :encode {:update {:x {:value 0}, :height {:signal "height"}}},
+      :scales
+      [{:name "x",
+        :type "linear",
+        :range [{:signal "chartWidth"} 0],
+        :nice true,
+        :zero true,
+        :domain {:data "population", :field "people"}}],
+      :axes [{:orient "bottom", :scale "x", :format "s", :title "Females"}],
+      :marks
+      [{:type "rect",
+        :from {:data "females"},
+        :encode
+        {:enter
+         {:x {:scale "x", :field "people"},
+          :x2 {:scale "x", :value 0},
+          :y {:scale "y", :field "age"},
+          :height {:scale "y", :band 1, :offset -1},
+          :fillOpacity {:value 0.6},
+          :fill {:scale "c", :field "sex"}}}}]}
+     {:type "group",
+      :encode {:update {:x {:signal "chartWidth + chartPad"}, :height {:signal "height"}}},
+      :scales
+      [{:name "x",
+        :type "linear",
+        :range [0 {:signal "chartWidth"}],
+        :nice true,
+        :zero true,
+        :domain {:data "population", :field "people"}}],
+      :axes [{:orient "bottom", :scale "x", :format "s", :title "Males"}],
+      :marks
+      [{:type "rect",
+        :from {:data "males"},
+        :encode
+        {:enter
+         {:x {:scale "x", :field "people"},
+          :x2 {:scale "x", :value 0},
+          :y {:scale "y", :field "age"},
+          :height {:scale "y", :band 1, :offset -1},
+          :fillOpacity {:value 0.6},
+          :fill {:scale "c", :field "sex"}}}}]}]}}
+ {:id "stock-chart",
+   :label "stock index",
+   :type :formula,
+   :show? true,
+   :position {:x 60, :y 380},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description
+    "An interactive line chart of stock prices, with returns shown relative to a selected date.",
+    :autosize {:type "fit", :contains "padding"},
+    :axes [{:orient "left", :scale "y", :grid true, :format "%"}],
+    :width 650,
+    :scales
+    [{:name "x", :type "time", :domain {:data "stocks", :field "date"}, :range "width"}
+     {:name "y",
+      :type "linear",
+      :domain {:data "indexed_stocks", :field "indexed_price"},
+      :nice true,
+      :zero true,
+      :range "height"}
+     {:name "color", :type "ordinal", :range "category", :domain {:data "stocks", :field "symbol"}}],
+    :padding 5,
+    :marks
+    [{:type "group",
+      :from {:facet {:name "series", :data "indexed_stocks", :groupby "symbol"}},
+      :data
+      [{:name "label", :source "series", :transform [{:type "filter", :expr "datum.date == maxDate"}]}],
+      :marks
+      [{:type "line",
+        :from {:data "series"},
+        :encode
+        {:update
+         {:x {:scale "x", :field "date"},
+          :y {:scale "y", :field "indexed_price"},
+          :stroke {:scale "color", :field "symbol"},
+          :strokeWidth {:value 2}}}}
+       {:type "text",
+        :from {:data "label"},
+        :encode
+        {:update
+         {:x {:scale "x", :field "date", :offset 2},
+          :y {:scale "y", :field "indexed_price"},
+          :fill {:scale "color", :field "symbol"},
+          :text {:field "symbol"},
+          :baseline {:value "middle"}}}}]}
+     {:type "rule",
+      :encode
+      {:update
+       {:x {:field {:group "x"}},
+        :x2 {:field {:group "width"}},
+        :y {:value 0.5, :offset {:scale "y", :value 0, :round true}},
+        :stroke {:value "black"},
+        :strokeWidth {:value 1}}}}
+     {:type "rule",
+      :encode
+      {:update
+       {:x {:scale "x", :signal "indexDate", :offset 0.5},
+        :y {:value 0},
+        :y2 {:field {:group "height"}},
+        :stroke {:value "firebrick"}}}}
+     {:type "text",
+      :encode
+      {:update
+       {:x {:scale "x", :signal "indexDate"},
+        :y2 {:field {:group "height"}, :offset 15},
+        :align {:value "center"},
+        :text {:signal "timeFormat(indexDate, '%b %Y')"},
+        :fill {:value "firebrick"}}}}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "indexDate",
+      :update "time('Jan 1 2005')",
+      :on [{:events "mousemove", :update "invert('x', clamp(x(), 0, width))"}]}
+     {:name "maxDate", :update "time('Mar 1 2010')"}],
+    :height 300,
+    :data
+    [{:name "stocks",
+      :url "/data/stocks.csv",
+      :format {:type "csv", :parse {:price "number", :date "date"}}}
+     {:name "index",
+      :source "stocks",
+      :transform
+      [{:type "filter",
+        :expr "month(datum.date) == month(indexDate) && year(datum.date) == year(indexDate)"}]}
+     {:name "indexed_stocks",
+      :source "stocks",
+      :transform
+      [{:type "lookup", :from "index", :key "symbol", :fields ["symbol"], :as ["index"], :default {:price 0}}
+       {:type "formula",
+        :as "indexed_price",
+        :expr "datum.index.price > 0 ? (datum.price - datum.index.price)/datum.index.price : 0"}]}]}}
+ {:id "tree-chart",
+   :label "tree layout",
+   :type :formula,
+   :show? true,
+   :position {:x 320, :y 380},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "An example of Cartesian layouts for a node-link diagram of hierarchical data.",
+    :autosize "none",
+    :width 600,
+    :scales
+    [{:name "color",
+      :type "linear",
+      :range {:scheme "magma"},
+      :domain {:data "tree", :field "depth"},
+      :zero true}],
+    :padding 5,
+    :marks
+    [{:type "path",
+      :from {:data "links"},
+      :encode {:update {:path {:field "path"}, :stroke {:value "#ccc"}}}}
+     {:type "symbol",
+      :from {:data "tree"},
+      :encode
+      {:enter {:size {:value 100}, :stroke {:value "#fff"}},
+       :update {:x {:field "x"}, :y {:field "y"}, :fill {:scale "color", :field "depth"}}}}
+     {:type "text",
+      :from {:data "tree"},
+      :encode
+      {:enter {:text {:field "name"}, :fontSize {:value 9}, :baseline {:value "middle"}},
+       :update
+       {:x {:field "x"},
+        :y {:field "y"},
+        :dx {:signal "datum.children ? -7 : 7"},
+        :align {:signal "datum.children ? 'right' : 'left'"},
+        :opacity {:signal "labels ? 1 : 0"}}}}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "labels", :value true, :bind {:input "checkbox"}}
+     {:name "layout", :value "tidy", :bind {:input "radio", :options ["tidy" "cluster"]}}
+     {:name "links",
+      :value "diagonal",
+      :bind {:input "select", :options ["line" "curve" "diagonal" "orthogonal"]}}
+     {:name "separation", :value false, :bind {:input "checkbox"}}],
+    :height 1600,
+    :data
+    [{:name "tree",
+      :url "/data/flare.json",
+      :transform
+      [{:type "stratify", :key "id", :parentKey "parent"}
+       {:type "tree",
+        :method {:signal "layout"},
+        :size [{:signal "height"} {:signal "width - 100"}],
+        :separation {:signal "separation"},
+        :as ["y" "x" "depth" "children"]}]}
+     {:name "links",
+      :source "tree",
+      :transform [{:type "treelinks"} {:type "linkpath", :orient "horizontal", :shape {:signal "links"}}]}]}}
+ {:id "treemap-chart",
+   :label "treemap",
+   :type :formula,
+   :show? true,
+   :position {:x 580, :y 380},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
+   :spec
+   {:description "An example of treemap layout for hierarchical data.",
+    :autosize "none",
+    :width 960,
+    :scales
+    [{:name "color",
+      :type "ordinal",
+      :domain {:data "nodes", :field "name"},
+      :range
+      ["#3182bd"
+       "#6baed6"
+       "#9ecae1"
+       "#c6dbef"
+       "#e6550d"
+       "#fd8d3c"
+       "#fdae6b"
+       "#fdd0a2"
+       "#31a354"
+       "#74c476"
+       "#a1d99b"
+       "#c7e9c0"
+       "#756bb1"
+       "#9e9ac8"
+       "#bcbddc"
+       "#dadaeb"
+       "#636363"
+       "#969696"
+       "#bdbdbd"
+       "#d9d9d9"]}
+     {:name "size", :type "ordinal", :domain [0 1 2 3], :range [256 28 20 14]}
+     {:name "opacity", :type "ordinal", :domain [0 1 2 3], :range [0.15 0.5 0.8 1.0]}],
+    :padding 2.5,
+    :marks
+    [{:type "rect",
+      :from {:data "nodes"},
+      :interactive false,
+      :encode
+      {:enter {:fill {:scale "color", :field "name"}},
+       :update {:x {:field "x0"}, :y {:field "y0"}, :x2 {:field "x1"}, :y2 {:field "y1"}}}}
+     {:type "rect",
+      :from {:data "leaves"},
+      :encode
+      {:enter {:stroke {:value "#fff"}},
+       :update
+       {:x {:field "x0"},
+        :y {:field "y0"},
+        :x2 {:field "x1"},
+        :y2 {:field "y1"},
+        :fill {:value "transparent"}},
+       :hover {:fill {:value "red"}}}}
+     {:type "text",
+      :from {:data "nodes"},
+      :interactive false,
+      :encode
+      {:enter
+       {:font {:value "Helvetica Neue, Arial"},
+        :align {:value "center"},
+        :baseline {:value "middle"},
+        :fill {:value "#000"},
+        :text {:field "name"},
+        :fontSize {:scale "size", :field "depth"},
+        :fillOpacity {:scale "opacity", :field "depth"}},
+       :update {:x {:signal "0.5 * (datum.x0 + datum.x1)"}, :y {:signal "0.5 * (datum.y0 + datum.y1)"}}}}],
+    :$schema "https://vega.github.io/schema/vega/v5.json",
+    :signals
+    [{:name "layout", :value "squarify", :bind {:input "select", :options ["squarify" "binary" "slicedice"]}}
+     {:name "aspectRatio", :value 1.6, :bind {:input "range", :min 1, :max 5, :step 0.1}}],
+    :height 500,
+    :data
+    [{:name "tree",
+      :url "/data/flare.json",
+      :transform
+      [{:type "stratify", :key "id", :parentKey "parent"}
+       {:type "treemap",
+        :field "size",
+        :sort {:field "value"},
+        :round true,
+        :method {:signal "layout"},
+        :ratio {:signal "aspectRatio"},
+        :size [{:signal "width"} {:signal "height"}]}]}
+     {:name "nodes", :source "tree", :transform [{:type "filter", :expr "datum.children"}]}
+     {:name "leaves", :source "tree", :transform [{:type "filter", :expr "!datum.children"}]}]}}],
+ :edges
+ []}

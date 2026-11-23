@@ -24,7 +24,7 @@ add a demo for glide-grid.
 
 ## Demo data
 
-The demo datasets are committed as CSV under `demo/resources/data/`:
+The demo datasets are committed as CSV under `demo/resources/public/data/`:
 
 - `bars-1m-full.csv` — 1-minute bars (10k rows)
 - `roundtrips.csv` — backtest roundtrips
@@ -48,5 +48,7 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
 
 
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
+
+
 
 
