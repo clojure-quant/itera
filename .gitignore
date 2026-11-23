@@ -10,6 +10,8 @@ itera/.cpcache
 plot/.cpcache
 todo/
 pixi-timeseries/.cpcache
+junk/.cpcache
+junk/.nrepl-port
 itera/.nrepl-port
 itera/.calva
 demo/.nrepl-port

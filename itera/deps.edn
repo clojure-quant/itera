@@ -1,6 +1,5 @@
 {:paths ["src" "resources"]
  :deps {resource-seq/resource-seq {:mvn/version "0.2.0"}
-        org.clojure/java.classpath {:mvn/version "0.3.0"}
         missionary/missionary {:mvn/version "b.44"}
         nano-id/nano-id {:mvn/version "1.1.0"}
         ai.dyal/hyper {:mvn/version "0.2.2"}

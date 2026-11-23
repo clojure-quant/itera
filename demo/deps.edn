@@ -5,8 +5,7 @@
         org.clojure/data.csv {:mvn/version "1.0.1"}
         tick/tick {:mvn/version "0.6.2"} 
         }
- :aliases {:discover {:main-opts ["-m" "demo.discover"]}
-           :itera {:exec-fn demo.main/start
+ :aliases {:itera {:exec-fn demo.main/start
                    :exec-args {:opts {:port 5000}}}
            :convert
            {:extra-deps {techascent/tech.ml.dataset {:mvn/version "7.059"}

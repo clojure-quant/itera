@@ -15,8 +15,7 @@
               status @status-a]
           [:div.page
            [:div {:style {:display "flex" :align-items "baseline" :gap "1rem"}}
-            [:h1 "Models"]
-            [:a (merge {:style {:font-weight "600"}} (h/navigate :itera)) "← Itera"]]
+            [:h1 "Models"]]
            [:form {:data-on:submit__prevent
                    (h/action
                     (let [{:keys [ok? name error]} (rui/create-model! ctx @name*)]

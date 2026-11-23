@@ -50,3 +50,24 @@ https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
 
 
+itera.plot.pixi-timeseries
+add a new plot type :background-color
+ the options are :col which can select from any :bool column
+ we have an additional argument :color
+ which can be selected from all colors from itera.util.color
+
+when a background-color plot is added to a pane,
+then it will draw the background of the pane for that x value
+in the specified color. it will not have an impact on the 
+y scale.
+ 
+create a new model "pixi-timeseries-background"
+add a formula cell where you generate dummy data
+with 1000 random bars, and then approximately 5% of 
+all bars should have :bear-market :true. make sure that
+the bear-market is true, that this is not only for 
+one row, but for multiple subsequent rows. 
+
+
+
+ 

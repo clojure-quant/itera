@@ -1,0 +1,4 @@
+{:paths ["src"]
+ :deps {io.github.clojure-quant/itera {:local/root "../itera"}
+        resource-seq/resource-seq {:mvn/version "0.2.0"}
+        org.clojure/java.classpath {:mvn/version "0.3.0"}}}

@@ -1,5 +1,4 @@
-{:head      [itera.page.algo/head
-             itera.plot.exception/head
+{:head      [itera.plot.exception/head
              itera.plot.hiccup/head
              itera.plot.text/head
              itera.util.fas/head]
