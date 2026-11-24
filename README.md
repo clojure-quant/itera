@@ -82,21 +82,6 @@ demo server reads.
 "data": {"url": "data/stocks.csv"},
 
 
-https://vega.github.io/vega-lite/examples/
-
-get the vegalite specs for for examples in 
-caegory 
-- Single-View Plots
-- Composite Marks
-- Layered Plots
-- Multi-View Displays
-- Maps (Geographic Displays)
-- Interactive
-
-save the vegalite spec to data/vegalite/category/name.edn
-write clojure code to convert the data from json to edn
-and to save it to the files in this structure
-
 
 
 

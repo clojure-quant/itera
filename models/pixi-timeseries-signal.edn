@@ -1,0 +1,32 @@
+{:graph/name "pixi-timeseries-signal",
+ :ns-data
+ "(ns itera.user.pixi-timeseries-signal\n  (:require [tech.v3.dataset :as ds]\n            [itera.plot.pixi-timeseries.plot :refer [pixi-timeseries]]))",
+ :nodes
+ [{:id "01-dataset",
+   :label "signal bars",
+   :type :formula,
+   :show? false,
+   :position {:x 24, :y 60},
+   :code
+   "(fn [_]\n  (let [rnd (java.util.Random. 42)\n        n 1000\n        start (java.time.LocalDate/of 2024 1 1)\n        signal-rows (loop [s #{}]\n                      (if (= 50 (count s))\n                        s\n                        (recur (conj s (.nextInt rnd n)))))\n        rows (loop [i 0 prev 100.0 acc []]\n               (if (= i n)\n                 acc\n                 (let [o prev\n                       c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))\n                       h (+ (max o c) (* (.nextDouble rnd) 1.0))\n                       l (max 1.0 (- (min o c) (* (.nextDouble rnd) 1.0)))]\n                   (recur (inc i) c\n                          (conj acc {:date (.plusDays start i)\n                                     :open o\n                                     :high h\n                                     :low l\n                                     :close c\n                                     :volume (.nextInt rnd 1000000)\n                                     :signal (contains? signal-rows i)})))))]\n    (ds/->dataset rows)))"}
+  {:id "02-plot",
+   :label "pixi-timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec
+   {:main-pane-min-height 220,
+    :aux-pane-height 120,
+    :panes
+    [{:yAxisScale :linear,
+      :plots
+      [{:type :bar, :col [:open :high :low :close]}
+       {:type :signal, :col :signal, :color "red-5"}]}]}}],
+ :edges
+ [{:id "e-dataset-plot",
+   :source-node "01-dataset",
+   :source-port "out",
+   :target-node "02-plot",
+   :target-port "rows"}]}
