@@ -1,4 +1,76 @@
-.options-group-header {
-  background-color: lightblue;
-  font-weight: bold;
+.options-theme-minimal {
+  background-color: #fafafa;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.options-theme-minimal .options-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.options-theme-minimal .options-label {
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.options-theme-minimal .options-group-header {
+  display: block;
+  background-color: #dbeafe;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.4rem;
+  border-radius: 0.25rem;
+  margin: 0.4rem 0 0.2rem;
+}
+
+.options-theme-minimal input[type="checkbox"] {
+  justify-self: start;
+  width: auto;
+  margin: 0;
+}
+
+.options-theme-minimal input[type="text"],
+.options-theme-minimal input[type="date"],
+.options-theme-minimal input[type="number"],
+.options-theme-minimal select {
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.8125rem;
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.options-theme-minimal input[type="text"]:focus,
+.options-theme-minimal input[type="date"]:focus,
+.options-theme-minimal input[type="number"]:focus,
+.options-theme-minimal select:focus {
+  outline: none;
+  border-color: #6b7280;
+  box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.12);
+}
+
+.options-theme-minimal button {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.options-theme-minimal button:hover {
+  background-color: #f3f4f6;
 }

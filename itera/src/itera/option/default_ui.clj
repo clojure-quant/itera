@@ -2,9 +2,10 @@
   "The built-in option editors.
 
    Registers the generic `itera.option.core/editor` methods dispatched on the
-   built-in option :type values: :bool :string :date :select :select-multiple
-   :view :default.  A :date value is a java.time.LocalDate (native
-   <input type=\"date\">; nil when cleared).
+   built-in option :type values: :bool :string :int :double :date :select
+   :select-multiple :view :default.  A :date value is a java.time.LocalDate
+   (native <input type=\"date\">; nil when cleared); an :int/:double value is
+   parsed with Integer/parseInt / Double/parseDouble (nil when blank/invalid).
 
    This namespace is not required by itera.option.core (that would be circular);
    it is loaded from the itera project's `itera-plots.edn` :option-ui entry by
@@ -63,6 +64,18 @@
   (when (seq s)
     (try (java.time.LocalDate/parse s) (catch Exception _ nil))))
 
+(defn- str->int
+  "Parse a string into an Integer (nil when blank/invalid)."
+  [s]
+  (when (seq s)
+    (try (Integer/parseInt s) (catch Exception _ nil))))
+
+(defn- str->double
+  "Parse a string into a Double (nil when blank/invalid)."
+  [s]
+  (when (seq s)
+    (try (Double/parseDouble s) (catch Exception _ nil))))
+
 (defn- base-attrs
   "Common render attributes for an option's editor: class, style, path."
   [opt]
@@ -83,6 +96,22 @@
              :value (str (or value ""))
              :placeholder (or name "")
              :data-on:change (h/action (set-fn path $value))}]))
+
+(defmethod options/editor :int [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)
+        name (:name opt)]
+    [:input {:class class :style style :type "number"
+             :value (str (or value ""))
+             :placeholder (or name "")
+             :data-on:change (h/action (set-fn path (str->int $value)))}]))
+
+(defmethod options/editor :double [opt value set-fn _update-fn _group]
+  (let [{:keys [class style path]} (base-attrs opt)
+        name (:name opt)]
+    [:input {:class class :style style :type "number"
+             :value (str (or value ""))
+             :placeholder (or name "")
+             :data-on:change (h/action (set-fn path (str->double $value)))}]))
 
 (defmethod options/editor :date [opt value set-fn _update-fn _group]
   (let [{:keys [class style path]} (base-attrs opt)]

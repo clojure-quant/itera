@@ -1,7 +1,35 @@
 # itera [![Clojars: itera](https://img.shields.io/clojars/v/io.github.clojure-quant/itera.svg?label=itera)](https://clojars.org/io.github.clojure-quant/itera) [![Clojars: itera-plot](https://img.shields.io/clojars/v/io.github.clojure-quant/itera-plot.svg?label=itera-plot)](https://clojars.org/io.github.clojure-quant/itera-plot) [![Clojars: itera-pixi-timeseries](https://img.shields.io/clojars/v/io.github.clojure-quant/itera-pixi-timeseries.svg?label=itera-pixi-timeseries)](https://clojars.org/io.github.clojure-quant/itera-pixi-timeseries)
 https://github.com/clojure-quant/quanta-studio/blob/main/dev-plot/src/quanta/studio/dev/page/viewer/backtest.cljs
 
+"A modern Excel Sheet in the Browser. Self Hosted."
 
+- Like in excel, you have cells into which you can enter values or formulas.
+  - unlike excel this cells are not organized in a table, but in a graph editor.
+  - the types in each cell can be complex. So the value cells have special
+    (extensible) editors. 
+    - The option-ui editor allows to create the structure of a map
+      which can hold multiple keys, which can have different types
+    - The edn editor allows you to define arbitrary edn structure.
+  - the inter(ative) view shows input-ui on the left (the one you
+    defined when you built the graph) and a document of all cells that
+    you want to see.
+    - cells can be rendered with custom ui functions. 
+      - table (which ui to define columns and its formats)
+      - timeseries-ui (a special timeseries plot function)
+      - vega/vegalite
+  - the entire graph calculates lazy on demand. 
+    changing inputs, causes rerenders. good for data exploration
+    or as a data pipeline playground.
+
+
+## Run the Demo
+
+clone this repo
+```
+cd demo
+clj -X:itera
+```
+open browser on localhost:5000/itera
 
 ["/public" 
      {:name :itera-public
@@ -40,30 +68,5 @@ demo server reads.
 
 
 
-https://github.com/pink-gorilla/reval/blob/master/reval-ui/src/reval/dali/viewer/evalerr.cljs
-
-https://github.com/pink-gorilla/dali/blob/main/src/dali/spec.cljc
-
- reval.helper.ui-helper
-
-
 (requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
-
-
-
-
-the options-ui was originally stolen from 
-https://github.com/pink-gorilla/options/tree/main
-with css defined in:
-https://github.com/pink-gorilla/options/blob/main/resources/public/options/options.css
-I want to have labels on left and editor on right
-either this is options-label-left or options-theme-minimal
-
-I am talking of the ui that gets displayed in 
-http://localhost:5000/itera/model
-
-
-
-
-
  

@@ -10,17 +10,14 @@
    :value {},
    :option-ui
    [{:type :label,
-     :name "Text & booleans",
-     :style
-     {:background "#dbeafe", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
-    {:path [:text], :type :string, :name "text"}
-    {:path [:unnamed], :type :string}
+     :name "Text & booleans"}
+    {:path [:first-name], :type :string, :name "FirstName"}
     {:path [:enabled], :type :bool, :name "enabled"}
     {:path [:trading-day], :type :date, :name "trading-day"}
+    {:path [:count], :type :int, :name "count"}
+    {:path [:ratio], :type :double, :name "ratio"}
     {:type :label,
-     :name "Selects (single & multiple)",
-     :style
-     {:background "#dcfce7", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
+     :name "Selects (single & multiple)"}
     {:path [:asset], :type :select, :name "asset", :spec "[:AAPL :MSFT :GOOGL]"}
     {:path [:frequency],
      :type :select,
@@ -38,14 +35,10 @@
      :spec
      "[{:id :momentum, :name \"Momentum\"} {:id :value, :name \"Value\"} {:id :low-vol, :name \"Low volatility\"}]"}
     {:type :label,
-     :name "Read-only & fallback",
-     :style
-     {:background "#fef3c7", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
+     :name "Read-only & fallback"}
     {:path [:portfolio-view], :type :view, :name "portfolio-view"}
     {:type :label,
-     :name "Container, styling & nested paths",
-     :style
-     {:background "#ede9fe", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
+     :name "Container, styling & nested paths"}
     {:path [:window], :type :container, :name "window"}
     {:path [:styled],
      :type :string,

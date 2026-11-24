@@ -4,15 +4,19 @@
    hyper actions.  All functions must be called inside a Hyper render context.
 
    The built-in editors dispatch on these :type values and live in
-   `itera.option.default-ui`: :bool :string :date :select :select-multiple
-   :view :default.  A :date value is a java.time.LocalDate (native
-   <input type=\"date\">; nil when cleared).  A :label option is layout, not an
-   editor.  The :container window editor lives in `itera.option.container`.
+   `itera.option.default-ui`: :bool :string :int :double :date :select
+   :select-multiple :view :default.  A :date value is a java.time.LocalDate
+   (native <input type=\"date\">; nil when cleared); an :int/:double value is
+   parsed with Integer/parseInt / Double/parseDouble (nil when blank/invalid).
+   A :label option is layout, not an editor, and its styling comes from the
+   stylesheet (no per-row :style).  The :container window editor lives in
+   `itera.option.container`.
 
    Editors are plain functions of the `editor` multimethod, dispatched on
    (:type opt), so viewer projects add their own with
    (defmethod editor :type ...) in a namespace listed under :option-ui in their
-   `itera-plots.edn`; `itera.hyper/start` loads those namespaces.")
+   `itera-plots.edn`; `itera.hyper/start` loads those namespaces."
+  (:require [clojure.string :as str]))
 
 (defn norm-path
   "Normalize an option :path (keyword or vector) to a vector."
@@ -41,6 +45,10 @@
 
 ;; --- public entry -----------------------------------------------------------
 
+(def head
+  "Static head assets for the options UI (the minimal theme stylesheet)."
+  [[:link {:rel "stylesheet" :href "/itera/options-ui.css"}]])
+
 (defn options-ui
   "Render an options UI.
    opts:
@@ -61,16 +69,17 @@
    Each option is rendered by the `editor` multimethod, dispatched on
    (:type opt); viewer projects extend it with (defmethod editor :type ...).
    The built-in editors are registered by `itera.option.default-ui`.  A :label
-   option is layout (a group header), not an editor."
+   option is layout (a group header), not an editor; its styling comes from the
+   stylesheet, so its per-row :style is ignored."
   [{:keys [spec value set-fn update-fn group class style]}]
-  (into [:div.options-ui {:class class :style style}]
+  (into [:div.options-ui
+         {:class (str/join " " (remove str/blank? [class "options-theme-minimal"]))
+          :style style}]
         (map (fn [opt]
                (if (= :label (:type opt))
-                 [:div.options-group-header {:class (:class opt)
-                                             :style (:style opt)}
-                  (or (:name opt) "")]
+                 [:div.options-group-header (or (:name opt) "")]
                  (let [path (norm-path (:path opt))]
                    [:div.options-row
-                    (when (:name opt) [:span.options-label (:name opt)])
+                    [:span.options-label (or (:name opt) "")]
                     (editor opt (get-in value path) set-fn update-fn group)]))))
         spec))

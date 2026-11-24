@@ -1,7 +1,8 @@
 {:head      [itera.plot.exception/head
              itera.plot.hiccup/head
              itera.plot.text/head
-             itera.util.fas/head]
+             itera.util.fas/head
+             itera.option.core/head]
  :option-ui [itera.option.default-ui itera.option.container]
  :requires  [[itera.plot.hiccup :refer [hiccup]]
              [itera.plot.text :refer [text]]

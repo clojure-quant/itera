@@ -14,6 +14,13 @@
   (-> (ht/test-page (fn [_] (options/editor opt value set-fn nil nil)))
       :body))
 
+(defn- render-option
+  "Render a single option spec through options-ui; return the test-page result."
+  [opt value set-fn]
+  (ht/test-page
+   (fn [_]
+     (options/options-ui {:spec [opt] :value value :set-fn set-fn}))))
+
 (deftest select-nil-value-renders-blank-option-test
   (let [body (render-editor {:type :select :spec frequency-spec} nil (fn [_ _]))
         opts (drop 2 body)]
@@ -54,3 +61,48 @@
                                       {:selected-symbols ["1" "3"]}}}]
           ((:fn action) {}))
         (is (= {:selected-symbols ["AAPL" "GOOGL"]} @written))))))
+
+(defn- editor-input
+  "The attrs map of the single option's rendered :input node."
+  [result]
+  (get-in result [:body 2 2 1]))
+
+(deftest int-editor-test
+  (let [written (atom nil)
+        set-fn  (fn [p v] (swap! written assoc-in p v))
+        result  (render-option {:type :int :name "count" :path [:count]} nil set-fn)
+        input   (editor-input result)
+        action  (-> result :actions vals first)]
+    (testing "renders a number input"
+      (is (= "number" (:type input)))
+      (is (= "" (:value input)))
+      (is (= "count" (:placeholder input))))
+    (testing "parses a numeric string into an Integer"
+      ((:fn action) {:value "12"})
+      (is (= {:count 12} @written)))
+    (testing "a blank value writes nil"
+      ((:fn action) {:value ""})
+      (is (= {:count nil} @written)))
+    (testing "a non-numeric value writes nil"
+      ((:fn action) {:value "abc"})
+      (is (= {:count nil} @written)))))
+
+(deftest double-editor-test
+  (let [written (atom nil)
+        set-fn  (fn [p v] (swap! written assoc-in p v))
+        result  (render-option {:type :double :name "ratio" :path [:ratio]} nil set-fn)
+        input   (editor-input result)
+        action  (-> result :actions vals first)]
+    (testing "renders a number input"
+      (is (= "number" (:type input)))
+      (is (= "" (:value input)))
+      (is (= "ratio" (:placeholder input))))
+    (testing "parses a numeric string into a Double"
+      ((:fn action) {:value "1.5"})
+      (is (= {:ratio 1.5} @written)))
+    (testing "a blank value writes nil"
+      ((:fn action) {:value ""})
+      (is (= {:ratio nil} @written)))
+    (testing "a non-numeric value writes nil"
+      ((:fn action) {:value "abc"})
+      (is (= {:ratio nil} @written)))))
