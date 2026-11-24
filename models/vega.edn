@@ -1,11 +1,13 @@
 {:graph/name "vega",
+ :ns-data
+ "(ns itera.user.vega (:require [itera.plot.hiccup :refer [hiccup]]\n  [itera.plot.text :refer [text]]\n  [itera.plot.image :refer [image image-inline]]\n  [itera.util.fas :refer [fas]]\n  [itera.plot.pixi-timeseries.plot :refer [pixi-timeseries]]\n  [itera.plot.aggrid :refer [aggrid]]\n  [itera.plot.cheetah :refer [cheetah]]\n  [itera.plot.rtable :refer [rtable]]\n  [itera.plot.highcharts :refer [highchart highstock]]\n  [itera.plot.highcharts-timeseries :refer [highcharts-timeseries]]\n  [itera.plot.vega :refer [vega vegalite]]\n  [itera.plot.plotly :refer [plotly]]\n  [itera.plot.echarts :refer [echarts]]\n  [itera.plot.cytoscape :refer [cytoscape]]\n  [itera.plot.fipp :refer [fipp]]\n  [itera.plot.md :refer [md md-resource]]\n  [clojure.string :as string]\n  [clojure.edn :as edn]\n  [demo.flow :as df]))",
  :nodes
  [{:id "03-nav-rows",
    :label "nav rows",
    :type :value,
-   :value/editor :edn,
    :show? false,
    :position {:x 24, :y 60},
+   :value/editor :edn,
    :value
    [{:nav 100.0, :index 1}
     {:nav 120.0, :index 2}
@@ -14,53 +16,50 @@
     {:nav 140.0, :index 5}
     {:nav 150.0, :index 6}
     {:nav 160.0, :index 7}
-    {:nav 150.0, :index 8}]}
+    {:nav 150.0, :index 8}
+    {:nav 172.5, :index 9}]}
   {:id "04-vega",
    :label "vega",
    :type :formula,
    :show? true,
-   :position {:x 420, :y 60},
-   :code
-   "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))"
+   :position {:x 420, :y 240},
+   :code "(fn [ctx]\n  ((requiring-resolve 'itera.plot.vega/vega) nil))",
    :spec
-   {:$schema "https://vega.github.io/schema/vega/v5.json"
-    :width 400
-    :height 250
-    :padding {:top 10, :left 55, :bottom 40, :right 10}
-    :data [{:name "table",
-            :values [{:x 0, :y 7} {:x 1, :y 8} {:x 2, :y 7}
-                     {:x 3, :y 4} {:x 4, :y 6}]}]
-    :marks [{:type "symbol"
-             :from {:data "table"}
-             :encode {:enter {:x {:scale "x", :field "x"}
-                              :y {:scale "y", :field "y"}
-                              :fill {:value "steelblue"}
-                              :fillOpacity {:value 1}}
-                      :update {:shape "circle"
-                               :size {:value 70}
-                               :stroke {:value "transparent"}}
-                      :hover {:size {:value 210}
-                              :stroke {:value "white"}}}}]
-    :scales [{:name "x", :type "linear", :range "width", :zero false
-              :domain {:data "table", :field "x"}}
-             {:name "y", :type "linear", :range "height", :nice true, :zero false
-              :domain {:data "table", :field "y"}}]
-    :axes [{:orient "bottom", :scale "x"}
-           {:orient "left", :scale "y"}]}}
+   {:$schema "https://vega.github.io/schema/vega/v5.json",
+    :width 400,
+    :height 250,
+    :padding {:top 10, :left 55, :bottom 40, :right 10},
+    :data [{:name "table", :values [{:x 0, :y 7} {:x 1, :y 80} {:x 2, :y 7} {:x 3, :y 4} {:x 4, :y 6}]}],
+    :marks
+    [{:type "symbol",
+      :from {:data "table"},
+      :encode
+      {:enter
+       {:x {:scale "x", :field "x"},
+        :y {:scale "y", :field "y"},
+        :fill {:value "steelblue"},
+        :fillOpacity {:value 1}},
+       :update {:shape "circle", :size {:value 70}, :stroke {:value "transparent"}},
+       :hover {:size {:value 210}, :stroke {:value "white"}}}}],
+    :scales
+    [{:name "x", :type "linear", :range "width", :zero false, :domain {:data "table", :field "x"}}
+     {:name "y",
+      :type "linear",
+      :range "height",
+      :nice true,
+      :zero false,
+      :domain {:data "table", :field "y"}}],
+    :axes [{:orient "bottom", :scale "x"} {:orient "left", :scale "y"}]}}
   {:id "05-vegalite",
    :label "vegalite",
    :type :formula,
    :show? true,
-   :position {:x 420, :y 420},
-   :code
-   "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.vega/vegalite) data))"
+   :position {:x 432, :y 60},
+   :code "(fn [ctx data]\n  ((requiring-resolve 'itera.plot.vega/vegalite) data))",
    :spec
-   {:width 500
-    :height 300
-    :description "NAV Plot"
-    :mark "line"
-    :encoding {:x {:field "index", :type "ordinal"}
-               :y {:field "nav", :type "quantitative"}}}}],
+   {:description "NAV Plot",
+    :mark "line",
+    :encoding {:x {:field "index", :type "ordinal"}, :y {:field "nav", :type "quantitative"}}}}],
  :edges
  [{:id "e3",
    :source-node "03-nav-rows",

@@ -47,7 +47,8 @@
                         {:width 600 :height 400})]
     (is (= 600 (:width spec)))
     (is (= 400 (:height spec)))
-    (is (= "line" (:mark spec)))))
+    (is (= "line" (:mark spec)))
+    (is (= {:type "fit" :contains "padding"} (:autosize spec)))))
 
 (deftest embed-options-nil-spec-test
   (is (= {} (:spec (#'vega/embed-options nil :vegalite nil nil))))
@@ -75,14 +76,39 @@
     (testing "a signal-valued autosize is left alone"
       (is (= {:signal "as"} (:autosize (spec-with {:signal "as"})))))))
 
+(deftest embed-options-window-autosize-vegalite-test
+  (let [window {:width 600 :height 400}
+        spec-with (fn [autosize]
+                    (:spec (#'vega/embed-options
+                            nil :vegalite
+                            (cond-> {} (some? autosize) (assoc :autosize autosize))
+                            window)))]
+    (testing "default autosize becomes fit + contains padding"
+      (is (= {:type "fit" :contains "padding"} (:autosize (spec-with nil)))))
+    (testing "explicit pad becomes fit + contains padding"
+      (is (= {:type "fit" :contains "padding"} (:autosize (spec-with "pad")))))
+    (testing "fit becomes fit + contains padding"
+      (is (= {:type "fit" :contains "padding"} (:autosize (spec-with "fit")))))
+    (testing "fit-x keeps its axis and gains contains padding"
+      (is (= {:type "fit-x" :contains "padding"} (:autosize (spec-with "fit-x")))))
+    (testing "none is left alone"
+      (is (= "none" (:autosize (spec-with "none")))))
+    (testing "a map type keeps other keys"
+      (is (= {:type "fit" :contains "padding" :resize true}
+             (:autosize (spec-with {:type "fit" :resize true})))))
+    (testing "a signal-valued autosize is left alone"
+      (is (= {:signal "as"} (:autosize (spec-with {:signal "as"})))))
+    (testing "no window leaves the spec untouched"
+      (is (= {} (:spec (#'vega/embed-options nil :vegalite {} nil)))))))
+
 (deftest embed-options-window-autosize-scope-test
   (testing "no window leaves the spec untouched"
     (is (= {} (:spec (#'vega/embed-options nil :vega {} nil)))))
-  (testing "vega-lite is not given an autosize"
-    (is (not (contains? (:spec (#'vega/embed-options
-                                nil :vegalite {:width 100 :height 100}
-                                {:width 600 :height 400}))
-                        :autosize)))))
+  (testing "vega-lite is also given the fitted autosize"
+    (is (= {:type "fit" :contains "padding"}
+           (:autosize (:spec (#'vega/embed-options
+                              nil :vegalite {:width 100 :height 100}
+                              {:width 600 :height 400})))))))
 
 (deftest embed-options-vega-rows-untouched-test
   (let [{:keys [spec embedOpts]} (#'vega/embed-options rows :vega nil nil)]

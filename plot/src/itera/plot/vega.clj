@@ -15,10 +15,12 @@
    itera-spec-plot the container `window` {:width <px> :height <px>} is merged
    into the spec's `:width`/`:height` (vega owns its size in the spec, so the
    fixed interact window overrides any `:width`/`:height` set in the spec) and
-   the host element is sized from it.  Since Vega's `width`/`height` are the
-   plot rectangle, a raw Vega spec's `autosize` is normalized to `fit` with
-   `:contains` padding when a window is supplied, so the axes and padding fit
-   inside the cell instead of being clipped.
+   the host element is sized from it.  Since Vega's and Vega-Lite's
+   `width`/`height` are the plot rectangle, the default `pad` autosize grows
+   the canvas around that rectangle -- past the fixed cell.  When a window is
+   supplied the `autosize` of both modes is therefore normalized to `fit` with
+   `:contains` padding, so the axes and padding fit inside the cell instead of
+   being clipped.
 
    Bound signal controls (`bind`) are rendered by Vega as an HTML form
    (`.vega-bindings`) below the plot rectangle, outside the area autosize
@@ -161,10 +163,10 @@
     spec))
 
 (defn- window-autosize
-  "Vega's width/height are the plot rectangle.  itera supplies the cell size
-   as width/height, so fit the gutters inside that size instead of letting the
-   default pad autosize grow the canvas past the cell.  Signal-valued autosize
-   and an explicit \"none\" are left alone."
+  "Vega and Vega-Lite `width`/`height` are the plot rectangle.  itera supplies
+   the cell size as width/height, so fit the gutters inside that size instead
+   of letting the default pad autosize grow the canvas past the cell.
+   Signal-valued autosize and an explicit \"none\" are left alone."
   [autosize]
   (let [type (if (map? autosize) (:type autosize) autosize)
         type (or type "pad")]
@@ -178,11 +180,13 @@
       :else autosize)))
 
 (defn- apply-window-autosize
-  "For raw Vega mode, normalize the spec's autosize against WINDOW, which itera
-   supplies as the plot rectangle size (see `window-autosize`)."
-  [spec mode window]
-  (if (and (= mode :vega)
-           window (:width window) (:height window))
+  "When WINDOW supplies the cell size, normalize the spec's autosize so the
+   axes and padding fit inside the cell instead of growing the canvas past it.
+   Vega and Vega-Lite both treat width/height as the plot rectangle; their
+   default \"pad\" autosize adds the gutters outside it.  Explicit \"none\" and
+   signal-valued autosize are left alone (see `window-autosize`)."
+  [spec window]
+  (if (and window (:width window) (:height window))
     (assoc spec :autosize (window-autosize (:autosize spec)))
     spec))
 
@@ -194,8 +198,7 @@
                     (select-keys window [:width :height]))
         base-embed (cond-> {}
                      (= mode :vega) (assoc :mode "vega"))
-        spec (cond-> spec
-               (= mode :vega) (apply-window-autosize :vega window))
+        spec (apply-window-autosize spec window)
         spec (if (= mode :vega) (inject-data spec data) spec)
         [spec embed-opts]
         (cond

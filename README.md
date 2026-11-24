@@ -66,36 +66,36 @@ them from the Dali transit-json sources, run from `demo/`:
 The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
 
+"data": {
+    "values": [
+      {"index": 1, "nav": 100},
+      {"index": 2, "nav": 120},
+      {"index": 3, "nav": 150},
+      {"index": 4, "nav": 120},
+      {"index": 5, "nav": 140},
+      {"index": 6, "nav": 150},
+      {"index": 7, "nav": 160},
+      {"index": 8, "nav": 150},
+      {"index": 9, "nav": 172.5}
+    ]
 
-itera.plot.pixi-timeseries
-- add new parameters to the spec: 
-  - :main-pane-min-height (int, meaning px)  
-  - :aux-pane-height (int meaning px)
-- no change to itera.plot.pixi-timeseries.plot/itera-pixi-timeseries
-- change render function so that 
-  - if there is 1 pane, then this pane
-    should fill the container on the y axis.
-- if there are more than 1 pane, then
-  - the first pane is the main pane, 
-    the other panes are aux-panes.
-  - display as many aux-panes with aux-pane
-    height as possible in the window, 
-    without main pane becoming less than 
-    main-pane-min-height. 
-  - if there are undisplayed aux-panes
-    then the next to the scroller there 
-    needs to be a combobox where the aux
-    pane can be selected. 
-
-create model "pixi-timeseries-pane" and add 
-an example with data being a tml dataset,
-displaying in the first pane a bar timeseries,
-in the second pane display a sine wave with 
-point-drop-line
-in the third pane display a cos wave with point-drop-line
- 
+"data": {"url": "data/stocks.csv"},
 
 
+https://vega.github.io/vega-lite/examples/
+
+get the vegalite specs for for examples in 
+caegory 
+- Single-View Plots
+- Composite Marks
+- Layered Plots
+- Multi-View Displays
+- Maps (Geographic Displays)
+- Interactive
+
+save the vegalite spec to data/vegalite/category/name.edn
+write clojure code to convert the data from json to edn
+and to save it to the files in this structure
 
 
 
