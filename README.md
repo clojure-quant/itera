@@ -5,21 +5,21 @@ https://github.com/clojure-quant/quanta-studio/blob/main/dev-plot/src/quanta/stu
 
 - Like in excel, you have cells into which you can enter values or formulas.
   - unlike excel this cells are not organized in a table, but in a graph editor.
-  - the types in each cell can be complex. So the value cells have special
-    (extensible) editors. 
-    - The option-ui editor allows to create the structure of a map
-      which can hold multiple keys, which can have different types
-    - The edn editor allows you to define arbitrary edn structure.
-  - the inter(ative) view shows input-ui on the left (the one you
-    defined when you built the graph) and a document of all cells that
-    you want to see.
-    - cells can be rendered with custom ui functions. 
-      - table (which ui to define columns and its formats)
-      - timeseries-ui (a special timeseries plot function)
-      - vega/vegalite
-  - the entire graph calculates lazy on demand. 
-    changing inputs, causes rerenders. good for data exploration
-    or as a data pipeline playground.
+- the types in each cell can be complex. So the value cells have special
+  (extensible) editors. 
+  - The option-ui editor allows to create the structure of a map
+    which can hold multiple keys, which can have different types
+  - The edn editor allows you to define arbitrary edn structure.
+- the inter(ative) view shows input-ui on the left (the one you
+  defined when you built the graph) and a document of all cells that
+  you want to see.
+- cells can be rendered with custom ui functions. 
+  - table (which ui to define columns and its formats)
+  - timeseries-ui (a special timeseries plot function)
+  - vega/vegalite
+- the entire graph calculates lazy on demand. 
+  changing inputs, causes rerenders. good for data exploration
+  or as a data pipeline playground.
 
 
 ## Run the Demo
