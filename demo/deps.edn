@@ -11,4 +11,7 @@
            {:extra-deps {techascent/tech.ml.dataset {:mvn/version "7.059"}
                          com.cognitect/transit-clj {:mvn/version "1.0.333"}
                          org.clojure/data.csv {:mvn/version "1.0.1"}}
-            :main-opts ["-m" "demo.convert"]}}}
+            :main-opts ["-m" "demo.convert"]}
+           :vegalite-specs
+           {:extra-deps {org.clojure/data.json {:mvn/version "2.5.0"}}
+            :main-opts ["-m" "demo.vegalite-specs"]}}}
