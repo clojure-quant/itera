@@ -22,6 +22,16 @@
                whose boolean :col value is true; it has no effect on the y
                scale and is ignored when :col is not a boolean column (the
                server drops such plots before the payload is built).
+               :signal truthy boolean or keyword per row; draws an SVG sprite.
+                       true/other keyword -> default.svg, :close -> close.svg,
+                       :long -> long.svg, :short -> short.svg, false/nil ->
+                       nothing.
+                       :y-align <numeric column> optional; nil (default) =
+                       pane bottom, set = scaled through the pane y scale and
+                       included in its bounds.
+                       :size one of 4/6/8/10/12/14/16 (default 8), sprite
+                       width/height in px.
+                       :color is ignored.
               Old vector panes [[<series> ...] ...] are still accepted and
               treated as :linear.  :log uses positive values only and falls
               back to :linear when a pane has no positive values.
@@ -260,6 +270,7 @@
                                           state     (js-obj "width" w "height" h
                                                             "data" data "charts" charts
                                                             "heights" heights
+                                                            "icons" (js-obj)
                                                             "container" container)
                                           true-min (fn [rows col positive?]
                                                      (let [n (.-length rows)]
@@ -293,6 +304,26 @@
                                                   ((aget geom "sx") i))
                                           get-y (fn [geom mn mx rows col i]
                                                   ((aget geom "sy") (aget (aget rows i) col) mn mx))
+                                          series-y-align (fn [series]
+                                                           (let [ya (aget series "y-align")]
+                                                             (if (and ya (not= "" ya)) ya nil)))
+                                          signal-size (fn [series]
+                                                        (let [s (aget series "size")]
+                                                          (if (and (number? s)
+                                                                   (.includes (array 4 6 8 10 12 14 16) s))
+                                                            s 8)))
+                                          signal-icon-key (fn [v]
+                                                            (cond
+                                                              (= v true) "default"
+                                                              (or (nil? v) (= v false)) nil
+                                                              :else
+                                                              (let [s (str v)
+                                                                    s (if (.startsWith s ":") (.slice s 1) s)]
+                                                                (cond
+                                                                  (= s "close") "close"
+                                                                  (= s "long")  "long"
+                                                                  (= s "short") "short"
+                                                                  :else         "default"))))
                                           plot-cols (fn [series]
                                                       (let [t (aget series "type")
                                                             c (aget series "col")]
@@ -316,6 +347,10 @@
 
                                                           (= t "background-color")
                                                           (array)
+
+                                                          (= t "signal")
+                                                          (let [ya (series-y-align series)]
+                                                            (if ya (array ya) (array)))
 
                                                           :else (array))))
                                           series-base (fn [series]
@@ -834,16 +869,30 @@
                                                               (recur (inc i)))))
                                                         (.fill graphics
                                                                (js-obj "color" color "alpha" 0.5))))
-                                          add-signal (fn [graphics rows geom col color]
-                                                       (let [n (.-length rows)
-                                                             y (+ (aget geom "y0") (aget geom "ch"))]
+                                          add-signal (fn [pane rows geom mn mx series icons]
+                                                       (let [n      (.-length rows)
+                                                             col    (aget series "col")
+                                                             ya     (series-y-align series)
+                                                             size   (signal-size series)
+                                                             base-y (+ (aget geom "y0") (aget geom "ch"))]
                                                          (loop [i 0]
                                                            (when (< i n)
-                                                             (when (aget (aget rows i) col)
-                                                               (.circle graphics (get-x geom i) y 2))
-                                                             (recur (inc i))))
-                                                         (.fill graphics
-                                                                (js-obj "color" color "alpha" 0.6))))
+                                                             (let [v (aget (aget rows i) col)
+                                                                   k (signal-icon-key v)]
+                                                               (when k
+                                                                 (let [tex (when icons (aget icons k))
+                                                                       y   (if ya
+                                                                             (get-y geom mn mx rows ya i)
+                                                                             base-y)]
+                                                                   (when (and tex (not (nil? y)))
+                                                                     (let [spr (new pixi/Sprite tex)]
+                                                                       (set! (.-width spr) size)
+                                                                       (set! (.-height spr) size)
+                                                                       (.set (.-anchor spr) 0.5 (if ya 0.5 1))
+                                                                       (set! (.-x spr) (get-x geom i))
+                                                                       (set! (.-y spr) y)
+                                                                       (.addChild pane spr)))))
+                                                               (recur (inc i)))))))
                                            add-backgrounds (fn [pane rows geom col color]
                                                              (let [n     (.-length rows)
                                                                    xstep (aget geom "xstep")
@@ -907,38 +956,38 @@
                                                                     (not= "background-color"
                                                                           (aget series "type")))
                                                            (let [t     (aget series "type")
-                                                                col   (aget series "col")
-                                                                color (or (aget series "color") "#3b82f6")
-                                                                g     (new pixi/Graphics)]
-                                                            (cond
-                                                              (= t "line")
-                                                              (add-line g rows geom mn mx col color)
+                                                                 col   (aget series "col")
+                                                                 color (or (aget series "color") "#3b82f6")]
+                                                             (if (= t "signal")
+                                                               (add-signal pane rows geom mn mx
+                                                                           series (aget state "icons"))
+                                                               (let [g (new pixi/Graphics)]
+                                                                 (cond
+                                                                   (= t "line")
+                                                                   (add-line g rows geom mn mx col color)
 
-                                                              (= t "point")
-                                                              (add-points g rows geom mn mx col color)
+                                                                   (= t "point")
+                                                                   (add-points g rows geom mn mx col color)
 
-                                                              (= t "point-drop")
-                                                              (add-point-drop g rows geom mn mx col
-                                                                              (series-base series) color)
+                                                                   (= t "point-drop")
+                                                                   (add-point-drop g rows geom mn mx col
+                                                                                   (series-base series) color)
 
-                                                              (= t "range")
-                                                              (add-range g rows geom mn mx
-                                                                         (aget col 0) (aget col 1) color)
+                                                                   (= t "range")
+                                                                   (add-range g rows geom mn mx
+                                                                              (aget col 0) (aget col 1) color)
 
-                                                              (= t "signal")
-                                                              (add-signal g rows geom col color)
+                                                                   (= t "bar")
+                                                                   (add-bars g rows geom mn mx
+                                                                             (let [c (aget series "col")]
+                                                                               (if (and (array? c)
+                                                                                        (>= (.-length c) 4))
+                                                                                 c
+                                                                                 (array "open" "high"
+                                                                                        "low" "close"))))
 
-                                                              (= t "bar")
-                                                              (add-bars g rows geom mn mx
-                                                                        (let [c (aget series "col")]
-                                                                          (if (and (array? c)
-                                                                                   (>= (.-length c) 4))
-                                                                            c
-                                                                            (array "open" "high"
-                                                                                   "low" "close"))))
-
-                                                              :else nil)
-                                                            (.addChild pane g))))
+                                                                   :else nil)
+                                                                 (.addChild pane g))))))
                                           pane-metrics (fn [rows pane-obj y-offset height show-x-axis?]
                                                          (let [pane     (new pixi/Container)
                                                                bg       (new pixi/Graphics)
@@ -1148,7 +1197,28 @@
                                       (.addChild stage container)
                                       (set! (.-display (.-style (.-canvas app))) "block")
                                       (.appendChild el (.-canvas app))
-                                      (redraw)))))))))]
+                                      (let [p (js/Promise.all
+                                               (array (pixi/Assets.load "/pixi-timeseries/default.svg")
+                                                      (pixi/Assets.load "/pixi-timeseries/close.svg")
+                                                      (pixi/Assets.load "/pixi-timeseries/long.svg")
+                                                      (pixi/Assets.load "/pixi-timeseries/short.svg")))
+                                            finish (fn []
+                                                     (when (= g (.-gen ctx))
+                                                       (redraw)))]
+                                        (.then p
+                                               (fn [textures]
+                                                 (when (= g (.-gen ctx))
+                                                   (set! (.-icons state)
+                                                         (js-obj "default" (aget textures 0)
+                                                                 "close"   (aget textures 1)
+                                                                 "long"    (aget textures 2)
+                                                                 "short"   (aget textures 3)))
+                                                   (finish))))
+                                        (.catch p
+                                                (fn [_]
+                                                  (when (= g (.-gen ctx))
+                                                    (set! (.-icons state) (js-obj))
+                                                    (finish)))))))))))))]
              (set! (.-init ctx) init!)
              (init!))))
   (update [_root]

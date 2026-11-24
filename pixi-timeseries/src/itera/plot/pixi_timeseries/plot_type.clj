@@ -13,7 +13,11 @@
    point to that base.  :background-color uses a single boolean :col plus
    :color; it paints a pane background band for every row whose value is
    true, contributes nothing to the y scale, and is ignored when the column
-   is not boolean.")
+   is not boolean.  :signal uses a boolean or keyword :col and maps row
+   values to SVG assets (true/other keyword -> default, :close -> close,
+   :long -> long, :short -> short, false/nil -> nothing); it accepts an
+   optional numeric :y-align column and a :size of 4/6/8/10/12/14/16, and
+   has no :color.")
 
 (def types
   "All plot types the pixi viewer can render."

@@ -33,7 +33,13 @@
    removes the key rather than storing the default.  :background-color uses a
    single boolean :col plus :color; it paints a pane background band and has
    no effect on the y scale, and a non-boolean :col makes the plot render
-   nothing (the viewer drops it server-side).
+   nothing (the viewer drops it server-side).  :signal uses a boolean or
+   keyword :col:
+   {:type :signal :col <bool|keyword column> :y-align <numeric column|nil>
+    :size <4|6|8|10|12|14|16>}
+   it has no :color.  :y-align nil puts the icon on the pane bottom; a
+   numeric column centers it on that scaled value and includes the column in
+   the pane's y bounds.
 
    `pixi-timeseries-format-edit-ui` renders the pane/plot editor over a code
    cursor; every edit resets that cursor to (pr-str spec) (always the map
@@ -122,7 +128,7 @@
 
 (defn- normalize-plot [plot]
   (if (map? plot)
-    (if (= :bar (:type plot)) (dissoc plot :color) plot)
+    (if (contains? #{:bar :signal} (:type plot)) (dissoc plot :color) plot)
     {}))
 
 (defn- normalize-pane
@@ -228,16 +234,36 @@
   (let [cols (remove #{:date :epoch} (keys (table-column-info data)))]
     (vec (distinct (concat cols (spec-columns spec))))))
 
+(def ^:private signal-sizes [4 6 8 10 12 14 16])
+
+(defn- signal-size-value [plot]
+  (let [s (:size plot)]
+    (if (some #{s} signal-sizes) s 8)))
+
 (defn- boolean-columns [cols col-info]
   (filterv #(= :boolean (get col-info %)) cols))
 
+(defn- numeric-columns [cols col-info]
+  (if (empty? col-info)
+    cols
+    (filterv #(= :number (get col-info %)) cols)))
+
+(defn- signal-columns [cols col-info]
+  (let [cs (filterv #(contains? #{:boolean :keyword} (get col-info %)) cols)]
+    (if (seq cs) cs cols)))
+
 (defn- type-columns
   "Columns offered for plot type T; :background-color lists boolean columns,
-   falling back to all columns when the data has none."
+   :signal lists boolean/keyword columns, falling back to all columns when the
+   data has none of those types."
   [t cols col-info]
-  (if (= :background-color t)
+  (cond
+    (= :background-color t)
     (let [b (boolean-columns cols col-info)] (if (seq b) b cols))
-    cols))
+
+    (= :signal t) (signal-columns cols col-info)
+
+    :else cols))
 
 (defn palette*
   "Named colors, plus any colors already used by SPEC, sorted by name."
@@ -310,10 +336,12 @@
 
 (defn- set-plot-type
   "Change a plot's :type, normalizing :col to a 2-vector for :range, a 4-vector
-   for :bar, and a single keyword otherwise.  Bars have no color; other types
-   use the first palette color when none is set.  :background-color keeps a
-   boolean :col, else falls back to the first boolean column, then the first
-   column."
+   for :bar, and a single keyword otherwise.  Bars and signals have no color;
+   other types use the first palette color when none is set.  :background-color
+   keeps a boolean :col, else falls back to the first boolean column, then the
+   first column.  :signal keeps an existing :y-align (including explicit nil)
+   and otherwise defaults it to :close when that numeric column exists, and
+   normalizes :size to one of the supported signal sizes."
   [plot t cols pal col-info]
   (let [col (:col plot)
         col (if (nil? col) (first cols) col)]
@@ -331,6 +359,19 @@
                       col
                       (or (first b) (first cols) col))
                :color (or (:color plot) (first pal))))
+      (= t :signal)
+      (let [col    (if (vector? col) (first col) col)
+            close? (if (seq col-info)
+                     (= :number (get col-info :close))
+                     (boolean (some #{:close} cols)))
+            out    (-> plot
+                       (assoc :type :signal
+                              :col col
+                              :size (signal-size-value plot))
+                       (dissoc :color))]
+        (if (contains? plot :y-align)
+          out
+          (assoc out :y-align (when close? :close))))
       :else        (assoc plot :type t
                           :col (if (vector? col) (first col) col)
                           :color (or (:color plot) (first pal))))))
@@ -369,6 +410,7 @@
         range? (= :range t)
         bar?   (= :bar t)
         drop?  (= :point-drop t)
+        signal? (= :signal t)
         ccol   (->col-pair col cols)
         bcol   (->col-4 col cols)]
     [:tr
@@ -466,6 +508,36 @@
            (for [c cols]
              [:option {:value (name c) :selected (= c (second ccol))} (name c)])]]]
 
+        signal?
+        (let [display-cols (type-columns t cols col-info)
+              num-cols     (numeric-columns cols col-info)
+              ya           (:y-align plot)]
+          [:div {:style {:display "flex" :flex-direction "column" :gap "0.2rem"}}
+           [:div {:style select-row-style}
+            [:span {:style col-label-style} "Column:"]
+            [:select {:style field-flex-style
+                      :data-on:change
+                      (h/action
+                       (update* path
+                                (fn [cs]
+                                  (assoc-in cs [:panes i :plots j :col] (keyword $value)))))}
+             (for [c display-cols]
+               [:option {:value (name c) :selected (= c col)} (name c)])]]
+           [:div {:style select-row-style}
+            [:span {:style col-label-style} "Y align:"]
+            [:select {:style field-flex-style
+                      :data-on:change
+                      (h/action
+                       (update* path
+                                (fn [cs]
+                                  (if (str/blank? $value)
+                                    (assoc-in cs [:panes i :plots j :y-align] nil)
+                                    (assoc-in cs [:panes i :plots j :y-align]
+                                              (keyword $value))))))}
+             [:option {:value "" :selected (nil? ya)} "\u2014"]
+             (for [c num-cols]
+               [:option {:value (name c) :selected (= c ya)} (name c)])]]])
+
         :else
         (let [display-cols (type-columns t cols col-info)]
           [:div {:style select-row-style}
@@ -483,7 +555,22 @@
       [:div {:style {:display "flex" :flex-direction "column" :gap "0.25rem"}}
        [:div {:style {:display "flex" :justify-content "flex-end"
                       :align-items "center" :gap "0.3rem"}}
-        (when-not bar?
+        (when signal?
+          [:span {:style col-label-style} "Size:"])
+        (when signal?
+          [:select {:style field-flex-style
+                    :data-on:change
+                    (h/action
+                     (update* path
+                              (fn [cs]
+                                (if-let [n (parse-number $value)]
+                                  (assoc-in cs [:panes i :plots j :size] n)
+                                  cs))))}
+           (for [s signal-sizes]
+             [:option {:value (str s)
+                       :selected (= s (signal-size-value plot))}
+              (str s)])])
+        (when-not (or bar? signal?)
           [:select {:style field-flex-style
                     :data-on:change
                     (h/action

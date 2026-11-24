@@ -33,6 +33,15 @@
         (range n)
         (ohlc-rows n)))
 
+(defn- signal-rows
+  "OHLC rows with keyword/false/nil :signal values for the first few rows."
+  [n]
+  (mapv (fn [i row]
+          (assoc row :signal (when (< i 5)
+                               (nth [:long :short :close :entry false] i))))
+        (range n)
+        (ohlc-rows n)))
+
 ;; ---------------------------------------------------------------------------
 ;; default spec
 ;; ---------------------------------------------------------------------------
@@ -78,6 +87,9 @@
 
 (deftest background-color-type-test
   (is (some #{:background-color} plot-type/types)))
+
+(deftest signal-type-test
+  (is (some #{:signal} plot-type/types)))
 
 ;; ---------------------------------------------------------------------------
 ;; data-only record and rows-only constructor
@@ -216,6 +228,18 @@
     (let [pane {:yAxisScale :linear
                 :plots [{:type :background-color :col :bear-market
                          :color "red-2"}]}]
+      (is (= (assoc default-heights :panes [pane])
+             (fmt/normalize-spec [pane])))))
+  (testing ":signal keeps :y-align and :size and strips :color"
+    (let [plot {:type :signal :col :signal :y-align :close :size 10}
+          pane {:yAxisScale :linear :plots [plot]}]
+      (is (= (assoc default-heights :panes [pane])
+             (fmt/normalize-spec
+              {:panes [{:yAxisScale :linear
+                        :plots [(assoc plot :color "red-3")]}]})))))
+  (testing ":signal keeps an explicit nil :y-align"
+    (let [pane {:yAxisScale :linear
+                :plots [{:type :signal :col :signal :y-align nil :size 8}]}]
       (is (= (assoc default-heights :panes [pane])
              (fmt/normalize-spec [pane])))))
   (testing "maps without a :panes vector, nil and scalars are invalid"
@@ -372,6 +396,30 @@
     (testing "a non-boolean column drops the plot server-side"
       (is (= :itera-pixi-timeseries (first hiccup)))
       (is (not (str/includes? payload "background-color"))))))
+
+(deftest signal-payload-test
+  (let [v      (pixi/pixi-timeseries (signal-rows 6))
+        hiccup (protocol/to-formatted-hiccup
+                v [{:yAxisScale :linear
+                    :plots [{:type :signal :col :signal
+                             :y-align :close :size 10}]}]
+                window)
+        payload (:options (second hiccup))]
+    (is (= :itera-pixi-timeseries (first hiccup)))
+    (testing "the signal plot passes through with y-align and size"
+      (is (str/includes? payload "signal"))
+      (is (str/includes? payload "y-align"))
+      (is (str/includes? payload "\"y-align\":\"close\""))
+      (is (str/includes? payload "size"))
+      (is (str/includes? payload "10")))
+    (testing "keyword signal values are serialized as plain strings"
+      (is (str/includes? payload "\"signal\":\"long\""))
+      (is (str/includes? payload "\"signal\":\"short\""))
+      (is (str/includes? payload "\"signal\":\"close\""))
+      (is (str/includes? payload "\"signal\":\"entry\""))
+      (is (str/includes? payload "\"signal\":false")))
+    (testing "the y-align column is present in the payload rows"
+      (is (str/includes? payload "\"close\":")))))
 
 ;; ---------------------------------------------------------------------------
 ;; page protocol

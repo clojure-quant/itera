@@ -1,0 +1,58 @@
+{:graph/name "pixi-timeseries-range",
+ :nodes
+ [{:id "01-gen",
+   :label "OHLC + SMA rows",
+   :type :formula,
+   :show? false,
+   :position {:x 24, :y 60},
+   :code
+   "(fn [_]
+  (let [rnd   (java.util.Random. 42)
+        n     1000
+        start (java.time.LocalDate/of 2024 1 1)
+        rows  (loop [i 0 prev 100.0 acc []]
+                (if (= i n)
+                  acc
+                  (let [o prev
+                        c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))
+                        h (+ (max o c) (* (.nextDouble rnd) 1.0))
+                        l (max 1.0 (- (min o c) (* (.nextDouble rnd) 1.0)))]
+                    (recur (inc i) c
+                           (conj acc {:date (str (.plusDays start i))
+                                      :open o
+                                      :high h
+                                      :low l
+                                      :close c})))))
+        closes (mapv :close rows)
+        sma (fn [k i]
+              (when (>= i (dec k))
+                (/ (reduce + 0.0 (subvec closes (- (inc i) k) (inc i)))
+                   k)))]
+    (mapv (fn [i row]
+            (assoc row
+                   :sma1 (sma 20 i)
+                   :sma2 (sma 60 i)))
+          (range n)
+          rows)))"}
+  {:id "02-plot",
+   :label "pixi-timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx rows]
+  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec
+   {:main-pane-min-height 220,
+    :aux-pane-height 120,
+    :panes
+    [{:yAxisScale :linear,
+      :plots
+      [{:type :bar, :col [:open :high :low :close]}
+       {:type :range, :col [:sma1 :sma2], :color "orange-4"}]}]}}],
+ :edges
+ [{:id "e-gen-plot",
+   :source-node "01-gen",
+   :source-port "out",
+   :target-node "02-plot",
+   :target-port "rows"}]}

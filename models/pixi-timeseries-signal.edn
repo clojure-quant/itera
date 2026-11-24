@@ -8,7 +8,7 @@
    :show? false,
    :position {:x 24, :y 60},
    :code
-   "(fn [_]\n  (let [rnd (java.util.Random. 42)\n        n 1000\n        start (java.time.LocalDate/of 2024 1 1)\n        signal-rows (loop [s #{}]\n                      (if (= 50 (count s))\n                        s\n                        (recur (conj s (.nextInt rnd n)))))\n        rows (loop [i 0 prev 100.0 acc []]\n               (if (= i n)\n                 acc\n                 (let [o prev\n                       c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))\n                       h (+ (max o c) (* (.nextDouble rnd) 1.0))\n                       l (max 1.0 (- (min o c) (* (.nextDouble rnd) 1.0)))]\n                   (recur (inc i) c\n                          (conj acc {:date (.plusDays start i)\n                                     :open o\n                                     :high h\n                                     :low l\n                                     :close c\n                                     :volume (.nextInt rnd 1000000)\n                                     :signal (contains? signal-rows i)})))))]\n    (ds/->dataset rows)))"}
+   "(fn [_]\n  (let [rnd (java.util.Random. 42)\n        n 1000\n        start (java.time.LocalDate/of 2024 1 1)\n        signal-rows (loop [s #{}]\n                      (if (= 50 (count s))\n                        s\n                        (recur (conj s (.nextInt rnd n)))))\n        kinds [:long :short :close :entry]\n        signal-vals (zipmap (sort signal-rows)\n                            (map (fn [k] (nth kinds (mod k 4))) (range)))\n        rows (loop [i 0 prev 100.0 acc []]\n               (if (= i n)\n                 acc\n                 (let [o prev\n                       c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))\n                       h (+ (max o c) (* (.nextDouble rnd) 1.0))\n                       l (max 1.0 (- (min o c) (* (.nextDouble rnd) 1.0)))]\n                   (recur (inc i) c\n                          (conj acc {:date (.plusDays start i)\n                                     :open o\n                                     :high h\n                                     :low l\n                                     :close c\n                                     :volume (.nextInt rnd 1000000)\n                                     :signal (get signal-vals i)})))))]\n    (ds/->dataset rows)))"}
   {:id "02-plot",
    :label "pixi-timeseries",
    :type :formula,
@@ -23,7 +23,7 @@
     [{:yAxisScale :linear,
       :plots
       [{:type :bar, :col [:open :high :low :close]}
-       {:type :signal, :col :signal, :color "red-5"}]}]}}],
+       {:type :signal, :col :signal, :y-align :close, :size 10}]}]}}],
  :edges
  [{:id "e-dataset-plot",
    :source-node "01-dataset",

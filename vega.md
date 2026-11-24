@@ -20,3 +20,18 @@ for geojson it can have:
  
 :sphere true; 
 :data may also be omitted on nested views.
+
+
+"data": {
+    "values": [
+      {"index": 1, "nav": 100},
+      {"index": 2, "nav": 120},
+      {"index": 3, "nav": 150},
+      {"index": 4, "nav": 120},
+      {"index": 5, "nav": 140},
+      {"index": 6, "nav": 150},
+      {"index": 7, "nav": 160},
+      {"index": 8, "nav": 150},
+      {"index": 9, "nav": 172.5}]
+
+"data": {"url": "data/stocks.csv"},
