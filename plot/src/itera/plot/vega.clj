@@ -51,6 +51,7 @@
    spec)."
   (:require [hyper.core :as h]
             [itera.input.codemirror :as input-cm]
+            [itera.plot.template :as template]
             [itera.value.protocol :as spec-plot]))
 
 (def head
@@ -232,3 +233,7 @@
 
 (defn vegalite [data] (->Vega data :vegalite))
 (defn vega     [data] (->Vega data :vega))
+
+(defmethod template/templateable-plot :vega     [_] vegalite)
+(defmethod template/templateable-plot :vegalite [_] vegalite)
+(defmethod template/templateable-plot :vega-raw [_] vega)

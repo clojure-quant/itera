@@ -1,0 +1,35 @@
+{:graph/name "template-close-line"
+ :nodes
+ [{:id "01-gen"
+   :label "1000 random bars"
+   :type :formula
+   :show? false
+   :position {:x 24 :y 60}
+   :code
+   "(fn [_]
+  (let [rnd   (java.util.Random. 42)
+        n     1000
+        start (java.time.LocalDate/of 2024 1 1)]
+    (loop [i 0 prev 100.0 acc []]
+      (if (= i n)
+        acc
+        (let [o prev
+              c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))
+              h (+ (max o c) (.nextDouble rnd))
+              l (max 1.0 (- (min o c) (.nextDouble rnd)))]
+          (recur (inc i) c
+                 (conj acc {:date (str (.plusDays start i))
+                            :open o :high h :low l :close c})))))))"}
+  {:id "02-plot"
+   :label "template close line"
+   :type :formula
+   :show? true
+   :position {:x 420 :y 60}
+   :code
+   "(fn [rows] (draw-template :pixi-timeseries \"close-line-plot\" rows))"}]
+ :edges
+ [{:id "e-gen-plot"
+   :source-node "01-gen"
+   :source-port "out"
+   :target-node "02-plot"
+   :target-port "rows"}]}

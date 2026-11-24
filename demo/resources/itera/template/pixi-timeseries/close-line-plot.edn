@@ -1,0 +1,5 @@
+{:main-pane-min-height 200
+ :aux-pane-height 100
+ :panes
+ [{:yAxisScale :linear
+   :plots [{:type :line :col :close :color "blue-5"}]}]}

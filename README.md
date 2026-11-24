@@ -65,33 +65,3 @@ them from the Dali transit-json sources, run from `demo/`:
 
 The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
-
-create itera.plot.template
-
-(defmulti templateable-plot
-  (fn [plot-type] plot-type))
-
-(defrecord TemplatePlot [base template data]
-  protocol/itera-convertable
-  (to-hiccup [_]
-    (to-hiccup base data))
-  protocol/itera-spec-plot
-  (to-formatted-hiccup [_ spec window]
-    (to-formatted-hiccup base data spec window)))
-  (default-spec [_]
-    (load-from-resources template)
-  (spec-editor [_ spec code-a]
-    (spec-editor base data spec code-a))))
-
-  protocol/itera-page-plot
-  (to-formatted-paged-hiccup [v spec window page]
-  (to-formatted-paged-hiccup [base spec window])
-  (init-page [_ _spec window]
-    (init-page base spec window))
-  (page-editor [v spec window page-a]
-    (page-editor base spec window page-a)))
-
-(defn draw-template [plot-type template data]
-  (let [base (template plot-type)
-        template (slurp (str "resources/itera/template/" template ".edn"))]
-    (TemplatePlot. base template data)))

@@ -46,6 +46,7 @@
             [itera.plot.rtable-default-column-formatter :as rtable-default-fmt]
             [itera.plot.rtable-format-ui :as rtable-fmt]
             [itera.plot.rtable-page-editor :as page-editor]
+            [itera.plot.template :as template]
             ;; Loading these itera value namespaces (from the itera project)
             ;; registers itera-table-info for vectors, seqs and
             ;; tech.ml/tablecloth datasets; the record accesses :data only
@@ -269,3 +270,5 @@
 (defn rtable
   [data]
   (->Rtable (or data [])))
+
+(defmethod template/templateable-plot :rtable [_] rtable)

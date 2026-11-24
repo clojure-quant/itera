@@ -7,4 +7,5 @@
  :requires  [[itera.plot.hiccup :refer [hiccup]]
              [itera.plot.text :refer [text]]
              [itera.plot.image :refer [image image-inline]]
-             [itera.util.fas :refer [fas]]]}
+             [itera.util.fas :refer [fas]]
+             [itera.plot.template :refer [draw-template]]]}

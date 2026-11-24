@@ -95,6 +95,7 @@
             [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
             [itera.plot.pixi-timeseries.plot-page-editor :as page-editor]
             [itera.plot.pixi-timeseries.window :as plot-window]
+            [itera.plot.template :as template]
             [itera.util.color :as colors]
             ;; Loading these itera value namespaces (now from the itera
             ;; project) registers itera-table-info for vectors, seqs and
@@ -1374,3 +1375,5 @@
    at a fixed fallback size.  The data value is stored as-is."
   [rows]
   (->PixiTimeseries (or rows [])))
+
+(defmethod template/templateable-plot :pixi-timeseries [_] pixi-timeseries)
