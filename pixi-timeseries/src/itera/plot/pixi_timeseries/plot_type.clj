@@ -10,8 +10,11 @@
    ([open high low close]); the other types use a single column (or a pair
    for :range).  :point-drop uses a scalar :col plus an optional
    :base-value number (default 0) and draws a vertical drop line from each
-   point to that base.")
+   point to that base.  :background-color uses a single boolean :col plus
+   :color; it paints a pane background band for every row whose value is
+   true, contributes nothing to the y scale, and is ignored when the column
+   is not boolean.")
 
 (def types
   "All plot types the pixi viewer can render."
-  [:line :point :point-drop :range :signal :bar])
+  [:line :point :point-drop :range :signal :bar :background-color])

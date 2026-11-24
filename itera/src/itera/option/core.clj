@@ -51,7 +51,11 @@
      :update-fn (fn [path f]) invoked inside the server action to read-modify-write
               the cursor value at path, e.g.
               (fn [p f] (swap! options-a update-in p f))
-     :group   keyword used to disambiguate signal names (:calculate / :plot)
+     :group   keyword used to disambiguate signal names (:calculate / :plot).
+              Datastar drops keyword namespaces from signal names, so pass an
+              unqualified keyword when a signal-backed editor (:select-multiple)
+              is used; namespaced groups are normalized to their name for
+              signal paths.
      :class :style  container passthrough
 
    Each option is rendered by the `editor` multimethod, dispatched on

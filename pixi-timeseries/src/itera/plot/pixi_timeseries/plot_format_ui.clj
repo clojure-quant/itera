@@ -15,7 +15,10 @@
    {:yAxisScale :linear :plots [...]}.  Bars carry no :color; normalize-spec
    strips one if present.  :point-drop uses a scalar :col plus an optional
    :base-value number; absent means 0 at render time and a blank number input
-   removes the key rather than storing the default.
+   removes the key rather than storing the default.  :background-color uses a
+   single boolean :col plus :color; it paints a pane background band and has
+   no effect on the y scale, and a non-boolean :col makes the plot render
+   nothing (the viewer drops it server-side).
 
    `pixi-timeseries-format-edit-ui` renders the pane/plot editor over a code
    cursor; every edit resets that cursor to (pr-str charts) and the spec popup
@@ -184,6 +187,17 @@
   (let [cols (remove #{:date :epoch} (keys (table-column-info data)))]
     (vec (distinct (concat cols (spec-columns spec))))))
 
+(defn- boolean-columns [cols col-info]
+  (filterv #(= :boolean (get col-info %)) cols))
+
+(defn- type-columns
+  "Columns offered for plot type T; :background-color lists boolean columns,
+   falling back to all columns when the data has none."
+  [t cols col-info]
+  (if (= :background-color t)
+    (let [b (boolean-columns cols col-info)] (if (seq b) b cols))
+    cols))
+
 (defn palette*
   "Named colors, plus any colors already used by SPEC, sorted by name."
   [spec]
@@ -256,8 +270,10 @@
 (defn- set-plot-type
   "Change a plot's :type, normalizing :col to a 2-vector for :range, a 4-vector
    for :bar, and a single keyword otherwise.  Bars have no color; other types
-   use the first palette color when none is set."
-  [plot t cols pal]
+   use the first palette color when none is set.  :background-color keeps a
+   boolean :col, else falls back to the first boolean column, then the first
+   column."
+  [plot t cols pal col-info]
   (let [col (:col plot)
         col (if (nil? col) (first cols) col)]
     (cond
@@ -266,6 +282,14 @@
       (= t :bar)   (-> plot
                        (assoc :type :bar :col (->col-4 col cols))
                        (dissoc :color))
+      (= t :background-color)
+      (let [col (if (vector? col) (first col) col)
+            b   (boolean-columns cols col-info)]
+        (assoc plot :type :background-color
+               :col (if (= :boolean (get col-info col))
+                      col
+                      (or (first b) (first cols) col))
+               :color (or (:color plot) (first pal))))
       :else        (assoc plot :type t
                           :col (if (vector? col) (first col) col)
                           :color (or (:color plot) (first pal))))))
@@ -297,7 +321,7 @@
 
 (defn- plot-row
   "One plot's editor table row."
-  [{:keys [path update* cols pal types i j plot]}]
+  [{:keys [path update* cols pal types col-info i j plot]}]
   (let [plot   (if (map? plot) plot {})
         t      (:type plot)
         col    (:col plot)
@@ -317,7 +341,7 @@
                   (update* path
                            (fn [cs]
                              (update-in cs [i :plots j] set-plot-type
-                                        (keyword $value) cols pal))))}
+                                        (keyword $value) cols pal col-info))))}
         (for [tt types]
           [:option {:value (name tt) :selected (= tt t)} (name tt)])]]]
 
@@ -402,16 +426,17 @@
              [:option {:value (name c) :selected (= c (second ccol))} (name c)])]]]
 
         :else
-        [:div {:style select-row-style}
-         [:span {:style col-label-style} "Column:"]
-         [:select {:style field-flex-style
-                   :data-on:change
-                   (h/action
-                    (update* path
-                             (fn [cs]
-                               (assoc-in cs [i :plots j :col] (keyword $value)))))}
-          (for [c cols]
-            [:option {:value (name c) :selected (= c col)} (name c)])]])]
+        (let [display-cols (type-columns t cols col-info)]
+          [:div {:style select-row-style}
+           [:span {:style col-label-style} "Column:"]
+           [:select {:style field-flex-style
+                     :data-on:change
+                     (h/action
+                      (update* path
+                               (fn [cs]
+                                 (assoc-in cs [i :plots j :col] (keyword $value)))))}
+            (for [c display-cols]
+              [:option {:value (name c) :selected (= c col)} (name c)])]]))]
 
      [:td {:style td-style}
       [:div {:style {:display "flex" :flex-direction "column" :gap "0.25rem"}}
@@ -449,7 +474,7 @@
 
 (defn- plot-table
   "The plots of pane I as a 3-column table: Type, Column(s), Opts."
-  [{:keys [path update* cols pal types i plots]}]
+  [{:keys [path update* cols pal types col-info i plots]}]
   [:div {:style {:overflow-x "auto"}}
    [:table {:style {:width "100%" :border-collapse "collapse"
                     :table-layout "fixed" :font-size "0.68rem"}}
@@ -466,7 +491,7 @@
      (map-indexed
       (fn [j plot]
         (plot-row {:path path :update* update* :cols cols :pal pal
-                   :types types :i i :j j :plot plot}))
+                   :types types :col-info col-info :i i :j j :plot plot}))
       plots)]]])
 
 (defn charts-editor
@@ -477,8 +502,10 @@
    update*  two-arg (fn [path f]) read-modify-write of the charts value
    cols     selectable column keywords
    pal      selectable color names
-   types    plot type keywords"
-  [{:keys [charts path update* cols pal types]}]
+   types    plot type keywords
+   col-info optional column name -> type map (narrows :background-color to
+            boolean columns)"
+  [{:keys [charts path update* cols pal types col-info]}]
   (let [cols         (vec (or cols []))
         pal          (vec (sort (distinct (or pal []))))
         types        (vec (or types plot-type/types))
@@ -522,7 +549,7 @@
                  [:option {:value (name s) :selected (= s scale)}
                   (str/capitalize (name s))])]]
              (plot-table {:path path :update* update* :cols cols :pal pal
-                          :types types :i i :plots plots})
+                          :types types :col-info col-info :i i :plots plots})
              [:div
               [:button {:type "button" :style button-style
                         :data-on:click
@@ -556,7 +583,8 @@
                     :update* update*
                     :cols (selectable-columns data spec)
                     :pal (palette* spec)
-                    :types plot-type/types})))
+                    :types plot-type/types
+                    :col-info (table-column-info data)})))
 
 (defmethod options/editor :chartspec [opt value set-fn update-fn _group]
   (let [path    (options/norm-path (:path opt))

@@ -1,84 +1,73 @@
-{:graph/name "option-ui"
- :ns-data
- "(ns itera.user.option-ui\n  (:require [itera.util.color :refer [colors]]))"
+{:graph/name "option-ui",
+ :ns-data "(ns itera.user.option-ui\n  (:require [itera.util.color :refer [colors]]))",
  :nodes
- [{:id "option-ui-values"
-   :label "option-ui (all built-in editors)"
-   :type :value
-   :value/editor :option-ui
-   :show? false
-   :position {:x 24, :y 60}
-   :value
-   {:text "hello option-ui"
-    :unnamed "no label"
-    :enabled true
-    :trading-day "2026-11-23"
-    :asset :MSFT
-    :frequency :m5
-    :color "blue-5"
-    :selected-symbols ["AAPL" "TSLA"]
-    :selected-tags [:momentum :low-vol]
-    :portfolio-view {:nav 1234567.89, :positions 3}
-    :custom-fallback {:mode :demo, :n 42}
-    :window {:mode :fixed, :width 640, :height 480}
-    :styled "styled input"
-    :nested {:inner-string "nested value"}}
+ [{:id "option-ui-values",
+   :label "option-ui (all built-in editors)",
+   :type :value,
+   :show? false,
+   :position {:x 24, :y 60},
+   :value/editor :option-ui,
+   :value {},
    :option-ui
-   [{:type :label
-     :name "Text & booleans"
-     :style {:background "#dbeafe", :padding "0.25rem 0.4rem"
-             :border-radius "0.25rem", :font-size "0.75rem"}}
+   [{:type :label,
+     :name "Text & booleans",
+     :style
+     {:background "#dbeafe", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
     {:path [:text], :type :string, :name "text"}
     {:path [:unnamed], :type :string}
     {:path [:enabled], :type :bool, :name "enabled"}
     {:path [:trading-day], :type :date, :name "trading-day"}
-
-    {:type :label
-     :name "Selects (single & multiple)"
-     :style {:background "#dcfce7", :padding "0.25rem 0.4rem"
-             :border-radius "0.25rem", :font-size "0.75rem"}}
-    {:path [:asset], :type :select, :name "asset"
-     :spec "[:AAPL :MSFT :GOOGL]"}
-    {:path [:frequency], :type :select, :name "frequency"
+    {:type :label,
+     :name "Selects (single & multiple)",
+     :style
+     {:background "#dcfce7", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
+    {:path [:asset], :type :select, :name "asset", :spec "[:AAPL :MSFT :GOOGL]"}
+    {:path [:frequency],
+     :type :select,
+     :name "frequency",
      :spec "[{:id :m1, :name \"1 minute\"} {:id :m5, :name \"5 minutes\"} {:id :d1, :name \"1 day\"}]"}
-    {:path [:color], :type :select, :name "color"
-     :spec "(sort (keys colors))"}
-    {:path [:selected-symbols], :type :select-multiple, :name "symbols"
-     :size 4
+    {:path [:color], :type :select, :name "color", :spec "(sort (keys colors))"}
+    {:path [:selected-symbols],
+     :type :select-multiple,
+     :name "symbols",
+     :size 4,
      :spec "[\"AAPL\" \"MSFT\" \"GOOGL\" \"AMZN\" \"TSLA\"]"}
-    {:path [:selected-tags], :type :select-multiple, :name "tags"
-     :spec "[{:id :momentum, :name \"Momentum\"} {:id :value, :name \"Value\"} {:id :low-vol, :name \"Low volatility\"}]"}
-
-    {:type :label
-     :name "Read-only & fallback"
-     :style {:background "#fef3c7", :padding "0.25rem 0.4rem"
-             :border-radius "0.25rem", :font-size "0.75rem"}}
+    {:path [:selected-tags],
+     :type :select-multiple,
+     :name "tags",
+     :spec
+     "[{:id :momentum, :name \"Momentum\"} {:id :value, :name \"Value\"} {:id :low-vol, :name \"Low volatility\"}]"}
+    {:type :label,
+     :name "Read-only & fallback",
+     :style
+     {:background "#fef3c7", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
     {:path [:portfolio-view], :type :view, :name "portfolio-view"}
-    {:path [:custom-fallback], :type :custom-fallback, :name "custom-fallback"}
-
-    {:type :label
-     :name "Container, styling & nested paths"
-     :style {:background "#ede9fe", :padding "0.25rem 0.4rem"
-             :border-radius "0.25rem", :font-size "0.75rem"}}
+    {:type :label,
+     :name "Container, styling & nested paths",
+     :style
+     {:background "#ede9fe", :padding "0.25rem 0.4rem", :border-radius "0.25rem", :font-size "0.75rem"}}
     {:path [:window], :type :container, :name "window"}
-    {:path [:styled], :type :string, :name "styled"
-     :class "option-ui-demo"
-     :style {:border "2px solid #6366f1", :border-radius "0.375rem"
-             :padding "0.25rem 0.4rem", :width "100%"
-             :box-sizing "border-box"}}
+    {:path [:styled],
+     :type :string,
+     :name "styled",
+     :class "option-ui-demo",
+     :style
+     {:border "2px solid #6366f1",
+      :border-radius "0.375rem",
+      :padding "0.25rem 0.4rem",
+      :width "100%",
+      :box-sizing "border-box"}}
     {:path [:nested :inner-string], :type :string, :name "nested-string"}]}
-
-  {:id "fipp-all"
-   :label "fipp (all selected values)"
-   :type :formula
-   :show? true
-   :position {:x 480, :y 60}
-   :code
-   "(fn [ctx options]\n  ((requiring-resolve 'itera.plot.fipp/fipp) options))"
-   :spec {:width 80}}]
+  {:id "fipp-all",
+   :label "fipp (all selected values)",
+   :type :formula,
+   :show? true,
+   :position {:x 480, :y 60},
+   :code "(fn [ctx options]\n  ((requiring-resolve 'itera.plot.fipp/fipp) options))",
+   :spec {:width 80}}],
  :edges
- [{:id "e-option-ui-fipp"
-   :source-node "option-ui-values"
-   :source-port "out"
-   :target-node "fipp-all"
+ [{:id "e-option-ui-fipp",
+   :source-node "option-ui-values",
+   :source-port "out",
+   :target-node "fipp-all",
    :target-port "options"}]}

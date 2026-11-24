@@ -22,6 +22,13 @@
            :close (+ 101.0 i)})
         (range n)))
 
+(defn- bear-rows
+  "OHLC rows with a boolean :bear-market column true for a run of rows."
+  [n]
+  (mapv (fn [i row] (assoc row :bear-market (< 1 i 4)))
+        (range n)
+        (ohlc-rows n)))
+
 ;; ---------------------------------------------------------------------------
 ;; default spec
 ;; ---------------------------------------------------------------------------
@@ -60,6 +67,9 @@
 
 (deftest point-drop-type-test
   (is (some #{:point-drop} plot-type/types)))
+
+(deftest background-color-type-test
+  (is (some #{:background-color} plot-type/types)))
 
 ;; ---------------------------------------------------------------------------
 ;; data-only record and rows-only constructor
@@ -171,6 +181,11 @@
                  :plots [{:type :point-drop :col :close
                           :color "red-3" :base-value 95}]}]]
       (is (= spec (fmt/normalize-spec spec)))))
+  (testing ":background-color keeps its :col and :color"
+    (let [spec [{:yAxisScale :linear
+                 :plots [{:type :background-color :col :bear-market
+                          :color "red-2"}]}]]
+      (is (= spec (fmt/normalize-spec spec)))))
   (testing "maps, nil and scalars are invalid"
     (is (nil? (fmt/normalize-spec {:charts []})))
     (is (nil? (fmt/normalize-spec nil)))
@@ -209,6 +224,31 @@
     (is (str/includes? payload "point-drop"))
     (is (str/includes? payload "base-value"))
     (is (str/includes? payload "87.5"))))
+
+(deftest background-color-payload-test
+  (let [v      (pixi/pixi-timeseries (bear-rows 6))
+        hiccup (protocol/to-formatted-hiccup
+                v [{:yAxisScale :linear
+                    :plots [{:type :background-color :col :bear-market
+                             :color "red-2"}]}]
+                window)
+        payload (:options (second hiccup))]
+    (testing "a boolean column keeps the plot with its resolved color"
+      (is (= :itera-pixi-timeseries (first hiccup)))
+      (is (str/includes? payload "background-color"))
+      (is (str/includes? payload "#fecaca")))))
+
+(deftest background-color-ignored-test
+  (let [v      (pixi/pixi-timeseries (bear-rows 6))
+        hiccup (protocol/to-formatted-hiccup
+                v [{:yAxisScale :linear
+                    :plots [{:type :background-color :col :close
+                             :color "red-2"}]}]
+                window)
+        payload (:options (second hiccup))]
+    (testing "a non-boolean column drops the plot server-side"
+      (is (= :itera-pixi-timeseries (first hiccup)))
+      (is (not (str/includes? payload "background-color"))))))
 
 ;; ---------------------------------------------------------------------------
 ;; page protocol

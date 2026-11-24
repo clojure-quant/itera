@@ -1,0 +1,26 @@
+{:graph/name "pixi-timeseries-background",
+ :nodes
+ [{:id "01-gen",
+   :label "random bars",
+   :type :formula,
+   :show? false,
+   :position {:x 24, :y 60},
+   :code
+   "(fn [_]\n  (let [rnd (java.util.Random. 42)\n        n 1000\n        bear? (boolean-array n)]\n    (loop [i 0]\n      (when (< i n)\n        (if (and (< (.nextDouble rnd) (/ 1.0 150.0))\n                 (<= (+ i 5) n))\n          (let [len (+ 5 (.nextInt rnd 21))]\n            (dotimes [k (min len (- n i))]\n              (aset bear? (+ i k) true))\n            (recur (+ i len)))\n          (recur (inc i)))))\n    (let [start (java.time.LocalDate/of 2024 1 1)\n          close-a (atom 100.0)]\n      (mapv (fn [i]\n              (let [o (deref close-a)\n                    c (max 1.0 (+ o (* (- (.nextDouble rnd) 0.5) 4.0)))\n                    h (+ (max o c) (* (.nextDouble rnd) 1.0))\n                    l (max 1.0 (- (min o c) (* (.nextDouble rnd) 1.0)))]\n                (reset! close-a c)\n                {:date (str (.plusDays start i))\n                 :open o\n                 :high h\n                 :low l\n                 :close c\n                 :bear-market (aget bear? i)}))\n            (range n)))))"}
+  {:id "02-plot",
+   :label "pixi-timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec
+   [{:yAxisScale :linear,
+     :plots [{:type :background-color, :col :bear-market, :color "red-2"}
+             {:type :bar, :col [:open :high :low :close]}]}]}],
+ :edges
+ [{:id "e-gen-plot",
+   :source-node "01-gen",
+   :source-port "out",
+   :target-node "02-plot",
+   :target-port "rows"}]}

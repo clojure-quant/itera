@@ -18,6 +18,10 @@
                the point to :base-value; the pane's min/max include that base
                (a log pane includes it only when positive and skips the
                segments of a series whose base is not positive).
+               :background-color paints a pane background band for every row
+               whose boolean :col value is true; it has no effect on the y
+               scale and is ignored when :col is not a boolean column (the
+               server drops such plots before the payload is built).
               Old vector panes [[<series> ...] ...] are still accepted and
               treated as :linear.  :log uses positive values only and falls
               back to :linear when a pane has no positive values.
@@ -293,6 +297,9 @@
                                                           (or (= t "line") (= t "point")
                                                               (= t "point-drop"))
                                                           (array c)
+
+                                                          (= t "background-color")
+                                                          (array)
 
                                                           :else (array))))
                                           series-base (fn [series]
@@ -821,7 +828,28 @@
                                                              (recur (inc i))))
                                                          (.fill graphics
                                                                 (js-obj "color" color "alpha" 0.6))))
-                                          add-bars (fn [graphics rows geom mn mx col]
+                                           add-backgrounds (fn [pane rows geom col color]
+                                                             (let [n     (.-length rows)
+                                                                   xstep (aget geom "xstep")
+                                                                   x0    (aget geom "x0")
+                                                                   y0    (aget geom "y0")
+                                                                   ch    (aget geom "ch")
+                                                                   g     (new pixi/Graphics)]
+                                                               (loop [i 0]
+                                                                 (when (< i n)
+                                                                   (if (= true (aget (aget rows i) col))
+                                                                     (let [j (loop [k (inc i)]
+                                                                               (if (and (< k n)
+                                                                                        (= true (aget (aget rows k) col)))
+                                                                                 (recur (inc k))
+                                                                                 k))]
+                                                                       (.rect g (+ x0 (* i xstep))
+                                                                              y0 (* (- j i) xstep) ch)
+                                                                       (recur j))
+                                                                     (recur (inc i)))))
+                                                               (.fill g (js-obj "color" color))
+                                                               (.addChild pane g)))
+                                           add-bars (fn [graphics rows geom mn mx col]
                                                      (let [c0        (aget col 0)
                                                            c1        (aget col 1)
                                                            c2        (aget col 2)
@@ -858,9 +886,11 @@
                                                                    (.lineTo graphics x-center lo)
                                                                    (.stroke graphics (js-obj "width" 1 "color" color)))))
                                                              (recur (inc i)))))))
-                                          draw-series (fn [rows pane geom mn mx series]
-                                                        (when series
-                                                          (let [t     (aget series "type")
+                                           draw-series (fn [rows pane geom mn mx series]
+                                                         (when (and series
+                                                                    (not= "background-color"
+                                                                          (aget series "type")))
+                                                           (let [t     (aget series "type")
                                                                 col   (aget series "col")
                                                                 color (or (aget series "color") "#3b82f6")
                                                                 g     (new pixi/Graphics)]
@@ -1013,6 +1043,17 @@
                                                         (.rect bg pad pad bw bh)
                                                         (.fill bg (js-obj "color" "#f5f5f5"))
                                                         (.addChild pane bg)
+                                                        (when series
+                                                          (loop [i 0]
+                                                            (when (< i ns)
+                                                              (let [s (aget series i)]
+                                                                (when (= "background-color"
+                                                                         (aget s "type"))
+                                                                  (add-backgrounds pane rows geom
+                                                                                   (aget s "col")
+                                                                                   (or (aget s "color")
+                                                                                       "#3b82f6"))))
+                                                              (recur (inc i)))))
                                                         (add-y-axis pane geom mn mx ticks labels)
                                                         (when show-x-axis?
                                                           (add-x-axis rows pane geom))
@@ -1098,19 +1139,26 @@
 (defn- resolve-charts
   "Resolve every non-bar plot's :color name to a concrete CSS color,
    server-side, so the client component needs no color table.  Bars are left
-   without a color; the viewer colors them by close-vs-open."
-  [charts]
+   without a color; the viewer colors them by close-vs-open.  A
+   :background-color plot whose :col is not :boolean per COL-INFO is dropped:
+   such a plot is ignored by design, and the stored spec is left intact."
+  [charts col-info]
   (when charts
     (mapv (fn [pane]
             (if (map? pane)
               (update pane :plots
                       (fn [plots]
-                        (mapv (fn [series]
-                                (if (and (map? series)
-                                         (not= :bar (:type series)))
-                                  (update series :color resolve-color)
-                                  series))
-                              (or plots []))))
+                        (->> (or plots [])
+                             (remove (fn [series]
+                                       (and (map? series)
+                                            (= :background-color (:type series))
+                                            (not= :boolean
+                                                  (get col-info (:col series))))))
+                             (mapv (fn [series]
+                                     (if (and (map? series)
+                                              (not= :bar (:type series)))
+                                       (update series :color resolve-color)
+                                       series))))))
               pane))
           charts)))
 
@@ -1154,11 +1202,16 @@
 
 (defn- render
   "Render selected ROWS with charts SPEC at WINDOW.  SPEC colors are resolved
-   server-side and dates normalized before the payload reaches the client."
+   server-side and dates normalized before the payload reaches the client;
+   background-color plots on non-boolean columns are dropped using ROWS'
+   column types."
   [rows spec window]
   (itera-pixi-timeseries
    {:options (cond-> {:data (normalize-dates rows) :window window}
-               spec (assoc :charts (resolve-charts spec)))
+               spec (assoc :charts
+                           (resolve-charts spec
+                                           (when (satisfies? protocol/itera-table-info rows)
+                                             (protocol/column-info rows)))))
     :style   (merge {:display "block" :width "100%" :height "100%"
                      :overflow "hidden"}
                     (window-size-style window))}))

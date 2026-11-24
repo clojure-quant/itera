@@ -34,6 +34,19 @@
   (let [sel (set current)]
     (into [] (comp (filter #(contains? sel (:val %))) (map :id)) norm-spec)))
 
+;; --- signal paths (mirrors Datastar's namespace-dropping) -------------------
+
+(defn- plain-signal-key
+  "Datastar drops keyword namespaces from signal names; mirror that in the
+   server-side signal store path so action-time derefs find the value."
+  [k]
+  (if (keyword? k) (keyword (name k)) k))
+
+(defn- plain-signal-path
+  [group path]
+  (mapv plain-signal-key
+        (into [:itera-options (or group :options)] path)))
+
 ;; --- editors ----------------------------------------------------------------
 
 (defn- date->str
@@ -84,8 +97,11 @@
         sel     (current-id ns-spec value)]
     (into [:select {:class class :style style
                     :data-on:change (h/action (set-fn path (get d $value)))}]
-          (for [{id :id nm :name} ns-spec]
-            [:option {:value id :selected (= id sel)} nm]))))
+          (concat
+           (when (nil? sel)
+             [[:option {:value "" :selected true} ""]])
+           (for [{id :id nm :name} ns-spec]
+             [:option {:value id :selected (= id sel)} nm])))))
 
 (defmethod options/editor :select-multiple [opt value set-fn _update-fn group]
   (let [{:keys [class style path]} (base-attrs opt)
@@ -93,7 +109,7 @@
         ns-spec (normalize-select (:spec opt))
         d       (id->val ns-spec)
         ids     (current-ids ns-spec (or value []))
-        sig     (h/signal (into [:itera-options group] path) ids)]
+        sig     (h/signal (plain-signal-path group path) ids)]
     (into [:select {:class class :style style
                     :multiple true :size (or size 5)
                     :data-bind sig
