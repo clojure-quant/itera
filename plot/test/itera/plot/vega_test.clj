@@ -89,6 +89,15 @@
     (is (not (contains? spec :data)))
     (is (= {:mode "vega"} embedOpts))))
 
+(deftest fitted-plot-height-test
+  (is (= 340 (#'vega/fitted-plot-height 400 60)))
+  (is (nil? (#'vega/fitted-plot-height 400 nil)))
+  (is (nil? (#'vega/fitted-plot-height nil 60)))
+  (is (nil? (#'vega/fitted-plot-height 400 0)))
+  (is (= 1 (#'vega/fitted-plot-height 400 500)))
+  (is (nil? (#'vega/fitted-plot-height "400" 60)))
+  (is (nil? (#'vega/fitted-plot-height 400 "60"))))
+
 (deftest to-formatted-hiccup-test
   (is (some? (protocol/to-formatted-hiccup
               (vega/vegalite rows)

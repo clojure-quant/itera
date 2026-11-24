@@ -15,9 +15,12 @@
    :code
    "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
    :spec
-   [{:yAxisScale :linear,
-     :plots [{:type :background-color, :col :bear-market, :color "red-2"}
-             {:type :bar, :col [:open :high :low :close]}]}]}],
+   {:main-pane-min-height 200,
+    :aux-pane-height 100,
+    :panes
+    [{:yAxisScale :linear,
+      :plots [{:type :background-color, :col :bear-market, :color "red-2"}
+              {:type :bar, :col [:open :high :low :close]}]}]}}],
  :edges
  [{:id "e-gen-plot",
    :source-node "01-gen",

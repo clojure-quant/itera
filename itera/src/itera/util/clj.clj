@@ -7,6 +7,7 @@
    acyclic."
   (:require
    [clojure.string :as string]
+   [clojure.core :as core]
    [clojure.edn :as edn]
    [clojure.core :refer [load-string]])
   (:import
@@ -91,7 +92,7 @@
   "Reads a single form from s and returns the parameter vector
    of an (fn [args] ...) form."
   [s]
-  (let [form (edn/read-string s)]
+  (let [form (core/read-string s)]
     (when (and (seq? form) (= 'fn (first form)))
       (second form))))
 
@@ -109,9 +110,13 @@
   (fn-arglist "(fn [ctx assets] (println assets))")
 
   (fn-arglist "(fn [_ assets] (println assets))")
+  (fn-arglist "(fn [_ assets] @assets)")
   ;;=> [ctx assets]
-
-
+  
+  (edn/read-string "(fn [_ assets] (println assets))")
+  (edn/read-string "(fn [_ assets] @assets)")
+  
+  (clojure.core/read-string "(fn [_ assets] @assets)")
 
   ;
   )

@@ -4,7 +4,7 @@
    opts:
      :data    a table value implementing itera-table-info (a vector/seq of
               row maps or a tech.ml/tablecloth dataset); required
-     :charts  vector of panes; each pane is a map:
+     :charts  the visible slice of the spec's pane vector; each pane is a map:
               {:yAxisScale :linear|:log   ; default :linear
                :plots [<series> ...]}
               where each series map is:
@@ -34,12 +34,19 @@
               loop has measured a complete window.  Absent or invalid
               dimensions render \"invalid :width and :height\" and draw
               nothing.
+     :heights optional vector of pixel heights, one per :charts entry, aligned
+              by position: [<main> <aux> ...].  Computed server-side by
+              itera.plot.pixi-timeseries.pane-layout from the spec's
+              :main-pane-min-height / :aux-pane-height and the window height;
+              omitted when the window height is unknown, in which case the
+              client falls back to its legacy ratio split.
      :window-selector  window metadata and state, a map:
               {:display :nice|:all
                :step <pixels per row>
                :end <exclusive end row>
                :rows-all <total result rows>
-               :rows-visible <rows per page>}
+               :rows-visible <rows per page>
+               :aux-pane <first visible aux pane index>}
               When present, rows are windowed server-side and the client
               receives only the visible slice; the default view is the last
               page.  :display defaults to :nice (windowed); with :all every
@@ -48,9 +55,11 @@
               viewport are derived from the live :window :width and :step on
               every render, so a container resize re-windows the slice; the
               stored :rows-visible is kept for display only and used as a
-              fallback when :width is missing.  The plot-page-editor writes
-              :end, :display and :step, while `init-window-selector!` fills
-              :rows-all and :rows-visible from the result and the window
+              fallback when :width is missing.  :aux-pane is the first visible
+              aux pane (page editor combobox); the visible run is clamped to
+              the last full window.  The plot-page-editor writes :end,
+              :display, :step and :aux-pane, while `init-window-selector!`
+              fills :rows-all and :rows-visible from the result and the window
               width.  Without this key all rows are sent to the client.
      :style   host element CSS, e.g. {:width \"100%\" :height \"800px\"}
      :class   host element class
@@ -63,14 +72,16 @@
    seq or a dataset); every calculation reads it through
    itera.value.protocol/itera-table-info.  The charts spec and the size are
    supplied by the itera.value.protocol methods.  The editable charts spec is
-   the bare panes vector above, the protocol `window` supplies the size, and
-   the page layer supplies the server-side row window (navigated by
-   `plot-page-editor`).  The generic `to-hiccup` path uses the smart default
-   spec at a fixed 900x600 fallback window because pixi cannot measure the
-   DOM.  
+   the map above ({:panes [...] :main-pane-min-height <px>
+   :aux-pane-height <px>}; a legacy bare pane vector is still accepted), the
+   protocol `window` supplies the size, and the page layer supplies the
+   server-side row window (navigated by `plot-page-editor`).  The generic
+   `to-hiccup` path uses the smart default spec at a fixed 900x600 fallback
+   window because pixi cannot measure the DOM.  
    `select-rows` and `init-window-selector!` are used internally by the paged
    methods and stay public for the legacy demo."
   (:require [hyper.core :as h]
+            [itera.plot.pixi-timeseries.pane-layout :as pane-layout]
             [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
             [itera.plot.pixi-timeseries.plot-page-editor :as page-editor]
             [itera.plot.pixi-timeseries.window :as plot-window]
@@ -180,13 +191,16 @@
 
 (h/defc itera-pixi-timeseries
   "pixi.js time-series viewer in a custom element. `options` is the
-   JSON-parsed viewer payload (`:data`, `:charts`, `:window`); :data holds
-   only the server-side visible row slice.  Each pane draws a left-side
-   y-axis whose ticks are auto-formatted from that pane's combined series
-   bounds.  All panes share one y-label gutter sized for the widest pane's
-   labels, so their plot areas and x-axis geometry are pixel-identical.  The
-   first pane also draws a bottom date x-axis with adaptive date/datetime
-   tick labels taken from the rows' `\"date\"` column, when present."
+   JSON-parsed viewer payload (`:data`, `:charts`, `:window`, optional
+   `:heights`); :data holds only the server-side visible row slice.  Each pane
+   draws a left-side y-axis whose ticks are auto-formatted from that pane's
+   combined series bounds.  All panes share one y-label gutter sized for the
+   widest pane's labels, so their plot areas and x-axis geometry are
+   pixel-identical.  The first pane also draws a bottom date x-axis with
+   adaptive date/datetime tick labels taken from the rows' `\"date\"` column,
+   when present.  When `:heights` is present and matches `:charts` in length,
+   panes are stacked top-to-bottom at those pixel heights; otherwise the
+   legacy h/2, h/4, remainder split is used (at most three panes)."
   {:require [["https://esm.sh/pixi.js@8.6.6?bundle" :as pixi]]}
   [{:keys [options]}]
   (render
@@ -240,10 +254,12 @@
                                   (when (= g (.-gen ctx))
                                     (let [data      (or (aget opts "data") (array))
                                           charts    (or (aget opts "charts") (array))
+                                          heights   (aget opts "heights")
                                           stage     (.-stage app)
                                           container (new pixi/Container)
                                           state     (js-obj "width" w "height" h
                                                             "data" data "charts" charts
+                                                            "heights" heights
                                                             "container" container)
                                           true-min (fn [rows col positive?]
                                                      (let [n (.-length rows)]
@@ -1077,16 +1093,33 @@
                                           redraw (fn []
                                                    (let [rows      (.-data state)
                                                          h         (.-height state)
-                                                         h1        (/ h 2)
-                                                         h2        (/ h 4)
-                                                         h3        (- h h1 h2)
                                                          charts    (.-charts state)
+                                                         heights   (.-heights state)
                                                          container (.-container state)
-                                                         descs     (array (array (aget charts 0) 0 h1 true))]
-                                                     (when (> (.-length charts) 1)
-                                                       (.push descs (array (aget charts 1) h1 h2 false)))
-                                                     (when (> (.-length charts) 2)
-                                                       (.push descs (array (aget charts 2) (+ h1 h2) h3 false)))
+                                                         nc        (.-length charts)
+                                                         descs     (if (and (array? heights)
+                                                                            (= (.-length heights) nc))
+                                                                     (loop [i 0 y 0 acc (array)]
+                                                                       (if (< i nc)
+                                                                         (let [ht (aget heights i)
+                                                                               ht (if (and (number? ht)
+                                                                                           (not (js/isNaN ht)))
+                                                                                    ht 0)]
+                                                                           (.push acc (array (aget charts i) y ht
+                                                                                             (zero? i)))
+                                                                           (recur (inc i) (+ y ht) acc))
+                                                                         acc))
+                                                                     (let [h1  (/ h 2)
+                                                                           h2  (/ h 4)
+                                                                           h3  (- h h1 h2)
+                                                                           acc (array)]
+                                                                       (when (> nc 0)
+                                                                         (.push acc (array (aget charts 0) 0 h1 true)))
+                                                                       (when (> nc 1)
+                                                                         (.push acc (array (aget charts 1) h1 h2 false)))
+                                                                       (when (> nc 2)
+                                                                         (.push acc (array (aget charts 2) (+ h1 h2) h3 false)))
+                                                                       acc))]
                                                      (.removeChildren container)
                                                      (let [models        (loop [i 0 acc (array)]
                                                                            (if (< i (.-length descs))
@@ -1104,13 +1137,14 @@
                                                                                       (if (aget m "finite?")
                                                                                         (js/Math.max g cap)
                                                                                         g)))
-                                                                             g))
-                                                           pane1         (draw-pane (aget models 0) shared-gutter)]
-                                                       (loop [i 1]
-                                                         (when (< i (.-length models))
-                                                           (draw-pane (aget models i) shared-gutter)
-                                                           (recur (inc i))))
-                                                       (draw-date rows pane1))))]
+                                                                             g))]
+                                                       (when (pos? (.-length models))
+                                                         (let [pane1 (draw-pane (aget models 0) shared-gutter)]
+                                                           (loop [i 1]
+                                                             (when (< i (.-length models))
+                                                               (draw-pane (aget models i) shared-gutter)
+                                                               (recur (inc i))))
+                                                           (draw-date rows pane1))))))]
                                       (.addChild stage container)
                                       (set! (.-display (.-style (.-canvas app))) "block")
                                       (.appendChild el (.-canvas app))
@@ -1201,38 +1235,47 @@
   {:width 900 :height 600})
 
 (defn- render
-  "Render selected ROWS with charts SPEC at WINDOW.  SPEC colors are resolved
+  "Render selected ROWS with charts SPEC at WINDOW, starting the visible aux
+   pane run at AUX-START.  SPEC is the canonical map; pane-layout decides which
+   panes are visible and their pixel heights.  Only the visible panes are
+   resolved (colors, background-color dropping), so payload :charts indices no
+   longer match spec pane indices; :heights aligns with :charts by position and
+   is omitted when the window height is unknown.  SPEC colors are resolved
    server-side and dates normalized before the payload reaches the client;
    background-color plots on non-boolean columns are dropped using ROWS'
    column types."
-  [rows spec window]
-  (itera-pixi-timeseries
-   {:options (cond-> {:data (normalize-dates rows) :window window}
-               spec (assoc :charts
-                           (resolve-charts spec
-                                           (when (satisfies? protocol/itera-table-info rows)
-                                             (protocol/column-info rows)))))
-    :style   (merge {:display "block" :width "100%" :height "100%"
-                     :overflow "hidden"}
-                    (window-size-style window))}))
+  [rows spec window aux-start]
+  (let [panes   (:panes spec)
+        plan    (pane-layout/layout spec window aux-start)
+        visible (mapv #(nth panes %) (:indices plan))
+        col-info (when (satisfies? protocol/itera-table-info rows)
+                   (protocol/column-info rows))
+        options (cond-> {:data (normalize-dates rows) :window window}
+                  spec     (assoc :charts (resolve-charts visible col-info))
+                  (:heights plan) (assoc :heights (:heights plan)))]
+    (itera-pixi-timeseries
+     {:options options
+      :style   (merge {:display "block" :width "100%" :height "100%"
+                       :overflow "hidden"}
+                      (window-size-style window))})))
 
 (defn- formatted-hiccup
-  "Render TABLE with SPEC (or the smart default when SPEC is nil) at WINDOW.
-   Rows are read through itera-table-info.  Invalid specs render
-   fmt/invalid-spec-block."
-  [table spec window]
+  "Render TABLE with SPEC (or the smart default when SPEC is nil) at WINDOW,
+   starting the visible aux pane run at AUX-START.  Rows are read through
+   itera-table-info.  Invalid specs render fmt/invalid-spec-block."
+  [table spec window aux-start]
   (if-let [spec (fmt/normalize-spec (or spec (fmt/default-spec* table)))]
-    (render (protocol/as-seq-of-maps table) spec window)
+    (render (protocol/as-seq-of-maps table) spec window aux-start)
     fmt/invalid-spec-block))
 
 (defrecord PixiTimeseries [data]
   protocol/itera-convertable
   (to-hiccup [_]
-    (formatted-hiccup data nil default-window))
+    (formatted-hiccup data nil default-window 0))
 
   protocol/itera-spec-plot
   (to-formatted-hiccup [_ spec window]
-    (formatted-hiccup data spec window))
+    (formatted-hiccup data spec window 0))
   (default-spec [_]
     (fmt/default-spec* data))
   (spec-editor [_ spec code-a]
@@ -1242,10 +1285,10 @@
   (to-formatted-paged-hiccup [v spec window page]
     (let [page (or page (protocol/init-page v spec window))
           rows (select-rows {:window window :window-selector page} data)]
-      (formatted-hiccup rows spec window)))
+      (formatted-hiccup rows spec window (:aux-pane page))))
   (init-page [_ _spec window]
     (let [a (atom {:window window
-                   :window-selector {:display :nice :step 8}})]
+                   :window-selector {:display :nice :step 8 :aux-pane 0}})]
       (init-window-selector! a data)
       (:window-selector @a)))
   (page-editor [v spec window page-a]
@@ -1255,8 +1298,9 @@
   "Return a pixi-timeseries viewer over ROWS (any value implementing
    itera.value.protocol/itera-table-info, e.g. a vector/seq of row maps or a
    tech.ml/tablecloth dataset).  The charts spec and size are supplied by the
-   itera.value.protocol methods: `to-formatted-hiccup` takes {:panes...} +
-   {:width :height}, `to-hiccup` uses the smart default at a fixed fallback
-   size.  The data value is stored as-is."
+   itera.value.protocol methods: `to-formatted-hiccup` takes the spec map
+   {:panes [...] :main-pane-min-height <px> :aux-pane-height <px>} + {:width
+   :height} (or a legacy bare pane vector), `to-hiccup` uses the smart default
+   at a fixed fallback size.  The data value is stored as-is."
   [rows]
   (->PixiTimeseries (or rows [])))

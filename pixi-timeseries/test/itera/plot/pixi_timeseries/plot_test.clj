@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
+   [itera.plot.pixi-timeseries.pane-layout :as pane-layout]
    [itera.plot.pixi-timeseries.plot :as pixi]
    [itera.plot.pixi-timeseries.plot-format-ui :as fmt]
    [itera.plot.pixi-timeseries.plot-type :as plot-type]
@@ -11,6 +12,9 @@
 
 (def ^:private window
   {:width 600 :height 400})
+
+(def ^:private default-heights
+  {:main-pane-min-height 200 :aux-pane-height 100})
 
 (defn- ohlc-rows
   [n]
@@ -34,27 +38,31 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest default-spec-ohlc-test
-  (is (= [{:yAxisScale :linear
-           :plots [{:type :bar :col [:open :high :low :close]}]}]
+  (is (= (assoc default-heights
+                :panes [{:yAxisScale :linear
+                         :plots [{:type :bar
+                                  :col [:open :high :low :close]}]}])
          (fmt/default-spec* (ohlc-rows 3)))))
 
 (deftest default-spec-line-test
   (testing ":close is preferred for non-OHLC data"
-    (is (= [{:yAxisScale :linear
-             :plots [{:type :line :col :close}]}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear
+                           :plots [{:type :line :col :close}]}])
            (fmt/default-spec* [{:date "2024-01-01" :close 1.5}]))))
   (testing "the first numeric non-time column is used"
-    (is (= [{:yAxisScale :linear
-             :plots [{:type :line :col :volume}]}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear
+                           :plots [{:type :line :col :volume}]}])
            (fmt/default-spec* [{:date "2024-01-01" :asset "a" :volume 3}]))))
   (testing "time and non-numeric columns are skipped"
-    (is (= []
+    (is (= (assoc default-heights :panes [])
            (fmt/default-spec* [{:epoch 1 :date "2024-01-01"
                                 :asset "a" :entry :flat}])))))
 
 (deftest default-spec-empty-test
-  (is (= [] (fmt/default-spec* [])))
-  (is (= [] (fmt/default-spec* nil))))
+  (is (= (assoc default-heights :panes []) (fmt/default-spec* [])))
+  (is (= (assoc default-heights :panes []) (fmt/default-spec* nil))))
 
 (deftest default-spec-protocol-test
   (let [rows (ohlc-rows 3)]
@@ -102,8 +110,10 @@
       (is (= rows (:data v)))
       (is (instance? clojure.lang.LazySeq (:data v))))
     (testing "the default spec works from seq data"
-      (is (= [{:yAxisScale :linear
-               :plots [{:type :bar :col [:open :high :low :close]}]}]
+      (is (= (assoc default-heights
+                    :panes [{:yAxisScale :linear
+                             :plots [{:type :bar
+                                      :col [:open :high :low :close]}]}])
              (protocol/default-spec v))))
     (testing "the preformatted path works from seq data"
       (is (= :itera-pixi-timeseries
@@ -111,6 +121,7 @@
     (testing "paging works from seq data"
       (is (= {:display :nice
               :step 8
+              :aux-pane 0
               :end 24
               :rows-all 24
               :rows-visible 24}
@@ -134,8 +145,10 @@
       (is (= :number (:close (protocol/column-info (:data v)))))
       (is (= :string (:date (protocol/column-info (:data v))))))
     (testing "the default spec and paged path work from dataset data"
-      (is (= [{:yAxisScale :linear
-               :plots [{:type :bar :col [:open :high :low :close]}]}]
+      (is (= (assoc default-heights
+                    :panes [{:yAxisScale :linear
+                             :plots [{:type :bar
+                                      :col [:open :high :low :close]}]}])
              (protocol/default-spec v)))
       (let [hiccup (protocol/to-formatted-paged-hiccup v nil window nil)]
         (is (= :itera-pixi-timeseries (first hiccup)))
@@ -146,47 +159,67 @@
 ;; ---------------------------------------------------------------------------
 
 (deftest normalize-spec-test
-  (testing "canonical pane maps are preserved, including :yAxisScale :log"
-    (let [spec [{:yAxisScale :log
-                 :plots [{:type :line :col :close}]}
-                {:yAxisScale :linear
-                 :plots [{:type :range :col [:low :high] :color "red-3"}]}]]
+  (testing "canonical spec maps are preserved, including :yAxisScale :log"
+    (let [spec {:main-pane-min-height 150
+                :aux-pane-height 80
+                :panes [{:yAxisScale :log
+                         :plots [{:type :line :col :close}]}
+                        {:yAxisScale :linear
+                         :plots [{:type :range :col [:low :high] :color "red-3"}]}]}]
       (is (= spec (fmt/normalize-spec spec)))))
-  (testing "old vector panes upgrade to :linear panes"
-    (is (= [{:yAxisScale :linear :plots [{:type :line :col :close}]}]
+  (testing "a legacy pane vector is converted to the map shape with defaults"
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear :plots [{:type :line :col :close}]}])
            (fmt/normalize-spec [[{:type :line :col :close}]]))))
+  (testing "unknown map keys are preserved and heights default when invalid"
+    (is (= {:panes [{:yAxisScale :linear :plots [] :extra 1}]
+            :extra 1
+            :main-pane-min-height 200
+            :aux-pane-height 100}
+           (fmt/normalize-spec {:extra 1
+                                :main-pane-min-height 0
+                                :aux-pane-height -5
+                                :panes [{:extra 1}]}))))
   (testing "an invalid/missing :yAxisScale becomes :linear"
-    (is (= [{:yAxisScale :linear :plots []}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear :plots []}])
            (fmt/normalize-spec [{:yAxisScale :bogus :plots []}])))
-    (is (= [{:yAxisScale :linear :plots []}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear :plots []}])
            (fmt/normalize-spec [{:plots []}]))))
   (testing "bar plots lose :color"
-    (is (= [{:yAxisScale :linear
-             :plots [{:type :bar :col [:open :high :low :close]}]}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear
+                           :plots [{:type :bar
+                                    :col [:open :high :low :close]}]}])
            (fmt/normalize-spec [[{:type :bar :col [:open :high :low :close]
                                   :color "red-3"}]]))))
   (testing "map panes gain :plots []/:yAxisScale and keep unknown keys"
-    (is (= [{:yAxisScale :linear :plots [] :extra 1}]
+    (is (= (assoc default-heights
+                  :panes [{:yAxisScale :linear :plots [] :extra 1}])
            (fmt/normalize-spec [{:extra 1}]))))
   (testing "a non-map plot becomes an empty plot map"
-    (is (= [{:yAxisScale :linear :plots [{}]}]
+    (is (= (assoc default-heights :panes [{:yAxisScale :linear :plots [{}]}])
            (fmt/normalize-spec [["nope"]]))))
   (testing "scalar panes become empty :linear panes"
-    (is (= [{:yAxisScale :linear :plots []}]
+    (is (= (assoc default-heights :panes [{:yAxisScale :linear :plots []}])
            (fmt/normalize-spec [42]))))
   (testing "an empty vector is valid"
-    (is (= [] (fmt/normalize-spec []))))
+    (is (= (assoc default-heights :panes []) (fmt/normalize-spec []))))
   (testing ":point-drop keeps its :col, :color and :base-value"
-    (let [spec [{:yAxisScale :linear
-                 :plots [{:type :point-drop :col :close
-                          :color "red-3" :base-value 95}]}]]
-      (is (= spec (fmt/normalize-spec spec)))))
+    (let [pane {:yAxisScale :linear
+                :plots [{:type :point-drop :col :close
+                         :color "red-3" :base-value 95}]}]
+      (is (= (assoc default-heights :panes [pane])
+             (fmt/normalize-spec {:panes [pane]})))))
   (testing ":background-color keeps its :col and :color"
-    (let [spec [{:yAxisScale :linear
-                 :plots [{:type :background-color :col :bear-market
-                          :color "red-2"}]}]]
-      (is (= spec (fmt/normalize-spec spec)))))
-  (testing "maps, nil and scalars are invalid"
+    (let [pane {:yAxisScale :linear
+                :plots [{:type :background-color :col :bear-market
+                         :color "red-2"}]}]
+      (is (= (assoc default-heights :panes [pane])
+             (fmt/normalize-spec [pane])))))
+  (testing "maps without a :panes vector, nil and scalars are invalid"
+    (is (nil? (fmt/normalize-spec {})))
     (is (nil? (fmt/normalize-spec {:charts []})))
     (is (nil? (fmt/normalize-spec nil)))
     (is (nil? (fmt/normalize-spec 42)))))
@@ -200,6 +233,96 @@
                  :plots [{:type :line :col :close :color "custom-1"}]}]]
       (is (= (vec (sort (conj (set (keys colors/colors)) "custom-1")))
              (fmt/palette* spec))))))
+
+;; ---------------------------------------------------------------------------
+;; pane layout
+;; ---------------------------------------------------------------------------
+
+(def ^:private three-pane-spec
+  {:main-pane-min-height 220
+   :aux-pane-height 120
+   :panes [{:yAxisScale :linear
+            :plots [{:type :bar :col [:open :high :low :close]}]}
+           {:yAxisScale :linear :plots [{:type :line :col :sine :color "blue-5"}]}
+           {:yAxisScale :linear :plots [{:type :line :col :cosine :color "green-5"}]}]})
+
+(deftest normalize-params-test
+  (is (= default-heights (pane-layout/normalize-params {})))
+  (is (= default-heights
+         (pane-layout/normalize-params {:main-pane-min-height 0
+                                        :aux-pane-height "x"})))
+  (is (= {:main-pane-min-height 300 :aux-pane-height 50}
+         (pane-layout/normalize-params {:main-pane-min-height 300
+                                        :aux-pane-height 50}))))
+
+(deftest pane-layout-single-test
+  (testing "one pane fills the container height"
+    (is (= {:main-pane-min-height 200 :aux-height 100
+            :main-height 400 :aux-count 0 :visible-aux-count 0
+            :start 0 :max-start 0 :indices [0] :heights [400]
+            :overflow? false :total-height 400}
+           (pane-layout/layout {:panes [{}]} {:height 400} 0)))))
+
+(deftest pane-layout-fitting-test
+  (testing "two 120px aux panes and a 280px main pane at h=520"
+    (is (= {:main-pane-min-height 220 :aux-height 120
+            :main-height 280 :aux-count 2 :visible-aux-count 2
+            :start 0 :max-start 0 :indices [0 1 2] :heights [280 120 120]
+            :overflow? false :total-height 520}
+           (pane-layout/layout three-pane-spec {:height 520} 0))))
+  (testing "at h=400 only one aux pane fits; main = h - k*a"
+    (is (= {:main-pane-min-height 220 :aux-height 120
+            :main-height 280 :aux-count 2 :visible-aux-count 1
+            :start 0 :max-start 1 :indices [0 1] :heights [280 120]
+            :overflow? true :total-height 400}
+           (pane-layout/layout three-pane-spec {:height 400} 0))))
+  (testing "the aux start clamps to the last full window"
+    (is (= [0 2] (:indices (pane-layout/layout three-pane-spec {:height 400} 1))))
+    (is (= [0 2] (:indices (pane-layout/layout three-pane-spec {:height 400} 9))))))
+
+(deftest pane-layout-floor-test
+  (testing "k uses quotient/floor: h=399 still fits one aux pane"
+    (is (= [0 1] (:indices (pane-layout/layout three-pane-spec {:height 399} 0)))))
+  (testing "h < main-pane-min-height shows only the main pane at full height"
+    (let [plan (pane-layout/layout three-pane-spec {:height 150} 0)]
+      (is (= 0 (:visible-aux-count plan)))
+      (is (= [0] (:indices plan)))
+      (is (= [150] (:heights plan)))
+      (is (:overflow? plan)))))
+
+(deftest pane-layout-invalid-height-test
+  (testing "an invalid window height lists all panes with nil heights"
+    (let [plan (pane-layout/layout three-pane-spec {:width 600} 0)]
+      (is (= [0 1 2] (:indices plan)))
+      (is (nil? (:heights plan)))
+      (is (nil? (:main-height plan)))
+      (is (false? (:overflow? plan))))))
+
+(deftest pane-layout-empty-test
+  (is (= [] (:indices (pane-layout/layout {:panes []} {:height 400} 0))))
+  (is (= [] (:heights (pane-layout/layout {:panes []} {:height 400} 0)))))
+
+(deftest aux-pane-payload-test
+  (let [v       (pixi/pixi-timeseries (ohlc-rows 3))
+        payload (fn [aux-start]
+                  (let [page   {:display :nice :step 8 :end 3 :rows-all 3
+                                :rows-visible 3 :aux-pane aux-start}
+                        hiccup (protocol/to-formatted-paged-hiccup
+                                v three-pane-spec window page)]
+                    (str (:options (second hiccup)))))
+        yscales (fn [s] (count (re-seq #"yAxisScale" s)))]
+    (testing "aux-start 0 sends the bar main pane plus the sine aux pane"
+      (let [s (payload 0)]
+        (is (= 2 (yscales s)))
+        (is (str/includes? s "\"heights\":[280,120]"))
+        (is (str/includes? s "\"col\":\"sine\""))
+        (is (not (str/includes? s "\"col\":\"cosine\"")))))
+    (testing "aux-start 1 sends the cosine aux pane and no sine"
+      (let [s (payload 1)]
+        (is (= 2 (yscales s)))
+        (is (str/includes? s "\"heights\":[280,120]"))
+        (is (str/includes? s "\"col\":\"cosine\""))
+        (is (not (str/includes? s "\"col\":\"sine\"")))))))
 
 (deftest log-pane-payload-test
   (let [v       (pixi/pixi-timeseries (ohlc-rows 3))
@@ -259,6 +382,7 @@
         page (protocol/init-page v nil window)]
     (is (= {:display :nice
             :step 8
+            :aux-pane 0
             :end 240
             :rows-all 240
             :rows-visible 75}

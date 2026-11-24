@@ -67,6 +67,36 @@ The converter (`demo.convert`) is dev-only; the committed CSVs are what the
 demo server reads.
 
 
+itera.plot.pixi-timeseries
+- add new parameters to the spec: 
+  - :main-pane-min-height (int, meaning px)  
+  - :aux-pane-height (int meaning px)
+- no change to itera.plot.pixi-timeseries.plot/itera-pixi-timeseries
+- change render function so that 
+  - if there is 1 pane, then this pane
+    should fill the container on the y axis.
+- if there are more than 1 pane, then
+  - the first pane is the main pane, 
+    the other panes are aux-panes.
+  - display as many aux-panes with aux-pane
+    height as possible in the window, 
+    without main pane becoming less than 
+    main-pane-min-height. 
+  - if there are undisplayed aux-panes
+    then the next to the scroller there 
+    needs to be a combobox where the aux
+    pane can be selected. 
 
-(requiring-resolve '.../cars) returns a Var, which cheshire cannot serialize (Cannot JSON encode object of class: class clojure.lang.Var). I deref it. @ is not EDN and breaks util/fn-arglist (edn/read-string), so I used (deref (requiring-resolve '...)).
+create model "pixi-timeseries-pane" and add 
+an example with data being a tml dataset,
+displaying in the first pane a bar timeseries,
+in the second pane display a sine wave with 
+point-drop-line
+in the third pane display a cos wave with point-drop-line
  
+
+
+
+
+
+

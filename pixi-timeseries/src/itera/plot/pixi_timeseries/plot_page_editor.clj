@@ -6,7 +6,8 @@
     :step <pixels per row>
     :end <exclusive end row>
     :rows-all <total result rows>
-    :rows-visible <rows per page>}.
+    :rows-visible <rows per page>
+    :aux-pane <first visible aux pane index>}.
 
    `selector-ui` renders the display/step comboboxes plus the range slider and
    the first/prior/next/last buttons over that value.  :display defaults to
@@ -15,6 +16,14 @@
    rows\" summary is shown instead.  :step has no effect
    on row selection in :all, but in :nice it drives the derived
    rows-per-viewport.
+
+   When the optional :pane-spec (the charts spec map) and :window are
+   supplied, the pane layout is computed with
+   itera.plot.pixi-timeseries.pane-layout and, when some aux panes do not fit,
+   a compact \"Aux pane\" combobox is rendered next to the row slider (in
+   :nice) or the Display/Step combos (in :all).  Choosing an entry writes the
+   clamped first-visible-aux-pane index into :aux-pane.  Without :pane-spec
+   (the legacy adapter) no aux control is rendered.
 
    In :nice mode the rows per viewport are derived from the live `:window`
    :width and :step on every render (so a container resize re-windows the
@@ -28,13 +37,15 @@
 
    The legacy :window-selector option editor is kept as a thin adapter over
    `selector-ui` so the demo algo page keeps working; it passes no `:window`
-   and relies on `init-window-selector!` having refreshed :rows-visible, so
-   :rows-all/:rows-visible may also come from the option :spec there.
+   or `:pane-spec` and relies on `init-window-selector!` having refreshed
+   :rows-visible, so :rows-all/:rows-visible may also come from the option
+   :spec there.
 
    This namespace is loaded via :option-ui in a project's itera-plots.edn by
    `itera.hyper/start`; it deliberately does not depend on the plot namespace."
   (:require [hyper.core :as h]
             [itera.option.core :as options]
+            [itera.plot.pixi-timeseries.pane-layout :as pane-layout]
             [itera.plot.pixi-timeseries.window :as plot-window]
             [itera.value.protocol :as spec-plot]))
 
@@ -95,6 +106,31 @@
            (for [s step-options]
              [:option {:value (str s) :selected (= s sraw)} (str s)]))]))
 
+(defn- aux-select
+  "Compact \"Aux pane\" combobox selecting the first visible aux pane.
+
+   Rendered only when PLAN's :overflow? is true (some aux panes are hidden).
+   Options are 0..:max-start labelled \"Aux 1\", \"Aux 2\", ...; a change writes
+   the clamped integer :aux-pane."
+  [value update* path plan actions?]
+  (when (:overflow? plan)
+    (let [max-start (:max-start plan)
+          craw      (:aux-pane value)
+          cur       (clamp 0 max-start (if (number? craw) (long craw) 0))]
+      [:label {:style label-style} "Aux pane"
+       (into [:select (cond-> {:style field-style}
+                        (not actions?) (assoc :disabled true)
+                        actions? (assoc :data-on:change
+                                        (h/action
+                                         (update* path
+                                                  (fn [sel]
+                                                    (let [n (or (->int $value) cur)]
+                                                      (assoc (or sel {}) :aux-pane
+                                                             (clamp 0 max-start n))))))))]
+             (for [n (range (inc max-start))]
+               [:option {:value (str n) :selected (= n cur)}
+                (str "Aux " (inc n))]))])))
+
 (defn selector-ui
   "Render the row-window controls.
 
@@ -110,16 +146,25 @@
    window           window map; when supplied with a positive :width, the rows
                     per viewport are derived from it and :step (overriding
                     rows-visible)
+   pane-spec        optional charts spec map; with :window it computes the pane
+                    layout and shows the \"Aux pane\" combobox when some aux
+                    panes do not fit
    actions?         when false the controls render disabled with no actions"
   [{:keys [value update* path class style display-options step-options
-           rows-all rows-visible window actions?]
+           rows-all rows-visible window pane-spec actions?]
     :or {display-options [:nice :all]
          step-options [4 6 8 10 12 14]
          actions? true}}]
   (let [display (or (:display value) :nice)
-        combos  [:div {:style {:display "flex" :gap "0.35rem"}}
-                 (display-select value update* path display-options actions?)
-                 (step-select value update* path step-options actions?)]
+        plan    (when pane-spec
+                  (pane-layout/layout pane-spec window (:aux-pane value)))
+        aux?    (boolean (:overflow? plan))
+        combos  (into [:div {:style {:display "flex" :gap "0.35rem"
+                                     :align-items "flex-end"}}]
+                      (keep identity
+                            [(display-select value update* path display-options actions?)
+                             (step-select value update* path step-options actions?)
+                             (when aux? (aux-select value update* path plan actions?))]))
         shell   {:class class
                  :style (merge {:display "flex" :flex-direction "column"
                                 :gap "0.35rem"} style)}]
@@ -152,23 +197,33 @@
                                  (not actions?) (assoc :disabled true)
                                  actions? (assoc :data-on:click
                                                  (h/action (update* path f))))
-                       label])]
+                       label])
+            slider  (fn [style]
+                      [:input (cond-> {:type "range"
+                                       :min (str visible) :max (str rows-all)
+                                       :step 1
+                                       :value (str end)
+                                       :style style}
+                                (not actions?) (assoc :disabled true)
+                                actions? (assoc :data-on:change
+                                                (h/action
+                                                 (update* path
+                                                          (fn [sel]
+                                                            (let [n (or (->int $value) end)]
+                                                              (assoc (or sel {})
+                                                                     :end (clamp visible
+                                                                                 rows-all n))))))))])
+            aux        (when aux? (aux-select value update* path plan actions?))
+            slider-row (if aux
+                         [:div {:style {:display "flex" :gap "0.35rem"
+                                        :align-items "flex-end"}}
+                          (slider (assoc field-style :flex "1" :min-width "0"
+                                         :width "auto"))
+                          aux]
+                         (slider field-style))]
         [:div shell
          combos
-         [:input (cond-> {:type "range"
-                          :min (str visible) :max (str rows-all)
-                          :step 1
-                          :value (str end)
-                          :style field-style}
-                   (not actions?) (assoc :disabled true)
-                   actions? (assoc :data-on:change
-                                   (h/action
-                                    (update* path
-                                             (fn [sel]
-                                               (let [n (or (->int $value) end)]
-                                                 (assoc (or sel {})
-                                                        :end (clamp visible
-                                                                    rows-all n))))))))]
+         slider-row
          [:div {:style {:display "flex" :gap "0.25rem"}}
           (button "<|" (fn [sel] (assoc (or sel {}) :end visible)))
           (button "<" (fn [sel]
@@ -218,6 +273,7 @@
       :update* update*
       :path [:window-selector]
       :window window
+      :pane-spec spec
       :rows-all (:rows-all page)
       :rows-visible (:rows-visible page)
       :actions? (some? page-a)})))

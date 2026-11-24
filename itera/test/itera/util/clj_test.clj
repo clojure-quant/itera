@@ -84,6 +84,9 @@
            (util/fn-arglist "(fn [ctx assets] (println assets))")))
     (is (= '[_ assets]
            (util/fn-arglist "(fn [_ assets] (println assets))"))))
+  (testing "handles reader macros in the fn body (deref)"
+    (is (= '[_ assets]
+           (util/fn-arglist "(fn [_ assets] @assets)"))))
   (testing "returns nil for non-fn forms"
     (is (nil? (util/fn-arglist "(println :not-a-fn)")))
     (is (nil? (util/fn-arglist "[ctx assets]")))))

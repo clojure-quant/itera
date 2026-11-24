@@ -1,15 +1,30 @@
 (ns itera.plot.pixi-timeseries.plot-format-ui
   "Editable charts spec for the pixi-timeseries viewer.
 
-   The spec is a vector of panes, each pane a map of a y-axis scale and a
-   vector of plot maps {:type <keyword> :col <keyword|vector> :color <string>};
-   it is exactly the viewer's bare :charts vector, not a wrapper map:
+   The spec is the canonical map
 
-     [{:yAxisScale :linear
-       :plots [{:type :bar :col [:open :high :low :close]}
-               {:type :line :col :close :color \"blue-5\"}]}
-      {:yAxisScale :log
-       :plots [{:type :line :col :close :color \"green-5\"}]}]
+     {:panes [<pane> ...]
+      :main-pane-min-height <px>
+      :aux-pane-height <px>}
+
+   where pane 0 is the main pane and the rest are aux panes.  Each pane is a
+   map of a y-axis scale and a vector of plot maps
+   {:type <keyword> :col <keyword|vector> :color <string>}:
+
+     {:main-pane-min-height 200
+      :aux-pane-height 100
+      :panes
+      [{:yAxisScale :linear
+        :plots [{:type :bar :col [:open :high :low :close]}
+                {:type :line :col :close :color \"blue-5\"}]}
+       {:yAxisScale :log
+        :plots [{:type :line :col :close :color \"green-5\"}]}]}
+
+   A legacy bare vector of panes is still read and normalized to the map
+   shape.  Omitted/invalid pane heights fall back to 200 and 100 px
+   (itera.plot.pixi-timeseries.pane-layout); the viewer uses them to fit as
+   many aux panes as possible without shrinking the main pane below
+   :main-pane-min-height.
 
    Old vector panes [[{:type ...} ...] ...] are still read and normalize to
    {:yAxisScale :linear :plots [...]}.  Bars carry no :color; normalize-spec
@@ -21,8 +36,9 @@
    nothing (the viewer drops it server-side).
 
    `pixi-timeseries-format-edit-ui` renders the pane/plot editor over a code
-   cursor; every edit resets that cursor to (pr-str charts) and the spec popup
-   persists it on Close.  Invalid EDN leaves the spec unchanged.
+   cursor; every edit resets that cursor to (pr-str spec) (always the map
+   shape) and the spec popup persists it on Close.  Invalid EDN leaves the
+   spec unchanged.
 
    The legacy :chartspec option editor is kept as a thin adapter over
    `charts-editor` so the demo algo page keeps working.  The option :spec
@@ -37,6 +53,7 @@
             [hyper.core :as h]
             [itera.option.core :as options]
             [itera.util.color :as colors]
+            [itera.plot.pixi-timeseries.pane-layout :as pane-layout]
             [itera.plot.pixi-timeseries.plot-type :as plot-type]
             ;; Loading these itera value namespaces (now from the itera
             ;; project) registers itera-table-info for the table shapes this
@@ -84,16 +101,24 @@
          :width "1.35rem" :height "1.35rem" :font-size "0.9rem" :padding "0"))
 
 (def invalid-spec-block
-  "Rendered in place of the viewer when a spec is not a charts vector."
+  "Rendered in place of the viewer when a spec is not a charts map."
   [:div {:style {:padding "1rem" :color "#888"}}
-   "Invalid pixi-timeseries spec: expected a vector of panes of plot maps."])
+   (str "Invalid pixi-timeseries spec: expected {:panes [<pane> ...]} "
+        "with optional :main-pane-min-height and :aux-pane-height.")])
 
 (def ^:private pane-scales #{:linear :log})
 
-(defn valid-spec?
-  "True when SPEC is the charts vector shape: a vector of panes."
+(defn- spec-panes
+  "The pane vector of SPEC, accepting the legacy bare vector shape."
   [spec]
-  (vector? spec))
+  (if (map? spec) (:panes spec) spec))
+
+(defn valid-spec?
+  "True when SPEC is the canonical map with a :panes vector, or the legacy
+   bare vector of panes."
+  [spec]
+  (or (vector? spec)
+      (and (map? spec) (vector? (:panes spec)))))
 
 (defn- normalize-plot [plot]
   (if (map? plot)
@@ -121,12 +146,20 @@
     {:yAxisScale :linear :plots []}))
 
 (defn normalize-spec
-  "Normalize SPEC into a vector of pane maps, preserving unknown keys, or nil
-   when SPEC is not a vector.  A non-vector pane becomes an empty :linear pane
-   and a non-map plot becomes an empty plot map."
+  "Normalize SPEC into the canonical map
+   {:panes [<pane> ...] :main-pane-min-height <px> :aux-pane-height <px>},
+   or nil when SPEC is not a vector or {:panes <vector>}.
+
+   Accepts the legacy bare pane vector, preserves unknown map keys, and
+   defaults/clamps the pane heights to positive integers (see
+   pane-layout/normalize-params).  A non-vector pane becomes an empty :linear
+   pane and a non-map plot becomes an empty plot map."
   [spec]
   (when (valid-spec? spec)
-    (mapv normalize-pane spec)))
+    (let [panes (mapv normalize-pane (spec-panes spec))]
+      (-> (if (map? spec) spec {})
+          (assoc :panes panes)
+          (merge (pane-layout/normalize-params spec))))))
 
 (defn- table-column-info
   "Column name -> type for DATA; {} when DATA is nil or does not implement
@@ -137,29 +170,36 @@
     {}))
 
 (defn default-spec*
-  "Smart default charts spec for the table DATA: one :bar pane when the data
-   has numeric OHLC columns, otherwise a :line on :close / the first numeric
-   non-time column, otherwise [].  Panes are {:yAxisScale :linear :plots ...}."
+  "Smart default charts spec for the table DATA, in the canonical map shape:
+   {:main-pane-min-height 200 :aux-pane-height 100 :panes [<pane> ...]}.
+
+   One :bar pane when the data has numeric OHLC columns, otherwise a :line on
+   :close / the first numeric non-time column; an empty table returns a map
+   with :panes []."
   [data]
-  (let [info (table-column-info data)
-        num? (fn [k] (= :number (get info k)))]
-    (cond
-      (empty? info)
-      []
+  (let [info  (table-column-info data)
+        num?  (fn [k] (= :number (get info k)))
+        panes (cond
+                (empty? info)
+                []
 
-      (and (num? :open) (num? :high) (num? :low) (num? :close))
-      [{:yAxisScale :linear :plots [{:type :bar :col [:open :high :low :close]}]}]
+                (and (num? :open) (num? :high) (num? :low) (num? :close))
+                [{:yAxisScale :linear
+                  :plots [{:type :bar :col [:open :high :low :close]}]}]
 
-      (num? :close)
-      [{:yAxisScale :linear :plots [{:type :line :col :close}]}]
+                (num? :close)
+                [{:yAxisScale :linear :plots [{:type :line :col :close}]}]
 
-      :else
-      (if-let [col (first (filter (fn [k]
-                                    (and (num? k)
-                                         (not (contains? #{:date :epoch} k))))
-                                  (keys info)))]
-        [{:yAxisScale :linear :plots [{:type :line :col col}]}]
-        []))))
+                :else
+                (if-let [col (first (filter (fn [k]
+                                              (and (num? k)
+                                                   (not (contains? #{:date :epoch} k))))
+                                            (keys info)))]
+                  [{:yAxisScale :linear :plots [{:type :line :col col}]}]
+                  []))]
+    {:main-pane-min-height pane-layout/default-main-pane-min-height
+     :aux-pane-height pane-layout/default-aux-pane-height
+     :panes panes}))
 
 (defn data-columns
   "Distinct column names across the table DATA, in column-info key order."
@@ -167,9 +207,10 @@
   (vec (keys (table-column-info data))))
 
 (defn- spec-plots
-  "All plot maps in SPEC; old vector panes are accepted as well."
+  "All plot maps in SPEC; accepts the canonical map and old vector panes."
   [spec]
-  (mapcat (fn [pane] (if (map? pane) (:plots pane) pane)) (or spec [])))
+  (mapcat (fn [pane] (if (map? pane) (:plots pane) pane))
+          (or (spec-panes spec) [])))
 
 (defn spec-columns
   "Column keywords already referenced by SPEC, whether scalar or vector :col."
@@ -208,7 +249,7 @@
 
 (defn- read-spec
   "Current charts spec: valid EDN from code-a, else (:spec opts) when valid,
-   else []."
+   else an empty canonical map.  Always returns the canonical map shape."
   [opts]
   (let [c      (:code-a opts)
         text   (try (when c @c) (catch Exception _ nil))
@@ -219,7 +260,7 @@
     (cond
       (valid-spec? parsed)       (normalize-spec parsed)
       (valid-spec? (:spec opts)) (normalize-spec (:spec opts))
-      :else                      [])))
+      :else                      (normalize-spec []))))
 
 (defn- write-spec!
   [code-a spec]
@@ -314,9 +355,9 @@
   (update* path
            (fn [cs]
              (if (str/blank? s)
-               (update-in cs [i :plots j] dissoc :base-value)
+               (update-in cs [:panes i :plots j] dissoc :base-value)
                (if-let [n (parse-number s)]
-                 (assoc-in cs [i :plots j :base-value] n)
+                 (assoc-in cs [:panes i :plots j :base-value] n)
                  cs)))))
 
 (defn- plot-row
@@ -340,7 +381,7 @@
                  (h/action
                   (update* path
                            (fn [cs]
-                             (update-in cs [i :plots j] set-plot-type
+                             (update-in cs [:panes i :plots j] set-plot-type
                                         (keyword $value) cols pal col-info))))}
         (for [tt types]
           [:option {:value (name tt) :selected (= tt t)} (name tt)])]]]
@@ -356,8 +397,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-4 (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-4 (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 0 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (nth bcol 0))} (name c)])]]
@@ -368,8 +409,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-4 (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-4 (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 1 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (nth bcol 1))} (name c)])]]
@@ -380,8 +421,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-4 (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-4 (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 2 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (nth bcol 2))} (name c)])]]
@@ -392,8 +433,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-4 (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-4 (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 3 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (nth bcol 3))} (name c)])]]]
@@ -407,8 +448,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-pair (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-pair (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 0 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (first ccol))} (name c)])]]
@@ -419,8 +460,8 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (let [cc (->col-pair (get-in cs [i :plots j :col]) cols)]
-                                  (assoc-in cs [i :plots j :col]
+                                (let [cc (->col-pair (get-in cs [:panes i :plots j :col]) cols)]
+                                  (assoc-in cs [:panes i :plots j :col]
                                             (assoc cc 1 (keyword $value)))))))}
            (for [c cols]
              [:option {:value (name c) :selected (= c (second ccol))} (name c)])]]]
@@ -434,7 +475,7 @@
                      (h/action
                       (update* path
                                (fn [cs]
-                                 (assoc-in cs [i :plots j :col] (keyword $value)))))}
+                                 (assoc-in cs [:panes i :plots j :col] (keyword $value)))))}
             (for [c display-cols]
               [:option {:value (name c) :selected (= c col)} (name c)])]]))]
 
@@ -448,7 +489,7 @@
                     (h/action
                      (update* path
                               (fn [cs]
-                                (assoc-in cs [i :plots j :color] $value))))}
+                                (assoc-in cs [:panes i :plots j :color] $value))))}
            (for [c pal]
              [:option {:value c :selected (= c (:color plot))} c])])
         [:button {:type "button" :title "Remove plot" :aria-label "Remove plot"
@@ -457,7 +498,7 @@
                   (h/action
                    (update* path
                             (fn [cs]
-                              (update-in cs [i :plots]
+                              (update-in cs [:panes i :plots]
                                          (fn [p]
                                            (let [p (vec (or p []))]
                                              (vec (concat (subvec p 0 j)
@@ -494,34 +535,66 @@
                    :types types :col-info col-info :i i :j j :plot plot}))
       plots)]]])
 
+(defn- set-pane-height!
+  "Set a top-level pane-height key from a numeric input; blank or non-positive
+   integer input leaves the spec unchanged."
+  [update* path k s]
+  (update* path
+           (fn [cs]
+             (let [n (parse-number s)]
+               (if (and (integer? n) (pos? n))
+                 (assoc cs k n)
+                 cs)))))
+
 (defn charts-editor
   "Charts spec editor body.
 
-   charts   the charts vector (vector of pane maps)
+   charts   the canonical spec map
+            {:panes [<pane> ...] :main-pane-min-height <px>
+             :aux-pane-height <px>}; a legacy pane vector is normalized
    path     path passed through to update*
-   update*  two-arg (fn [path f]) read-modify-write of the charts value
+   update*  two-arg (fn [path f]) read-modify-write of the spec value
    cols     selectable column keywords
    pal      selectable color names
    types    plot type keywords
    col-info optional column name -> type map (narrows :background-color to
-            boolean columns)"
+            boolean columns)
+
+   Every edit writes the canonical map shape."
   [{:keys [charts path update* cols pal types col-info]}]
   (let [cols         (vec (or cols []))
         pal          (vec (sort (distinct (or pal []))))
         types        (vec (or types plot-type/types))
-        normalize    (fn [cs] (or (normalize-spec (if (vector? cs) cs [])) []))
-        charts       (normalize charts)
+        normalize    (fn [cs] (or (normalize-spec cs) (normalize-spec [])))
+        spec         (normalize charts)
         update*      (fn [p f] (update* p (fn [cs] (f (normalize cs)))))
-        add-pane     (fn [cs] (conj (vec (or cs []))
-                                    {:yAxisScale :linear
-                                     :plots [(default-plot cols pal)]}))
-        remove-pane  (fn [cs i]
-                       (let [cs (vec cs)]
-                         (vec (concat (subvec cs 0 i) (subvec cs (inc i))))))
-        add-plot     (fn [cs i]
-                       (update-in cs [i :plots] (fnil conj [])
-                                  (default-plot cols pal)))]
+        add-pane     (fn [s]
+                       (update s :panes conj
+                               {:yAxisScale :linear
+                                :plots [(default-plot cols pal)]}))
+        remove-pane  (fn [s i]
+                       (let [ps (vec (:panes s))]
+                         (assoc s :panes
+                                (vec (concat (subvec ps 0 i)
+                                             (subvec ps (inc i)))))))
+        add-plot     (fn [s i]
+                       (update-in s [:panes i :plots] (fnil conj [])
+                                  (default-plot cols pal)))
+        height-field (fn [k label]
+                       [:label {:style {:display "flex" :flex-direction "column"
+                                        :font-size "0.68rem" :color "#374151"
+                                        :gap "0.1rem" :flex "1" :min-width "0"}}
+                        label
+                        [:input {:type "number" :min "1" :step "1"
+                                 :value (str (get spec k))
+                                 :style field-style
+                                 :data-on:change
+                                 (h/action
+                                  (set-pane-height! update* path k $value))}]])]
     [:div {:style {:display "flex" :flex-direction "column" :gap "0.5rem"}}
+     [:div {:style {:display "flex" :gap "0.35rem"}}
+      (height-field :main-pane-min-height "Main pane min height (px)")
+      (height-field :aux-pane-height "Aux pane height (px)")]
      (mapv
       (fn [[i pane]]
         (let [plots (vec (or (:plots pane) []))
@@ -543,7 +616,7 @@
                         (h/action
                          (update* path
                                   (fn [cs]
-                                    (assoc-in cs [i :yAxisScale]
+                                    (assoc-in cs [:panes i :yAxisScale]
                                               (keyword $value)))))}
                (for [s [:linear :log]]
                  [:option {:value (name s) :selected (= s scale)}
@@ -560,7 +633,7 @@
                      :data-on:click
                      (h/action (update* path (fn [cs] (remove-pane cs i))))}
             "×"]]))
-      (map-indexed vector charts))
+      (map-indexed vector (:panes spec)))
      [:div {:style {:display "flex" :justify-content "flex-start"}}
       [:button {:type "button" :style button-style
                 :data-on:click (h/action (update* path add-pane))}
@@ -570,10 +643,12 @@
   "Edit a pixi-timeseries charts spec bound to code-a.
 
    data  the plot table (used to list selectable columns via itera-table-info)
-   opts  {:spec <current charts vector> :code-a <hyper cursor holding EDN text>}
+   opts  {:spec <current spec map or legacy pane vector>
+          :code-a <hyper cursor holding EDN text>}
 
-   Every edit resets code-a to (pr-str charts); the spec popup persists it on
-   Close.  Must be called inside a Hyper render context."
+   Every edit resets code-a to (pr-str spec) in the canonical map shape; the
+   spec popup persists it on Close.  Must be called inside a Hyper render
+   context."
   [data opts]
   (let [spec    (read-spec opts)
         code-a  (:code-a opts)

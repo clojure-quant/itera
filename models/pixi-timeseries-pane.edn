@@ -1,0 +1,36 @@
+{:graph/name "pixi-timeseries-pane",
+ :ns-data
+ "(ns itera.user.pixi-timeseries-pane (:require [tech.v3.dataset :as ds]\n  [itera.plot.pixi-timeseries.plot :refer [pixi-timeseries]]))",
+ :nodes
+ [{:id "01-dataset",
+   :label "bars + sine + cosine",
+   :type :formula,
+   :show? false,
+   :position {:x 24, :y 60},
+   :code
+   "(fn [_]\n  (let [n 240\n        idx (range n)\n        start (java.time.LocalDate/of 2024 1 1)\n        sine (mapv (fn [i] (Math/sin (* i 0.12))) idx)\n        cosine (mapv (fn [i] (Math/cos (* i 0.12))) idx)\n        close (mapv (fn [i] (+ 100.0 (* 10.0 i))) sine)\n        open (mapv (fn [i] (+ 100.0 (* 10.0 i) (* 1.5 (Math/cos (* i 0.35))))) idx)\n        high (mapv (fn [o c] (+ (max o c) 1.0)) open close)\n        low (mapv (fn [o c] (- (min o c) 1.0)) open close)\n        date (mapv (fn [i] (str (.plusDays start i))) idx)]\n    (ds/->dataset {:date date :open open :high high :low low\n                   :close close :sine sine :cosine cosine})))"}
+  {:id "02-plot",
+   :label "pixi-timeseries",
+   :type :formula,
+   :show? true,
+   :position {:x 420, :y 60},
+   :code
+   "(fn [ctx rows]\n  ((requiring-resolve 'itera.plot.pixi-timeseries.plot/pixi-timeseries) rows))",
+   :spec
+   {:main-pane-min-height 220,
+    :aux-pane-height 120,
+    :panes
+    [{:yAxisScale :linear,
+      :plots [{:type :bar, :col [:open :high :low :close]}]}
+     {:yAxisScale :linear,
+      :plots [{:type :line, :col :sine, :color "blue-5"}
+              {:type :point-drop, :col :sine, :color "blue-5", :base-value 0}]}
+     {:yAxisScale :linear,
+      :plots [{:type :line, :col :cosine, :color "green-5"}
+              {:type :point-drop, :col :cosine, :color "green-5", :base-value 0}]}]}}],
+ :edges
+ [{:id "e1",
+   :source-node "01-dataset",
+   :source-port "out",
+   :target-node "02-plot",
+   :target-port "rows"}]}

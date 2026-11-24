@@ -20,6 +20,12 @@
    `:contains` padding when a window is supplied, so the axes and padding fit
    inside the cell instead of being clipped.
 
+   Bound signal controls (`bind`) are rendered by Vega as an HTML form
+   (`.vega-bindings`) below the plot rectangle, outside the area autosize
+   accounts for.  After the embed resolves, the component measures the form
+   and shrinks the view height so that bindings band fits inside the fixed
+   cell instead of overflowing it.
+
    Data attachment:
      - a map name -> raw value is injected into a raw Vega spec's matching
        `:data` entries as `:values` (the entry's `:url` is removed, `:format`
@@ -45,12 +51,32 @@
             [itera.input.codemirror :as input-cm]
             [itera.value.protocol :as spec-plot]))
 
-(def head [])
+(def head
+  [[:style
+    ".vega-embed canvas { display: block; }
+     .vega-bindings { margin: 0; padding: 4px 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; font: 12px sans-serif; }
+     .vega-bind { display: flex; align-items: center; gap: .35rem; }
+     .vega-bind input[type=range] { width: 120px; }"]])
+
+(defn- fitted-plot-height
+  "Target canvas height that leaves `bindings-height` px of the window for the
+   signal-binding form rendered below it.  nil when there is no box height or
+   no non-zero bindings band (so the caller leaves the view alone).
+
+   Pure reference rule for the fit applied by the embedded component; Hyper
+   compiles each lifecycle segment on its own, so the component inlines the
+   same arithmetic instead of calling this fn.  The component additionally
+   subtracts the canvas/height-signal delta that autosize \"none\" specs add
+   as vertical padding."
+  [box-height bindings-height]
+  (when (and (number? box-height) (pos? box-height)
+             (number? bindings-height) (pos? bindings-height))
+    (max 1 (- box-height bindings-height))))
 
 (h/defc itera-vega-embed
   {:require [["https://esm.sh/vega-embed@6.26.0" :as vega-embed]
              ["https://esm.sh/vega-loader@4.5.4" :as vega-loader]]}
-  [{:keys [options]}]
+  [{:keys [options window]}]
   (render
    [:div {:style "width:100%;height:100%"}])
   (mount [root]
@@ -60,7 +86,29 @@
       (set! (.-fileAccess loader) false)
       (set! (.-loader embed-opts) loader)
       (-> (vega-embed/default el (.-spec options) embed-opts)
-          (.then (fn [res] (set! (.-result ctx) res)))
+          (.then (fn [res]
+                   (set! (.-result ctx) res)
+                   (let [spec (.-spec options)
+                         autosize (:autosize spec)
+                         autosize-type (if (map? autosize) (:type autosize) autosize)
+                         view (.-view res)
+                         form (.querySelector root ".vega-bindings")
+                         bh (when (and form (.querySelector form ".vega-bind"))
+                              (.-offsetHeight form))
+                         box (some-> window :height)
+                         plot (when view (.querySelector root ".chart-wrapper canvas"))
+                         ;; autosize "none" canvases also include the spec's
+                         ;; vertical padding, which the height signal omits.
+                         extra (when (and plot (= "none" autosize-type))
+                                 (- (.-offsetHeight plot) (.height view)))]
+                     ;; Vega renders the bound-signal controls below the plot
+                     ;; rectangle; shrink the view so that band stays inside
+                     ;; the fixed cell.  Mirrors fitted-plot-height.
+                     (when (and view (number? box) (pos? box)
+                                (number? bh) (pos? bh))
+                       (.height view (max 1 (- (max 1 (- box bh)) (or extra 0))))
+                       (.resize view)
+                       (.runAsync view)))))
           (.catch (fn [err] (js/console.error "vega-embed error" err))))))
   (update [root]
     (when-let [r (.-result ctx)]
@@ -73,7 +121,24 @@
       (set! (.-fileAccess loader) false)
       (set! (.-loader embed-opts) loader)
       (-> (vega-embed/default el (.-spec options) embed-opts)
-          (.then (fn [res] (set! (.-result ctx) res)))
+          (.then (fn [res]
+                   (set! (.-result ctx) res)
+                   (let [spec (.-spec options)
+                         autosize (:autosize spec)
+                         autosize-type (if (map? autosize) (:type autosize) autosize)
+                         view (.-view res)
+                         form (.querySelector root ".vega-bindings")
+                         bh (when (and form (.querySelector form ".vega-bind"))
+                              (.-offsetHeight form))
+                         box (some-> window :height)
+                         plot (when view (.querySelector root ".chart-wrapper canvas"))
+                         extra (when (and plot (= "none" autosize-type))
+                                 (- (.-offsetHeight plot) (.height view)))]
+                     (when (and view (number? box) (pos? box)
+                                (number? bh) (pos? bh))
+                       (.height view (max 1 (- (max 1 (- box bh)) (or extra 0))))
+                       (.resize view)
+                       (.runAsync view)))))
           (.catch (fn [err] (js/console.error "vega-embed error" err))))))
   (unmount [_]
     (when-let [r (.-result ctx)]
@@ -150,7 +215,8 @@
   (let [style (some-> window spec-plot/window->style)]
     (itera-vega-embed
      (cond-> {:options (embed-options data mode chart-spec window)}
-       style (assoc :style style)))))
+       window (assoc :window window)
+       style  (assoc :style style)))))
 
 (defrecord Vega [data mode]
   itera.value.protocol/itera-convertable
